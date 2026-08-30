@@ -11,9 +11,11 @@ services:
   legal-mcp:
     build: docker/legal-mcp
     volumes: [legal-cache:/usr/local/lib/python3.12/site-packages/mcp_server/data]
+  # Quick Tunnel（trycloudflare.com）：免網域、免 token，但網址每次重啟都會變；
+  # 改用固定網域時換成：command: tunnel --no-autoupdate run --token ${CF_TUNNEL_TOKEN}
   cloudflared:
     image: cloudflare/cloudflared:latest
-    command: tunnel --no-autoupdate run --token ${CF_TUNNEL_TOKEN}
+    command: tunnel --no-autoupdate --url http://app:8080
     depends_on: [app]
 volumes:
   legal-cache:
