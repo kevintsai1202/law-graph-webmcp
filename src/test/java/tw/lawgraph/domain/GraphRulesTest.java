@@ -64,4 +64,23 @@ class GraphRulesTest {
         assertEquals(1, outcome.graph().edges().size());
         assertEquals(2, outcome.notes().stream().filter(note -> note.startsWith("removed edge")).count());
     }
+
+    /** 規則四：group 缺漏或不在白名單的節點不得放行；能以 ref／jid 對應檢索結果者推斷為 law／judgment，其餘移除並記錄。 */
+    @Test
+    void rule4DropsNodesWithMissingOrUnknownGroupUnlessInferable() {
+        var raw = new GraphData(List.of(
+                node("n1", null, "Civil Code Art. 184 ¶1（民法第184條第1項）", "民法第184條第1項", null, null),
+                node("n2", null, "Supreme Court 108-Tai-Shang-2345", null, "TPSV,108,台上,2345", null),
+                node("n3", null, "闖紅燈", null, null, null),
+                node("n4", "Fact", "大小寫錯誤的群組", null, null, null),
+                node("f1", "fact", "正常事實", null, null, null)),
+                List.of(new GraphEdge("n3", "f1", "適用", null, null)));
+        var outcome = GraphRules.apply(raw, research, analysis);
+        var byId = outcome.graph().nodes().stream().collect(java.util.stream.Collectors.toMap(GraphNode::id, n -> n));
+        assertEquals(java.util.Set.of("n1", "n2", "f1"), byId.keySet());
+        assertEquals("law", byId.get("n1").group(), "有 ref 對應檢索法條者推斷為 law");
+        assertEquals("judgment", byId.get("n2").group(), "有 jid 對應檢索判決者推斷為 judgment");
+        assertTrue(outcome.graph().edges().isEmpty(), "連到被移除節點的邊也要移除");
+        assertEquals(2, outcome.notes().stream().filter(note -> note.startsWith("removed node without valid group")).count());
+    }
 }

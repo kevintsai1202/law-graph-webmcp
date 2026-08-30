@@ -68,6 +68,7 @@ public final class LegalPrompts {
                 <research>%s</research>
                 <analysis>%s</analysis>
                 Rules for this environment:
+                - Every node MUST have "group", exactly one of (lower-case): fact, law, judgment, issue, party, plaintiff, evidence, contract, clause, obligation, element. Nodes without a valid group will be deleted.
                 - Every law node must carry "ref" copied verbatim from research.laws[].ref; every judgment node must carry "jid" copied verbatim from research.judgments[].jid. Nodes without a matching ref/jid will be deleted.
                 - Element nodes: label must equal analysis.elements[].element exactly; do not set "met" (the server fills it from the analysis).
                 - Edge "label" must be one of the skill's Chinese labels (適用, 引用, 上訴, 當事人, 證據, 要件, 該當, 抗辯/阻斷, 法條關聯, ...). Use "from"/"to" for endpoints.

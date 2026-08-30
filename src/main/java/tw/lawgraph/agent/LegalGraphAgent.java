@@ -75,7 +75,7 @@ public class LegalGraphAgent {
                 .createObject(LegalPrompts.analyze(research, brainstorm, input.locale()), AnalysisResult.class);
     }
 
-    /** 步驟五：產生 3D 圖資料並套用三條硬規則。 */
+    /** 步驟五：產生 3D 圖資料並套用四條硬規則。 */
     @AchievesGoal(description = "A verified legal relationship graph for the case")
     @Action
     public GraphOutcome buildGraph(CaseInput input, BrainstormResult brainstorm, ResearchResult research,
