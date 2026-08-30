@@ -12,7 +12,7 @@
 
 - 純文字輸入＋四個可點選的虛構示範案例
 - 中英雙語 UI 與 LLM 產出，預設英文
-- 後端 Java：Spring Boot 4.1 ＋ Embabel 1.5.1 ＋ gpt-5.4-mini
+- 後端 Java：Spring Boot 4.1 ＋ Embabel 1.5.1 ＋ gpt-5.4-nano（2026-08-30 由 gpt-5.4-mini 降級以節省成本）
 - 法律資料只接 `taiwan-legal-db`（非 RAG 的 MCP）
 - 本機 Docker Compose ＋ Cloudflare Tunnel 上線
 - 十個 WebMCP 工具（Imperative API）
@@ -31,7 +31,7 @@
 瀏覽器 (HTML+JS, i18n, 3D renderer, WebMCP registerTool)
    │ REST: POST /api/cases · POST /api/cases/{id}/answers · GET /api/cases/{id}
    ▼
-app  (Spring Boot 4.1 + Embabel 1.5.1, OpenAI gpt-5.4-mini, Skills ← /app/skills/*)
+app  (Spring Boot 4.1 + Embabel 1.5.1, OpenAI gpt-5.4-nano, Skills ← /app/skills/*)
    │ Streamable HTTP MCP
    ▼
 legal-mcp sidecar (Python 3.12, mcp-taiwan-legal-db)  ──▶ 司法院裁判書 / 全國法規資料庫
@@ -42,7 +42,7 @@ cloudflared ──▶ https://<domain>
 
 | 議題 | 決定 | 理由 |
 |---|---|---|
-| LLM | OpenAI `gpt-5.4-mini`（`embabel-agent-starter-openai`） | 與主辦方一致；Embabel 1.5.1 `OpenAiModels.GPT_54_MINI` 內建；每 case 約 US$0.3–0.5 |
+| LLM | OpenAI `gpt-5.4-nano`（`embabel-agent-starter-openai`） | 成本優先；Embabel 1.5.1 `models/openai-models.yml` 內建 `gpt-5.4-nano`；品質不足時可改回 `gpt-5.4-mini` |
 | Embabel 版本 | 1.5.1（Boot 4.1.0 / Spring AI 2.0.0 / Jackson 3） | 2026-08-24 發佈；新專案無 Boot 3 包袱 |
 | 技能載入 | `embabel-agent-skills` 的 `Skills.withLocalSkill()`，以 `LlmReference` 掛進 PromptRunner | 113 KB SKILL.md 零改寫；模型透過 `activate()`／`readResource()` 讀完整指令與 `references/` |
 | 流程結構 | 單一 Agent、五個 `@Action` ＋ 一個 `WaitFor.formSubmission` | 一條可預測的 GOAP 鏈，除錯簡單 |
@@ -268,7 +268,7 @@ INPUT ─start─▶ RUNNING ─WAITING─▶ QUESTIONS ─submit─▶ RUNNING 
 
 | 層 | 工具 | 範圍 | 打外部 |
 |---|---|---|---|
-| 領域規則 | JUnit 5 | 三條硬規則、`CaseStatus` 序列化 | 否 |
+| 領域規則 | JUnit 5 | 四條硬規則、`CaseStatus` 序列化 | 否 |
 | Action 契約 | JUnit 5 ＋ Embabel 測試支援（fake context / prompt runner） | 型別串接、prompt 含 activate 句 | 否 |
 | REST | `@WebMvcTest` | 五端點、409、429 | 否 |
 | MCP 連線 | `@SpringBootTest` ＋ Testcontainers 起 `legal-mcp` | `search_regulations("民法")` 回 pcode；WAF 失敗以假 server 模擬 | 只 sidecar |

@@ -2,7 +2,7 @@
 
 **One sentence:** paste a fictional Taiwan legal dispute, answer a few questions only you can answer, and get a verified, interactive 3D legal-relationship graph — every step of which your browser Agent can drive through ten WebMCP tools, except the answering.
 
-![Completed graph for the car-accident sample (live gpt-5.4-mini run)](docs/images/completed-graph.png)
+![Completed graph for the car-accident sample (live gpt-5.4-nano run, 繁體中文 UI)](docs/images/completed-graph.png)
 
 ![Tool Inspector running focusNode on the rendered graph](docs/images/smoke-graph.png)
 
@@ -41,13 +41,14 @@ Browser (HTML/JS, no framework)
 Spring Boot 4.1 / Embabel 1.5.1 (Java 21)
   ├─ LegalGraphAgent   five @Action steps + WaitFor.awaitable (human questions)
   ├─ Skills            law-powers legal-brainstorming / legal-research / legal-element-analysis / legal-graph
-  ├─ GraphRules        3 hard rules after model output: law/judgment nodes must be anchored in research,
+  ├─ GraphRules        4 hard rules after model output: every node needs a whitelisted group (inferred from
+  │                    ref/jid when the model omits it), law/judgment nodes must be anchored in research,
   │                    element findings only from analysis, edge labels from a fixed whitelist
   └─ Spring AI MCP client ──► legal-mcp sidecar (Python, mcp-taiwan-legal-db, Streamable HTTP)
                                  └─ law.moj.gov.tw statutes · judicial.gov.tw judgments
 ```
 
-Only six sidecar tools are whitelisted for the Agent: `search_regulations`, `query_regulation`, `get_pcode`, `search_judgments`, `get_judgment`, `get_citations`. The LLM is `gpt-5.4-mini`.
+Only six sidecar tools are whitelisted for the Agent: `search_regulations`, `query_regulation`, `get_pcode`, `search_judgments`, `get_judgment`, `get_citations`. The LLM is `gpt-5.4-nano` (`embabel.models.default-llm`; Embabel 1.5.1 ships the model definition in `models/openai-models.yml`).
 
 ## WebMCP implementation
 
@@ -76,6 +77,10 @@ await modelContext.registerTool({ name, description, inputSchema, annotations,
 
 Environment notes: in **Chrome 149+** enable `chrome://flags/#enable-webmcp-testing`, then `await document.modelContext.getTools()` returns 5 tools on load and 10 after completion. In the **ChatGPT desktop app**, the address-bar *Site tools* list shows the same five base tools. The declarative (`<form>`-based) WebMCP API is not used.
 
+## UI design system
+
+The front end follows the **Trust & Authority** pattern from `ui-ux-pro-max` (`design-system/law-graph/MASTER.md`): ivory background, navy primary (`#1e3a8a`), gold accents, EB Garamond / Noto Serif TC headings, Inter / Noto Sans TC body. Every colour, spacing, radius and duration is a CSS token in `static/css/app.css`; components never hard-code hex values. Built-in checks: 4.5:1 contrast, 44 px touch targets, visible `:focus-visible` rings, `aria-current` stepper, `tablist` tabs with arrow-key navigation, inline validation on the case text (submit enabled at 20 chars), element findings encoded by symbol + text + colour, `prefers-reduced-motion`, and no horizontal scroll at 375/768/1440 (`npm run e2e:visual`).
+
 ## Run locally
 
 Requires Java 21, Node 20+, Docker and an OpenAI key.
@@ -102,6 +107,8 @@ mvn test                                    # 36 unit tests (domain rules, promp
 mvn verify -Dtest=LegalMcpIT                # starts the real sidecar via Testcontainers, verifies 民法第184條
 npm test                                    # 24 node --test cases: i18n, state machine, client, views, graph, WebMCP contract
 npm run e2e                                 # Playwright: smoke (no LLM; fake modelContext) + journey (needs E2E_LIVE=1)
+npm run stub                                # static + stubbed /api server on :8090 — no Spring Boot, no LLM
+$env:BASE_URL='http://localhost:8090'; npm run e2e:visual   # UI/a11y regression: 375/768/1440 screenshots -> docs/ui-review/
 $env:E2E_LIVE='1'; npm run e2e              # full human/agent journey against a live backend
 npm run eval                                # 4 samples × 2 locales; counts nodes removed by the hard rules → eval/
 ```
@@ -118,7 +125,7 @@ $env:E2E_LIVE='1'; npx playwright test -c e2e/playwright.config.mjs e2e/tutorial
 
 ## Limitations
 
-- `gpt-5.4-mini` output quality varies; the hard rules remove unverifiable nodes rather than "fix" them, so graphs can be small.
+- `gpt-5.4-nano` output quality varies (more than mini); the hard rules remove unverifiable nodes rather than "fix" them, so graphs can be small. Switch back with `embabel.models.default-llm: gpt-5.4-mini` if quality matters more than cost.
 - The judicial.gov.tw WAF can block judgment lookups; the sidecar falls back to Playwright but may still fail.
 - Case state is in memory only; a restart loses running cases. Rate limit is 10 cases / hour / IP.
 - No file upload; the semantic `dr-lawbot` search from law-powers is intentionally not connected.
