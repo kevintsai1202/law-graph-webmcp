@@ -1,0 +1,19 @@
+services:
+  app:
+    build: { context: ., dockerfile: docker/app/Dockerfile }
+    environment:
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      LEGAL_MCP_URL: http://legal-mcp:8000
+      LAWGRAPH_SKILLS_DIR: /app/skills
+    ports: ["8080:8080"]
+    depends_on:
+      legal-mcp: { condition: service_healthy }
+  legal-mcp:
+    build: docker/legal-mcp
+    volumes: [legal-cache:/usr/local/lib/python3.12/site-packages/mcp_server/data]
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    command: tunnel --no-autoupdate run --token ${CF_TUNNEL_TOKEN}
+    depends_on: [app]
+volumes:
+  legal-cache:
