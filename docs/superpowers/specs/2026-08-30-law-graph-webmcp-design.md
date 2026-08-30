@@ -163,7 +163,7 @@ spring.ai.mcp.client:
   request-timeout: 60s
   streamable-http:
     connections:
-      legal-mcp: { url: ${LEGAL_MCP_URL:http://legal-mcp:8000/mcp} }
+      legal-mcp: { url: ${LEGAL_MCP_URL:http://legal-mcp:8000} }   # Spring AI 以 url ＋ 預設 endpoint /mcp 連線
 ```
 
 `McpToolGroup("taiwan-legal-db", …)` 白名單：`search_regulations`、`query_regulation`、`get_pcode`、`search_judgments`、`get_judgment`、`get_citations`。不開 `search_interpretations`／`get_interpretation`。
@@ -282,10 +282,11 @@ INPUT ─start─▶ RUNNING ─WAITING─▶ QUESTIONS ─submit─▶ RUNNING 
 ```yaml
 services:
   app:         # 多階段 Dockerfile：maven 建置 → eclipse-temurin:21-jre；COPY jar + skills/
-    environment: [OPENAI_API_KEY, LEGAL_MCP_URL=http://legal-mcp:8000/mcp, LAWGRAPH_SKILLS_DIR=/app/skills]
+    environment: [OPENAI_API_KEY, LEGAL_MCP_URL=http://legal-mcp:8000, LAWGRAPH_SKILLS_DIR=/app/skills]
     depends_on: { legal-mcp: { condition: service_healthy } }
   legal-mcp:   # python:3.12-slim；pip install mcp-taiwan-legal-db playwright；playwright install --with-deps chromium
-    command: python -c "from mcp_server.server import mcp; mcp.run(transport='streamable-http', host='0.0.0.0', port=8000)"
+    environment: [FASTMCP_HOST=0.0.0.0, FASTMCP_PORT=8000]   # mcp<2 的 FastMCP 以環境變數設 host/port
+    command: python -c "from mcp_server.server import mcp; mcp.run(transport='streamable-http')"
     healthcheck: curl -f http://localhost:8000/mcp
     volumes: [legal-cache:/app/mcp_server/data]
   cloudflared: # cloudflare/cloudflared；tunnel run --token ${CF_TUNNEL_TOKEN}
