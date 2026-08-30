@@ -1,0 +1,17 @@
+embabel:
+  models:
+    default-llm: gpt-5.4-mini
+spring:
+  ai:
+    mcp:
+      client:
+        enabled: true
+        type: SYNC
+        request-timeout: 60s
+        streamable-http:
+          connections:
+            legal-mcp:
+              url: ${LEGAL_MCP_URL:http://localhost:8000}
+lawgraph:
+  skills-dir: ${LAWGRAPH_SKILLS_DIR:skills/law-powers/skills}
+  rate-limit-per-hour: 10

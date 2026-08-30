@@ -1,0 +1,7 @@
+target/
+logs/
+node_modules/
+e2e/screenshots/
+eval/
+.env
+*.log

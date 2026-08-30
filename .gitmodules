@@ -1,0 +1,3 @@
+[submodule "skills/law-powers"]
+	path = skills/law-powers
+	url = https://github.com/kevintsai1202/law-powers.git
