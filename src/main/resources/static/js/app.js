@@ -1,6 +1,7 @@
 import { t, detectLocale, DICT } from './i18n.js';
 import { States, reduce, initialState } from './state.js';
 import { esc, mount as mountHtml } from './views/util.js';
+import { ICONS } from './views/icons.js';
 import { renderInput, bindInput } from './views/input.js';
 import { renderProgress, renderCancel } from './views/progress.js';
 import { renderQuestions, bindQuestions } from './views/questions.js';
@@ -47,7 +48,7 @@ export function createApp({ root, client, storage, navigatorLanguage, partialCol
         break;
       case States.QUESTIONS:
         // 頭腦風暴成果放在提問之前（先看脈絡再回答），數秒後自動收折讓問題浮上來
-        mountHtml(el, renderProgress({ step: 'QUESTIONS' }, locale) + renderCancel(locale) + renderSections(state.last.result, locale)
+        mountHtml(el, renderProgress({ step: 'QUESTIONS', busy: false }, locale) + renderCancel(locale) + renderSections(state.last.result, locale)
           + renderQuestions({ questions: state.last.questions }, locale));
         bindQuestions(el, { onSubmit: answer });
         bindCancel(el);
@@ -82,9 +83,9 @@ export function createApp({ root, client, storage, navigatorLanguage, partialCol
 
   /** 失敗頁：錯誤代碼、步驤、訊息與重試。 */
   function renderFailed(error, loc) {
-    return `<section class="failed"><h2>${esc(t('failed.title', loc))}</h2>
+    return `<section class="failed card" role="alert"><h2>${ICONS.alert}${esc(t('failed.title', loc))}</h2>
       <p class="code">${esc(error?.code || '')} @ ${esc(error?.step || '')}</p><p>${esc(error?.message || '')}</p>
-      <button id="retry" type="button" class="primary">${esc(t('failed.retry', loc))}</button></section>`;
+      <div class="actions"><button id="retry" type="button" class="primary">${ICONS.refresh}${esc(t('failed.retry', loc))}</button></div></section>`;
   }
 
   /** 開始（或重新開始）輪詢指定案件。 */

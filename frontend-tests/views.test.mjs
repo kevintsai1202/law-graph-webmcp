@@ -58,3 +58,39 @@ test('result 缺少任一段落時不會拋錯', () => {
   const html = renderResult({ status: { locale: 'zh-TW', result: { graph: { nodes: [], edges: [] } } } }, 'zh-TW');
   assert.match(html, /關係圖/);
 });
+
+// ── ui-ux-pro-max 強化後的語意與可及性標記 ──
+test('input 有可見 label、字數提示，送出鈕初始停用', () => {
+  const html = renderInput({ samples: [] }, 'zh-TW');
+  assert.match(html, /<label class="field-label" for="case-text">描述你的爭議<\/label>/);
+  assert.match(html, /aria-describedby="case-hint"/);
+  assert.match(html, /id="case-submit"[^>]*disabled/);
+  assert.match(html, /0 \/ 20/);
+});
+test('progress 當前步驤帶 aria-current 與序號；busy=false 時不帶 data-busy', () => {
+  const busy = renderProgress({ step: 'RESEARCH' }, 'en');
+  assert.match(busy, /class="step active" data-step="RESEARCH" aria-current="step" data-busy/);
+  assert.match(busy, /<span class="step-no" aria-hidden="true">3<\/span>/);
+  const idle = renderProgress({ step: 'QUESTIONS', busy: false }, 'en');
+  assert.match(idle, /aria-current="step"/);
+  assert.doesNotMatch(idle, /data-busy/);
+});
+test('result 分頁具 tablist／tab／tabpanel 語意且 aria-selected 對應 activeTab', () => {
+  const status = { locale: 'en', result: { graph: { nodes: [], edges: [] } } };
+  const html = renderResult({ status, activeTab: 'analysis' }, 'en');
+  assert.match(html, /role="tablist"/);
+  assert.match(html, /id="tab-analysis"[^>]*aria-selected="true"/);
+  assert.match(html, /id="tab-graph"[^>]*aria-selected="false"/);
+  assert.match(html, /role="tabpanel" id="panel-analysis" aria-labelledby="tab-analysis"/);
+  assert.match(html, /id="close-panel-btn"[^>]*aria-label="Close detail panel"/);
+});
+test('analysis 要件列依 met 產生三色類別，符號＋文字雙重編碼且經轉義', () => {
+  const status = { locale: 'zh-TW', result: { analysis: {
+    elements: [{ law: '民法第184條', element: '<過失>', met: 'yes', basis: 'b1' }, { law: 'L', element: 'E', met: 'no', basis: 'b2' }, { law: 'L', element: 'E', met: 'maybe', basis: 'b3' }],
+    strategy: '', evidenceGaps: [], disclaimer: '' } } };
+  const html = renderResult({ status, activeTab: 'analysis' }, 'zh-TW');
+  assert.match(html, /class="el el-yes"><span class="el-badge">○ 該當<\/span>/);
+  assert.match(html, /class="el el-no"><span class="el-badge">✗ 不該當<\/span>/);
+  assert.match(html, /class="el el-unknown"><span class="el-badge">△ 事實不明/);
+  assert.match(html, /&lt;過失&gt;/);
+});

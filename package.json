@@ -5,7 +5,9 @@
   "scripts": {
     "test": "node --test \"frontend-tests/**/*.test.mjs\"",
     "e2e": "playwright test -c e2e/playwright.config.mjs",
-    "eval": "node scripts/eval-samples.mjs"
+    "eval": "node scripts/eval-samples.mjs",
+    "stub": "node e2e/stub-server.mjs",
+    "e2e:visual": "playwright test -c e2e/playwright.config.mjs e2e/visual.spec.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.55.0"

@@ -225,7 +225,7 @@ function dutyText(duty) { return ['main', 'collateral', 'incidental'].includes(d
 /** 小型資訊列（義務類型／契約地位）。 */
 function infoLine(text) {
   const d = document.createElement('div');
-  d.textContent = text; d.style.cssText = 'font-size:0.85rem;color:#38bdf8;margin-bottom:6px;';
+  d.textContent = text; d.style.cssText = 'font-size:0.85rem;color:var(--color-primary);margin-bottom:6px;';
   return d;
 }
 /** 證據節點清單用文字：泛稱 label 改用 description。 */
@@ -240,7 +240,7 @@ function buildEvidenceList(n) {
     .filter((l) => l.label === '證據' && endId(l.source) === n.id)
     .map((l) => (typeof l.target === 'object' ? l.target : null)).filter(Boolean);
   const sec = document.createElement('div'); sec.style.cssText = 'margin-top:16px;';
-  const h = document.createElement('h3'); h.textContent = t('graph.detail.evidence', locale); h.style.cssText = 'font-size:0.95rem;color:#38bdf8;margin-bottom:8px;';
+  const h = document.createElement('h3'); h.textContent = t('graph.detail.evidence', locale); h.style.cssText = 'font-size:0.95rem;color:var(--color-heading);margin-bottom:8px;';
   sec.appendChild(h);
   if (!evs.length) {
     const p = document.createElement('div'); p.textContent = t('graph.detail.noEvidence', locale); p.style.cssText = 'color:var(--text-sub);font-size:0.85rem;';
@@ -249,7 +249,7 @@ function buildEvidenceList(n) {
   const ul = document.createElement('ul'); ul.style.cssText = 'list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:8px;';
   evs.forEach((e) => {
     const strong = e.favorable === 'strong';
-    const li = document.createElement('li'); li.style.cssText = 'display:flex;gap:8px;font-size:0.85rem;line-height:1.5;color:#cbd5e1;';
+    const li = document.createElement('li'); li.style.cssText = 'display:flex;gap:8px;font-size:0.85rem;line-height:1.5;color:var(--color-text);';
     const dot = document.createElement('span'); dot.style.cssText = 'flex:0 0 auto;width:9px;height:9px;border-radius:50%;margin-top:5px;background:' + (strong ? COLORS.strong : COLORS.weak) + ';';
     const txt = document.createElement('span'); const lead = document.createElement('b'); lead.textContent = t(strong ? 'graph.detail.forDefendant' : 'graph.detail.againstDefendant', locale);
     txt.appendChild(lead); txt.appendChild(document.createTextNode(evidenceText(e)));
@@ -259,7 +259,7 @@ function buildEvidenceList(n) {
 }
 /** 以安全 DOM 呈現含 **粗體** 與換行的描述文字。 */
 function renderRichText(container, text) {
-  container.style.cssText = 'font-size:0.9rem;line-height:1.6;color:#cbd5e1;white-space:pre-wrap;';
+  container.style.cssText = 'font-size:0.9rem;line-height:1.6;color:var(--color-text);white-space:pre-wrap;';
   const lines = String(text).split('\n');
   lines.forEach((line, i) => {
     line.split(/(\*\*[^*]+\*\*)/g).forEach((p) => {
@@ -289,7 +289,7 @@ function showDetail(n) {
   if (n.url) {
     const link = document.createElement('a');
     link.href = n.url; link.target = '_blank'; link.rel = 'noopener'; link.textContent = t('graph.detail.fullText', locale);
-    link.style.cssText = 'display:inline-block;margin-top:12px;color:#38bdf8;text-decoration:none;';
+    link.style.cssText = 'display:inline-block;margin-top:12px;min-height:44px;line-height:44px;color:var(--color-primary);font-weight:600;text-decoration:none;';
     add(link);
   }
   panel.classList.add('active');
@@ -313,7 +313,7 @@ function buildFilters(nodes) {
   filterState = {};
   [...new Set(nodes.map((n) => n.group))].forEach((g) => {
     filterState[g] = true;
-    const lb = document.createElement('label'); lb.style.cssText = 'display:flex;gap:6px;font-size:0.8rem;color:var(--text-sub);padding:2px 0;cursor:pointer;';
+    const lb = document.createElement('label');
     const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = true; cb.dataset.group = g;
     cb.addEventListener('change', () => { filterState[g] = cb.checked; Graph.nodeVisibility(nodeVis).linkVisibility(linkVis); });
     lb.appendChild(cb); lb.appendChild(document.createTextNode(' ' + groupName(g))); box.appendChild(lb);
@@ -333,7 +333,9 @@ function buildFamilyFocus(nodes) {
   box.style.display = '';
   fams.forEach((f) => {
     const chip = document.createElement('span'); chip.textContent = f;
-    chip.style.cssText = 'display:inline-block;font-size:0.75rem;padding:3px 8px;margin:2px;border:1px solid var(--glass-border);border-radius:999px;cursor:pointer;color:var(--text-sub);';
+    chip.style.cssText = 'display:inline-block;font-size:0.8rem;padding:6px 12px;margin:2px;border:1px solid var(--color-border);border-radius:999px;cursor:pointer;color:var(--color-text-sub);background:var(--color-surface);';
+    chip.setAttribute('role', 'button'); chip.tabIndex = 0;
+    chip.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); chip.click(); } });
     chip.addEventListener('click', () => { activeFamily = activeFamily === f ? null : f; applyFamilyFocus(); });
     box.appendChild(chip);
   });
@@ -360,8 +362,8 @@ function showCanvasError(title, tips) {
   const el = $('network-canvas'); if (!el) return;
   el.replaceChildren();
   const box = document.createElement('div');
-  box.style.cssText = 'max-width:560px;margin:80px auto;padding:24px 28px;background:rgba(239,68,68,0.08);border:1px solid #ef4444;border-radius:12px;color:#fca5a5;font-size:0.95rem;line-height:1.8;';
-  const h = document.createElement('div'); h.textContent = '⚠️ ' + title; h.style.cssText = 'font-size:1.1rem;font-weight:700;margin-bottom:10px;color:#ef4444;';
+  box.style.cssText = 'max-width:560px;margin:80px auto;padding:24px 28px;background:var(--color-bad-soft);border:1px solid var(--color-bad);border-radius:12px;color:var(--color-text);font-size:0.95rem;line-height:1.8;';
+  const h = document.createElement('div'); h.textContent = title; h.style.cssText = 'font-size:1.1rem;font-weight:700;margin-bottom:10px;color:var(--color-bad);';
   box.appendChild(h);
   const ul = document.createElement('ul'); ul.style.cssText = 'padding-left:1.2em;margin:0;';
   tips.forEach((tip) => { const li = document.createElement('li'); li.textContent = tip; ul.appendChild(li); });

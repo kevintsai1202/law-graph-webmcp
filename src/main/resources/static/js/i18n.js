@@ -27,6 +27,10 @@ export const DICT = {
     'graph.detail.againstDefendant': 'Against defendant: ', 'graph.detail.fullText': 'Read full judgment ↗', 'graph.overturned': ' ⚠️ overturned',
     'failed.title': 'Analysis failed', 'failed.retry': 'Try again',
     'disclaimer': 'Analysis support only — not legal advice. Sample cases are fictional. Do not paste real personal data.',
+    'a11y.skip': 'Skip to main content', 'input.label': 'Describe your dispute',
+    'input.hint': 'At least 20 characters. The more specific the facts, the better the analysis.',
+    'progress.aria': 'Analysis progress', 'questions.lead': 'Your answers are sent to the agent only; nothing is stored after the case ends.',
+    'graph.close': 'Close detail panel', 'graph.detail.aria': 'Node details', 'result.tabs.aria': 'Result sections',
     'inspector.title': 'Tool Inspector', 'inspector.run': 'Run'
   },
   'zh-TW': {
@@ -56,6 +60,10 @@ export const DICT = {
     'graph.detail.againstDefendant': '不利被告：', 'graph.detail.fullText': '查看判決全文 ↗', 'graph.overturned': ' ⚠️已廢棄',
     'failed.title': '分析失敗', 'failed.retry': '重試',
     'disclaimer': '僅供分析輔助，非法律意見。示範案例皆為虛構。請勿貼入真實個資。',
+    'a11y.skip': '跳到主要內容', 'input.label': '描述你的爭議',
+    'input.hint': '至少 20 字。事實越具體，分析越精準。',
+    'progress.aria': '分析進度', 'questions.lead': '回答只會提供給 Agent 分析；案件結束後不會保存。',
+    'graph.close': '關閉詳情面板', 'graph.detail.aria': '節點詳情', 'result.tabs.aria': '結果分頁',
     'inspector.title': '工具檢視器', 'inspector.run': '執行'
   }
 };

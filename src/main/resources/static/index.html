@@ -3,18 +3,33 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="theme-color" content="#1e3a8a">
   <title>Law Graph</title>
+  <!-- 字體：標題 EB Garamond／Noto Serif TC，內文 Inter／Noto Sans TC；display=swap 避免隱形文字，離線時退回系統字體 -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=EB+Garamond:wght@500;600;700&family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@600;700&display=swap">
   <link rel="stylesheet" href="css/app.css">
 </head>
 <body>
+  <a class="skip-link" href="#stage" data-i18n="a11y.skip">Skip to main content</a>
   <header class="topbar">
-    <div><h1 data-i18n="app.title">Law Graph</h1><p data-i18n="app.subtitle"></p></div>
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">
+        <!-- 天平：法律的權衡（SVG 圖示，不用 emoji） -->
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 3v18M5 21h14M12 6l-6 3 6-3 6 3-6-3"/><path d="M3 14a3 3 0 0 0 6 0L6 9l-3 5zM15 14a3 3 0 0 0 6 0l-3-5-3 5z"/>
+        </svg>
+      </span>
+      <div><h1 data-i18n="app.title">Law Graph</h1><p data-i18n="app.subtitle"></p></div>
+    </div>
     <div class="topbar-right">
-      <span id="agent-badge" class="badge" data-i18n="agent.unavailable"></span>
+      <span id="agent-badge" class="badge" role="status" data-i18n="agent.unavailable"></span>
       <select id="lang-select" aria-label="Language"><option value="en">English</option><option value="zh-TW">繁體中文</option></select>
     </div>
   </header>
-  <main id="stage"></main>
+  <main id="stage" tabindex="-1"></main>
   <!-- 3D 渲染器依賴（自 law-powers 單檔抽出，見 scripts/extract-renderer.mjs），須在應用層模組之前載入 -->
   <script src="vendor/three.min.js"></script>
   <script src="vendor/three-spritetext.min.js"></script>
