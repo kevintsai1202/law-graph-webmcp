@@ -14,6 +14,7 @@ const app = createApp({
 });
 window.__lawGraphApp = app;
 window.__graphView = graphView;
+graphView.setLocale(app.getLocale());
 
 /** WebMCP 控制器：有 document.modelContext 才會真的註冊；Inspector 一律可用。 */
 const webmcp = createWebMcp({ app, graphView, modelContext: document.modelContext });
@@ -22,10 +23,14 @@ const hasWebMcp = !!document.modelContext?.registerTool;
 badge.dataset.i18n = hasWebMcp ? 'agent.available' : 'agent.unavailable';
 badge.classList.toggle('on', hasWebMcp);
 await webmcp.registerBase();
-const inspector = mountInspector(document, webmcp, t, app.getLocale());
+const inspector = mountInspector(document, webmcp, t, () => app.getLocale());
 
-/** 狀態變化：結果頁重繪 → 渲染 3D 圖並補註冊圖工具；回到輸入頁 → 解除圖工具只留 base。 */
+/** 狀態變化：語系切換 → 同步圖區文案與 Inspector；結果頁重繪 → 渲染 3D 圖並補註冊圖工具；回到輸入頁 → 只留 base 工具。 */
 app.onChange(async (state, kind) => {
+  if (kind === 'LOCALE') {
+    graphView.setLocale(app.getLocale());
+    inspector.refresh();
+  }
   if (kind === 'RESULT_RENDERED') {
     if (state.last?.result?.graph && document.getElementById('network-canvas')) graphView.render(state.last.result.graph);
     await webmcp.registerCompleted();

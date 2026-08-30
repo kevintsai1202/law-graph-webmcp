@@ -116,6 +116,7 @@ export function createApp({ root, client, storage, navigatorLanguage }) {
     storage.setItem('locale', locale);
     samples = await client.samples(locale);
     const sel = root.querySelector('#lang-select'); if (sel) sel.value = locale;
+    listeners.forEach((l) => l(state, 'LOCALE'));
     render();
   }
 

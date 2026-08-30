@@ -6,6 +6,15 @@
  * 配色、幾何體、連線樣式、詳情面板與篩選邏輯沿用原作；改動為模組化、延遲取 DOM、移除 load 自動渲染。
  */
 
+import { t } from './i18n.js';
+
+/** 目前顯示語系；由 app 透過 setLocale 同步，影響篩選器群組名與詳情面板文案。 */
+let locale = 'en';
+/** 設定圖區文案語系（'en' | 'zh-TW'）。 */
+export function setLocale(code) { locale = code === 'zh-TW' ? 'zh-TW' : 'en'; }
+/** 節點群組的顯示名稱（依語系）；未知群組回原字串。 */
+export function groupName(group, code = locale) { const v = t('graph.group.' + group, code); return v === 'graph.group.' + group ? group : v; }
+
 /* ────────────────────────────── 純函式 ────────────────────────────── */
 
 /** superset JSON → 3d-force-graph {nodes, links}；edges.from/to → source/target，端點不存在的邊略過。 */
@@ -112,7 +121,7 @@ function nodeObject(n) {
   }
   const bigLabel = (text, y) => { const l = new SpriteText(text); l.color = '#ffffff'; l.backgroundColor = 'rgba(15,23,42,0.82)'; l.textHeight = 7; l.padding = 2; l.position.set(0, y, 0); return l; };
   const smallLabel = (text, color, height, y) => { const l = new SpriteText(text); l.color = color; l.textHeight = height; l.position.set(0, y, 0); return l; };
-  if (n.group === 'judgment') group.add(bigLabel((n.label || '') + (n.overturned === true ? ' ⚠️已廢棄' : ''), 12));
+  if (n.group === 'judgment') group.add(bigLabel((n.label || '') + (n.overturned === true ? t('graph.overturned', locale) : ''), 12));
   else if (n.group === 'contract') group.add(bigLabel(n.label || '', 13));
   else if (n.group === 'law') group.add(smallLabel(n.label || '', LABEL_SUB, 3.4, 9));
   else if (n.group === 'clause') group.add(smallLabel(n.label || '', n.risk ? riskColor(n) : LABEL_SUB, 3.4, 9));
@@ -187,7 +196,7 @@ const $ = (id) => document.getElementById(id);
 /** status → 勝負／有利性徽章文字；節點自訂 statusText 優先。 */
 function badgeText(n) {
   if (n.statusText) return n.statusText;
-  return n.status === 'good' ? '對本方有利／勝訴' : n.status === 'bad' ? '對本方不利／敗訴' : n.status === 'mixed' ? '互見（部分有利）' : '';
+  return ['good', 'bad', 'mixed'].includes(n.status) ? t('graph.status.' + n.status, locale) : '';
 }
 /** 建立圓角徽章元素。 */
 function pill(text, color) {
@@ -203,16 +212,16 @@ function buildStatusBadge(n) {
 }
 /** 條款風險徽章；無 risk 回 null。 */
 function buildRiskBadge(risk) {
-  const map = { high: '🔴 高風險條款', medium: '🟡 中風險條款', low: '🟢 低風險條款' };
+  const map = { high: t('graph.risk.high', locale), medium: t('graph.risk.medium', locale), low: t('graph.risk.low', locale) };
   return map[risk] ? pill(map[risk], risk === 'high' ? COLORS.risk_high : risk === 'medium' ? COLORS.risk_medium : COLORS.risk_low) : null;
 }
 /** 要件該當性徽章；無 met 回 null。 */
 function buildMetBadge(met) {
-  const map = { yes: '○ 該當', no: '✗ 不該當', unknown: '△ 事實不明（待補證據）' };
+  const map = { yes: t('graph.met.yes', locale), no: t('graph.met.no', locale), unknown: t('graph.met.unknown', locale) };
   return map[met] ? pill(map[met], met === 'yes' ? COLORS.met_yes : met === 'no' ? COLORS.met_no : COLORS.met_unknown) : null;
 }
 /** 義務類型顯示文字。 */
-function dutyText(duty) { return duty === 'main' ? '主給付義務' : duty === 'collateral' ? '從給付義務' : duty === 'incidental' ? '附隨義務' : ''; }
+function dutyText(duty) { return ['main', 'collateral', 'incidental'].includes(duty) ? t('graph.duty.' + duty, locale) : ''; }
 /** 小型資訊列（義務類型／契約地位）。 */
 function infoLine(text) {
   const d = document.createElement('div');
@@ -231,10 +240,10 @@ function buildEvidenceList(n) {
     .filter((l) => l.label === '證據' && endId(l.source) === n.id)
     .map((l) => (typeof l.target === 'object' ? l.target : null)).filter(Boolean);
   const sec = document.createElement('div'); sec.style.cssText = 'margin-top:16px;';
-  const h = document.createElement('h3'); h.textContent = '關鍵證據優劣點'; h.style.cssText = 'font-size:0.95rem;color:#38bdf8;margin-bottom:8px;';
+  const h = document.createElement('h3'); h.textContent = t('graph.detail.evidence', locale); h.style.cssText = 'font-size:0.95rem;color:#38bdf8;margin-bottom:8px;';
   sec.appendChild(h);
   if (!evs.length) {
-    const p = document.createElement('div'); p.textContent = '本案未特別標註逆轉關鍵證據'; p.style.cssText = 'color:var(--text-sub);font-size:0.85rem;';
+    const p = document.createElement('div'); p.textContent = t('graph.detail.noEvidence', locale); p.style.cssText = 'color:var(--text-sub);font-size:0.85rem;';
     sec.appendChild(p); return sec;
   }
   const ul = document.createElement('ul'); ul.style.cssText = 'list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:8px;';
@@ -242,7 +251,7 @@ function buildEvidenceList(n) {
     const strong = e.favorable === 'strong';
     const li = document.createElement('li'); li.style.cssText = 'display:flex;gap:8px;font-size:0.85rem;line-height:1.5;color:#cbd5e1;';
     const dot = document.createElement('span'); dot.style.cssText = 'flex:0 0 auto;width:9px;height:9px;border-radius:50%;margin-top:5px;background:' + (strong ? COLORS.strong : COLORS.weak) + ';';
-    const txt = document.createElement('span'); const lead = document.createElement('b'); lead.textContent = strong ? '有利被告：' : '不利被告：';
+    const txt = document.createElement('span'); const lead = document.createElement('b'); lead.textContent = t(strong ? 'graph.detail.forDefendant' : 'graph.detail.againstDefendant', locale);
     txt.appendChild(lead); txt.appendChild(document.createTextNode(evidenceText(e)));
     li.appendChild(dot); li.appendChild(txt); ul.appendChild(li);
   });
@@ -272,14 +281,14 @@ function showDetail(n) {
   if (n.group === 'judgment') add(buildStatusBadge(n));
   if (n.group === 'clause') add(buildRiskBadge(n.risk));
   if (n.group === 'element') add(buildMetBadge(n.met));
-  if (n.group === 'obligation' && dutyText(n.duty)) add(infoLine('義務類型：' + dutyText(n.duty)));
-  if (n.group === 'party' && n.role) add(infoLine('契約地位：' + n.role));
+  if (n.group === 'obligation' && dutyText(n.duty)) add(infoLine(t('graph.detail.dutyType', locale) + dutyText(n.duty)));
+  if (n.group === 'party' && n.role) add(infoLine(t('graph.detail.role', locale) + n.role));
   const bodyText = n.description || n.title || '';
   if (bodyText) { const el = document.createElement('div'); renderRichText(el, bodyText); add(el); }
   if (n.group === 'judgment') add(buildEvidenceList(n));
   if (n.url) {
     const link = document.createElement('a');
-    link.href = n.url; link.target = '_blank'; link.rel = 'noopener'; link.textContent = '查看判決全文 ↗';
+    link.href = n.url; link.target = '_blank'; link.rel = 'noopener'; link.textContent = t('graph.detail.fullText', locale);
     link.style.cssText = 'display:inline-block;margin-top:12px;color:#38bdf8;text-decoration:none;';
     add(link);
   }
@@ -297,8 +306,6 @@ function linkVis(l) {
   const s = typeof l.source === 'object' ? l.source : null, t = typeof l.target === 'object' ? l.target : null;
   return (!s || filterState[s.group] !== false) && (!t || filterState[t.group] !== false);
 }
-/** 群組中文名（篩選器顯示用）。 */
-const GROUP_NAMES = { fact: '事實', law: '法條', judgment: '判決', issue: '爭點', party: '當事人', plaintiff: '原告', evidence: '證據', contract: '契約', clause: '條款', obligation: '義務', element: '要件' };
 /** 依目前圖上出現的 group 動態產生篩選 checkbox。 */
 function buildFilters(nodes) {
   const box = $('filter-box'); if (!box) return;
@@ -309,7 +316,7 @@ function buildFilters(nodes) {
     const lb = document.createElement('label'); lb.style.cssText = 'display:flex;gap:6px;font-size:0.8rem;color:var(--text-sub);padding:2px 0;cursor:pointer;';
     const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = true; cb.dataset.group = g;
     cb.addEventListener('change', () => { filterState[g] = cb.checked; Graph.nodeVisibility(nodeVis).linkVisibility(linkVis); });
-    lb.appendChild(cb); lb.appendChild(document.createTextNode(' ' + (GROUP_NAMES[g] || g))); box.appendChild(lb);
+    lb.appendChild(cb); lb.appendChild(document.createTextNode(' ' + groupName(g))); box.appendChild(lb);
   });
   Graph.nodeVisibility(nodeVis).linkVisibility(linkVis);
 }

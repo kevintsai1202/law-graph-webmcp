@@ -1,14 +1,15 @@
 import { TOOL_DEFS } from './webmcp.js';
 import { esc, mount } from './views/util.js';
 
-/** 折疊式 Tool Inspector：沒有 WebMCP 的瀏覽器也能手動執行十個工具看回傳。 */
-export function mountInspector(root, webmcp, t, locale) {
+/** 折疊式 Tool Inspector：沒有 WebMCP 的瀏覽器也能手動執行十個工具看回傳。getLocale 每次重繪時呼叫，跟隨語系切換。 */
+export function mountInspector(root, webmcp, t, getLocale) {
   const host = document.createElement('aside');
   host.id = 'inspector'; host.className = 'inspector collapsed';
   root.body.appendChild(host);
 
   /** 重繪：未註冊（尚未 COMPLETED）的工具顯示 inactive 但仍可從 Inspector 執行以便除錯。 */
   const draw = () => {
+    const locale = getLocale();
     const active = new Set(webmcp.tools());
     const opts = TOOL_DEFS.map((d) => `<option value="${d.name}">${d.name}${active.has(d.name) ? '' : ' (inactive)'}</option>`).join('');
     const wasOpen = !host.classList.contains('collapsed');

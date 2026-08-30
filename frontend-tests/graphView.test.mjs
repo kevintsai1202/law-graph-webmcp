@@ -1,6 +1,14 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { toGraphData, findNode, neighborsOf, summarize } from '../src/main/resources/static/js/graphView.js';
+import { toGraphData, findNode, neighborsOf, summarize, groupName, setLocale } from '../src/main/resources/static/js/graphView.js';
+
+test('groupName 依語系顯示群組名稱；setLocale 影響預設語系', () => {
+  assert.equal(groupName('fact', 'en'), 'Facts');
+  assert.equal(groupName('fact', 'zh-TW'), '事實');
+  assert.equal(groupName('mystery', 'en'), 'mystery');
+  setLocale('zh-TW'); assert.equal(groupName('law'), '法條');
+  setLocale('en'); assert.equal(groupName('law'), 'Statutes');
+});
 
 // 用途：graphView 中不碰 DOM／WebGL 的純函式，在 node 驗證資料轉換與摘要。
 const data = { nodes: [
