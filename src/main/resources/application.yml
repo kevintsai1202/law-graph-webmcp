@@ -1,6 +1,6 @@
 embabel:
   models:
-    default-llm: gpt-5.4-mini
+    default-llm: gpt-5.4-nano
 spring:
   ai:
     mcp:
