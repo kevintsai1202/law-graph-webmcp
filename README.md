@@ -108,6 +108,14 @@ npm run eval                                # 4 samples × 2 locales; counts nod
 
 `e2e/smoke.spec.mjs` injects a fake `document.modelContext` so the two-phase registration (5 → 10 → 5 tools) is asserted even in a browser without WebMCP.
 
+### Tutorial screenshots
+
+```powershell
+$env:E2E_LIVE='1'; npx playwright test -c e2e/playwright.config.mjs e2e/tutorial.spec.mjs
+```
+
+`e2e/tutorial.spec.mjs` walks the whole human/agent journey in **English and 繁體中文** and saves one screenshot per action to `docs/tutorial/<locale>/NN-*.png` (21 frames each: input → progress with partial results → questions → answers → graph → four tabs → every Inspector tool → focus/detail panel → filter → verify citation → new case). These frames are the storyboard for the demo video. While a case runs, the page already lists the results of finished steps under *Results so far*, and every progress screen has a *Cancel and start over* button.
+
 ## Limitations
 
 - `gpt-5.4-mini` output quality varies; the hard rules remove unverifiable nodes rather than "fix" them, so graphs can be small.
