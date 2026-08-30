@@ -1,0 +1,3 @@
+import{TOOL_DEFS}from'./webmcp.js';
+/** 掛載可在一般瀏覽器手動執行同一組工具的 Inspector。 */
+export function mountInspector(webmcp){const select=document.querySelector('#insp-tool'),input=document.querySelector('#insp-input'),out=document.querySelector('#insp-out');function refresh(){select.innerHTML=TOOL_DEFS.map(d=>`<option ${webmcp.tools().includes(d.name)?'':'disabled'}>${d.name}</option>`).join('');}document.querySelector('#insp-run').onclick=async()=>{try{out.textContent=JSON.stringify(await webmcp.execute(select.value,JSON.parse(input.value||'{}')),null,2);}catch(e){out.textContent=e.message;}};document.querySelector('#insp-toggle').onclick=()=>select.parentElement.hidden=!select.parentElement.hidden;refresh();return{refresh};}

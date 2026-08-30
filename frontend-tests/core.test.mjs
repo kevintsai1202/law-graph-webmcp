@@ -1,0 +1,4 @@
+import test from'node:test';import assert from'node:assert/strict';import{t,normalizeLocale}from'../src/main/resources/static/js/i18n.js';import{viewFor}from'../src/main/resources/static/js/state.js';import{createCaseClient}from'../src/main/resources/static/js/caseClient.js';
+test('i18n fallback and locale',()=>{assert.equal(t('title','zh-TW'),'台灣法律關係圖');assert.equal(t('missing','xx'),'missing');assert.equal(normalizeLocale('zh-Hant'),'zh-TW');});
+test('state mapping',()=>{assert.equal(viewFor(null),'INPUT');assert.equal(viewFor({status:'WAITING'}),'QUESTIONS');assert.equal(viewFor({status:'COMPLETED'}),'RESULT');});
+test('case client posts structured JSON',async()=>{let call;const c=createCaseClient(async(...x)=>{call=x;return{ok:true,json:async()=>({caseId:'1'})};});await c.start('case','en');assert.equal(call[0],'/api/cases');assert.match(call[1].body,/"caseText":"case"/);});
