@@ -40,14 +40,15 @@ export function createApp({ root, client, storage, navigatorLanguage, partialCol
         bindInput(el, { onSubmit: start, onSample: startSample });
         break;
       case States.RUNNING:
-        mountHtml(el, renderProgress({ step: state.last?.step || 'BRAINSTORM' }, locale)
-          + renderSections(state.last?.result, locale) + renderCancel(locale));
+        // 放棄按鈕緊接進度列，捲動前就看得到
+        mountHtml(el, renderProgress({ step: state.last?.step || 'BRAINSTORM' }, locale) + renderCancel(locale)
+          + renderSections(state.last?.result, locale));
         bindCancel(el);
         break;
       case States.QUESTIONS:
         // 頭腦風暴成果放在提問之前（先看脈絡再回答），數秒後自動收折讓問題浮上來
-        mountHtml(el, renderProgress({ step: 'QUESTIONS' }, locale) + renderSections(state.last.result, locale)
-          + renderQuestions({ questions: state.last.questions }, locale) + renderCancel(locale));
+        mountHtml(el, renderProgress({ step: 'QUESTIONS' }, locale) + renderCancel(locale) + renderSections(state.last.result, locale)
+          + renderQuestions({ questions: state.last.questions }, locale));
         bindQuestions(el, { onSubmit: answer });
         bindCancel(el);
         scheduleCollapse(el);

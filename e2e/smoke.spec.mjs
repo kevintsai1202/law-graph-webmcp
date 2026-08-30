@@ -82,6 +82,10 @@ test('waiting view shows brainstorm results above the questions, then collapses 
 test('waiting view offers a cancel button that returns to the input view', async ({ page }) => {
   await page.evaluate((s) => window.__lawGraphApp.dispatch({ type: 'STATUS', status: s }), waiting);
   await expect(page.locator('#questions-form textarea[name="q1"]')).toBeVisible();
+  // 放棄按鈕必須在表單之前（進度列下方），長問卷時不必捲到底才找得到
+  const pos = await page.evaluate(() => document.querySelector('#cancel-case').compareDocumentPosition(document.querySelector('#questions-form')));
+  expect(pos & 4 /* DOCUMENT_POSITION_FOLLOWING */).toBeTruthy();
+  await expect(page.locator('#cancel-case')).toBeInViewport();
   await page.click('#cancel-case');
   await expect(page.locator('#case-submit')).toBeVisible();
   await expect(page.locator('#questions-form')).toHaveCount(0);
