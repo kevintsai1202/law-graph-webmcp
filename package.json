@@ -1,1 +1,13 @@
-{"name":"law-graph-webmcp","private":true,"type":"module","scripts":{"test":"node --test frontend-tests/*.test.mjs","e2e":"playwright test -c e2e/playwright.config.mjs","eval":"node scripts/eval-samples.mjs"},"devDependencies":{"@playwright/test":"^1.55.0"}}
+{
+  "name": "law-graph-webmcp-frontend",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test \"frontend-tests/**/*.test.mjs\"",
+    "e2e": "playwright test -c e2e/playwright.config.mjs",
+    "eval": "node scripts/eval-samples.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.55.0"
+  }
+}

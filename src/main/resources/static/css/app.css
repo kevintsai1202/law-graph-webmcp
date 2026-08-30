@@ -1,1 +1,121 @@
-:root{font-family:Inter,system-ui;color:#e8f3ff;background:#061625}body{margin:0}header,main{max-width:1100px;margin:auto;padding:1rem}header{display:flex;gap:1rem;align-items:center}header h1{flex:1}textarea,select,button{font:inherit;padding:.7rem;border-radius:.55rem;border:1px solid #2d6685}textarea{width:100%;box-sizing:border-box;background:#0b263b;color:white}button{cursor:pointer;background:#16a7c9;color:#03131e;font-weight:700}.samples{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:.7rem;margin-bottom:1rem}.sample{background:#0b263b;color:#e8f3ff}.graph-grid{display:flex;flex-wrap:wrap;gap:.8rem;padding:2rem}.node{background:#133d55;color:white}.node.focus{outline:3px solid #f4b740}#inspector{position:fixed;right:1rem;bottom:1rem;width:340px;background:#0b263b;padding:.7rem;border-radius:.7rem}#inspector textarea{height:70px}pre{white-space:pre-wrap;max-height:330px;overflow:auto}[hidden]{display:none!important}@media(max-width:600px){#inspector{position:static;width:auto;margin:1rem}header{flex-wrap:wrap}}
+/* ── 全局變數與基礎（深色主題，沿用 law-powers 渲染器配色） ── */
+:root {
+  --bg: #0f172a;
+  --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  --panel-bg: rgba(30, 41, 59, 0.45);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glow-color: rgba(56, 189, 248, 0.35);
+  --text-main: #e2e8f0;
+  --text-sub: #94a3b8;
+  --accent: #38bdf8;
+  --ok: #22c55e;
+  --bad: #ef4444;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; min-height: 100vh;
+  font-family: 'Inter', 'Noto Sans TC', system-ui, sans-serif;
+  background: var(--bg-gradient); background-attachment: fixed;
+  color: var(--text-main);
+}
+h1, h2, h3, p { margin: 0; }
+button, textarea, select, input { font: inherit; }
+[hidden] { display: none !important; }
+
+/* ── 頂欄 ── */
+.topbar {
+  display: flex; justify-content: space-between; align-items: center; gap: 1rem;
+  padding: 18px 28px; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--glass-border);
+}
+.topbar h1 {
+  font-size: 1.5rem; font-weight: 700; letter-spacing: 0.5px;
+  background: linear-gradient(to right, #38bdf8, #818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.topbar p { font-size: 0.85rem; color: var(--text-sub); }
+.topbar-right { display: flex; align-items: center; gap: 0.8rem; }
+.badge { font-size: 0.75rem; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--glass-border); color: var(--text-sub); }
+.badge.on { color: var(--ok); border-color: var(--ok); }
+select, textarea, input[type=text] {
+  background: rgba(15, 23, 42, 0.6); color: var(--text-main);
+  border: 1px solid var(--glass-border); border-radius: 8px; padding: 8px 10px;
+}
+textarea { width: 100%; resize: vertical; line-height: 1.5; }
+button { cursor: pointer; border-radius: 8px; border: 1px solid var(--glass-border); background: rgba(30, 41, 59, 0.7); color: var(--text-main); padding: 8px 14px; }
+button.primary { background: var(--accent); color: #03131e; font-weight: 700; border-color: transparent; }
+button:hover { filter: brightness(1.1); }
+
+/* ── 舞台 ── */
+#stage { max-width: 1200px; margin: 0 auto; padding: 1.2rem 1.5rem 2rem; }
+
+/* ── 輸入頁 ── */
+.input { display: flex; flex-direction: column; gap: 0.9rem; }
+.input h3 { font-size: 0.95rem; color: var(--text-sub); margin-top: 0.6rem; }
+.samples { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.8rem; }
+.sample { text-align: left; display: flex; flex-direction: column; gap: 4px; padding: 12px 14px; background: var(--panel-bg); }
+.sample b { color: var(--accent); }
+.sample span { font-size: 0.85rem; color: var(--text-sub); }
+.disclaimer { font-size: 0.78rem; color: var(--text-sub); line-height: 1.6; }
+
+/* ── 進度列 ── */
+.progress { list-style: none; padding: 0; margin: 0 0 1.2rem; display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+.step { padding: 10px 8px; text-align: center; font-size: 0.82rem; border-radius: 8px; background: var(--panel-bg); color: var(--text-sub); border: 1px solid var(--glass-border); }
+.step.done { color: var(--ok); border-color: rgba(34, 197, 94, 0.5); }
+.step.active { color: #fff; border-color: var(--accent); background: rgba(56, 189, 248, 0.18); animation: pulse 1.5s infinite; }
+@keyframes pulse { 0%, 100% { box-shadow: 0 0 0 0 var(--glow-color); } 50% { box-shadow: 0 0 14px 2px var(--glow-color); } }
+
+/* ── 提問表單 ── */
+.questions { display: flex; flex-direction: column; gap: 1rem; }
+.questions h2 { font-size: 1.2rem; }
+.q { display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; background: var(--panel-bg); border-radius: 10px; border: 1px solid var(--glass-border); }
+.q-text { font-weight: 600; }
+.q small { color: var(--text-sub); }
+
+/* ── 結果頁 ── */
+.tabs { display: flex; align-items: center; gap: 6px; margin-bottom: 0.9rem; flex-wrap: wrap; }
+.tab.active { background: var(--accent); color: #03131e; font-weight: 700; }
+.tabs .gen { margin-left: auto; font-size: 0.78rem; color: var(--text-sub); }
+.panel h3 { font-size: 0.95rem; color: var(--accent); margin: 1rem 0 0.4rem; }
+.panel ul { margin: 0; padding-left: 1.2rem; line-height: 1.7; }
+.panel p { line-height: 1.7; }
+.failed { display: flex; flex-direction: column; gap: 0.8rem; }
+.failed .code { color: var(--bad); font-family: monospace; }
+
+/* ── 3D 圖區（law-powers 渲染器骨架） ── */
+.graph-wrap { display: grid; grid-template-columns: 220px 1fr; height: 70vh; position: relative; overflow: hidden; border-radius: 12px; border: 1px solid var(--glass-border); }
+.control-panel {
+  background: var(--panel-bg); backdrop-filter: blur(20px); border-right: 1px solid var(--glass-border);
+  padding: 16px; display: flex; flex-direction: column; gap: 12px; z-index: 5; overflow-y: auto;
+}
+.section-title { font-size: 0.9rem; font-weight: 600; color: var(--accent); border-left: 3px solid var(--accent); padding-left: 10px; }
+#search-input { width: 100%; font-size: 0.85rem; outline: none; transition: border-color 0.3s, box-shadow 0.3s; }
+#search-input:focus { border-color: var(--accent); box-shadow: 0 0 10px var(--glow-color); }
+#network-canvas { min-width: 0; min-height: 0; height: 100%; position: relative; }
+.detail-panel {
+  position: absolute; right: 0; top: 0; width: 360px; max-width: 90%; height: 100%;
+  background: var(--panel-bg); backdrop-filter: blur(25px); border-left: 1px solid var(--glass-border);
+  padding: 30px 24px; z-index: 8; display: flex; flex-direction: column; gap: 16px;
+  box-shadow: -10px 0 30px rgba(0, 0, 0, 0.2); transform: translateX(100%);
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); overflow-y: auto;
+}
+.detail-panel.active { transform: translateX(0); }
+.close-btn { position: absolute; top: 14px; right: 14px; background: none; border: none; color: var(--text-sub); font-size: 1.2rem; }
+.close-btn:hover { color: var(--text-main); }
+.detail-header { border-bottom: 1px solid var(--glass-border); padding-bottom: 12px; margin-top: 6px; }
+.detail-tag { display: inline-block; padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; margin-bottom: 8px; color: #fff; }
+.detail-title { font-size: 1.1rem; font-weight: 700; line-height: 1.4; }
+.detail-body { font-size: 0.9rem; line-height: 1.6; color: #cbd5e1; white-space: pre-wrap; }
+
+/* ── Tool Inspector（右下角折疊面板） ── */
+.inspector { position: fixed; right: 1rem; bottom: 1rem; width: 360px; max-width: calc(100vw - 2rem); background: rgba(15, 23, 42, 0.92); border: 1px solid var(--glass-border); border-radius: 12px; padding: 10px; z-index: 20; }
+.inspector .insp-body { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+.inspector.collapsed .insp-body { display: none; }
+.inspector pre { margin: 0; max-height: 240px; overflow: auto; font-size: 0.75rem; white-space: pre-wrap; word-break: break-all; }
+
+@media (max-width: 720px) {
+  .samples { grid-template-columns: 1fr; }
+  .progress { grid-template-columns: 1fr; }
+  .graph-wrap { grid-template-columns: 1fr; height: 60vh; }
+  .control-panel { display: none; }
+  .topbar { flex-wrap: wrap; }
+}

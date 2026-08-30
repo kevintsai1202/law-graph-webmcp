@@ -1,1 +1,24 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Taiwan Legal Graph</title><link rel="stylesheet" href="/css/app.css"></head><body><header><h1 id="title">Taiwan Legal Graph</h1><select id="locale"><option value="en">English</option><option value="zh-TW">繁體中文</option></select><span id="agent-badge">Agent tools</span></header><main><section id="input"><div id="samples"></div><textarea id="case-text" rows="9" placeholder="Describe a fictional Taiwan legal dispute"></textarea><button id="start">Analyse case</button></section><section id="status" hidden></section><section id="questions" hidden></section><section id="result" hidden><nav><button data-tab="graph">Graph</button><button data-tab="analysis">Analysis</button><button data-tab="research">Research</button><button data-tab="brainstorm">Brainstorm</button></nav><div id="graph"></div><pre id="details"></pre></section></main><aside id="inspector"><button id="insp-toggle">Tool Inspector</button><div><select id="insp-tool"></select><textarea id="insp-input">{}</textarea><button id="insp-run">Run tool</button><pre id="insp-out"></pre></div></aside><script type="module" src="/js/main.js"></script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Law Graph</title>
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+  <header class="topbar">
+    <div><h1 data-i18n="app.title">Law Graph</h1><p data-i18n="app.subtitle"></p></div>
+    <div class="topbar-right">
+      <span id="agent-badge" class="badge" data-i18n="agent.unavailable"></span>
+      <select id="lang-select" aria-label="Language"><option value="en">English</option><option value="zh-TW">繁體中文</option></select>
+    </div>
+  </header>
+  <main id="stage"></main>
+  <!-- 3D 渲染器依賴（自 law-powers 單檔抽出，見 scripts/extract-renderer.mjs），須在應用層模組之前載入 -->
+  <script src="vendor/three.min.js"></script>
+  <script src="vendor/three-spritetext.min.js"></script>
+  <script src="vendor/3d-force-graph.min.js"></script>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
