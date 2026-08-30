@@ -61,9 +61,25 @@ test('base tools register on load; graph tools only after COMPLETED; reset retur
   await expect.poll(async () => (await names()).length).toBe(5);
 });
 
+/** 假的 WAITING 狀態：含頭腦風暴中間成果與一題提問。 */
+const waiting = { caseId: 'smoke-2', status: 'WAITING', step: 'QUESTIONS', locale: 'en',
+  questions: [{ id: 'q1', text: 'When did the accident happen?', why: 'limitation period' }],
+  result: { brainstorm: { facts: ['A ran a red light'], relations: [], issues: ['Negligence'], evidenceNeeds: [], questions: [] } } };
+
+test('waiting view shows brainstorm results above the questions, then collapses them after a few seconds', async ({ page }) => {
+  await page.evaluate((s) => window.__lawGraphApp.dispatch({ type: 'STATUS', status: s }), waiting);
+  const partials = page.locator('.partials'), form = page.locator('#questions-form');
+  await expect(partials).toBeVisible();
+  await expect(partials.locator('details[data-section="brainstorm"]')).toHaveAttribute('open', '');
+  // 成果區在 DOM 中位於表單之前
+  const order = await page.evaluate(() => document.querySelector('.partials').compareDocumentPosition(document.querySelector('#questions-form')));
+  expect(order & 4 /* DOCUMENT_POSITION_FOLLOWING */).toBeTruthy();
+  await expect(form).toBeVisible();
+  // 5 秒後自動收折，問題浮上來
+  await expect(partials.locator('details[data-section="brainstorm"]')).not.toHaveAttribute('open', '', { timeout: 8000 });
+});
+
 test('waiting view offers a cancel button that returns to the input view', async ({ page }) => {
-  const waiting = { caseId: 'smoke-2', status: 'WAITING', step: 'QUESTIONS', locale: 'en',
-    questions: [{ id: 'q1', text: 'When did the accident happen?', why: 'limitation period' }] };
   await page.evaluate((s) => window.__lawGraphApp.dispatch({ type: 'STATUS', status: s }), waiting);
   await expect(page.locator('#questions-form textarea[name="q1"]')).toBeVisible();
   await page.click('#cancel-case');

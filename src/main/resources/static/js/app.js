@@ -7,7 +7,7 @@ import { renderQuestions, bindQuestions } from './views/questions.js';
 import { renderResult, bindResult, renderSections } from './views/result.js';
 
 /** 應用程式核心：持有狀態、驅動輪詢、切換 view；WebMCP 由 webmcp.js 透過 onChange 掛上。 */
-export function createApp({ root, client, storage, navigatorLanguage }) {
+export function createApp({ root, client, storage, navigatorLanguage, partialCollapseMs = 5000 }) {
   /** 目前頁面狀態（state.js 的 reduce 產生）。 */
   let state = { ...initialState };
   /** 目前語系；使用者選過的存於 storage。 */
@@ -32,6 +32,7 @@ export function createApp({ root, client, storage, navigatorLanguage }) {
   /** 依 view 渲染並綁事件；[data-i18n] 節點同步換字。 */
   function render() {
     const el = stage(); if (!el) return;
+    clearTimeout(collapseTimer);
     root.querySelectorAll('[data-i18n]').forEach((n) => { n.textContent = t(n.dataset.i18n, locale); });
     switch (state.view) {
       case States.INPUT:
@@ -44,10 +45,12 @@ export function createApp({ root, client, storage, navigatorLanguage }) {
         bindCancel(el);
         break;
       case States.QUESTIONS:
-        mountHtml(el, renderProgress({ step: 'QUESTIONS' }, locale) + renderQuestions({ questions: state.last.questions }, locale)
-          + renderSections(state.last.result, locale) + renderCancel(locale));
+        // 頭腦風暴成果放在提問之前（先看脈絡再回答），數秒後自動收折讓問題浮上來
+        mountHtml(el, renderProgress({ step: 'QUESTIONS' }, locale) + renderSections(state.last.result, locale)
+          + renderQuestions({ questions: state.last.questions }, locale) + renderCancel(locale));
         bindQuestions(el, { onSubmit: answer });
         bindCancel(el);
+        scheduleCollapse(el);
         break;
       case States.RESULT:
         mountHtml(el, renderResult({ status: state.last, activeTab }, locale));
@@ -59,6 +62,16 @@ export function createApp({ root, client, storage, navigatorLanguage }) {
         el.querySelector('#retry').addEventListener('click', reset);
         break;
     }
+  }
+
+  /** 中間成果自動收折的計時器；重繪時清除以免收折到新畫面。 */
+  let collapseTimer = null;
+  /** 等待回答頁：先展開頭腦風暴成果讓使用者看脈絡，partialCollapseMs 後自動收折，問題浮到視野內。 */
+  function scheduleCollapse(el) {
+    clearTimeout(collapseTimer);
+    collapseTimer = setTimeout(() => {
+      el.querySelectorAll('.partials details[open]').forEach((d) => { d.open = false; });
+    }, partialCollapseMs);
   }
 
   /** 進行中／等待回答頁的「放棄此案」按鈕：停止輪詢並回輸入頁。 */

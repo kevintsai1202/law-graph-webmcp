@@ -25,6 +25,15 @@ test('非 2xx 丟出含 status 的錯誤', async () => {
   const c = createCaseClient(fakeFetch([{ ok: false, status: 429, body: { error: 'RATE_LIMITED' } }]));
   await assert.rejects(c.start('x', 'en'), (e) => e.status === 429 && e.code === 'RATE_LIMITED');
 });
+test('poll 於 WAITING 停止（等待人工回答時不重繪表單，避免打字被洗掉；answer 後再續接）', async () => {
+  const fetch = fakeFetch([{ body: { status: 'RUNNING' } }, { body: { status: 'WAITING', questions: [] } }, { body: { status: 'WAITING' } }]);
+  const c = createCaseClient(fetch);
+  const seen = [];
+  await new Promise((res) => { c.poll('p1', (s) => { seen.push(s.status); if (s.status === 'WAITING') res(); }, 5); });
+  await new Promise((r) => setTimeout(r, 30));
+  assert.deepEqual(seen, ['RUNNING', 'WAITING']);
+  assert.equal(fetch.calls.length, 2, 'WAITING 後不得再輪詢');
+});
 test('poll 於 COMPLETED 自動停止', async () => {
   const fetch = fakeFetch([{ body: { status: 'RUNNING' } }, { body: { status: 'COMPLETED' } }, { body: { status: 'COMPLETED' } }]);
   const c = createCaseClient(fetch);
