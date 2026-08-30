@@ -32,7 +32,7 @@ public final class LegalPrompts {
                 Activate skill "legal-brainstorming" and follow its steps 1–4. Output only the requested object.
                 Case description (locale %s):
                 <case>%s</case>
-                Fill facts, relations, issues, evidenceNeeds. Put every fact you still need from the user into questions[] (max 5, each with id q1..q5, text, why). Leave questions empty if the case is already sufficient.
+                Fill facts, relations, issues, evidenceNeeds. Then ask the user, in questions[] (each with id q1..q5, text, why), for the facts only they can supply and that would change the legal outcome: exact dates and deadlines, notices given, evidence in hand, amounts, prior settlements. Ask at least 2 and at most 5 questions; case descriptions are deliberately incomplete, so questions[] must never be empty.
                 """.formatted(input.locale().code(), input.text());
     }
 

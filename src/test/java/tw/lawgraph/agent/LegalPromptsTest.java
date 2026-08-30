@@ -26,6 +26,8 @@ class LegalPromptsTest {
         assertTrue(prompt.contains("Respond in zh-TW"));
         assertTrue(prompt.contains("（"), "識別碼雙寫規則需含全形括號範例");
         assertTrue(prompt.contains("questions"), "技能要求詢問使用者時改寫入 questions[]");
+        assertTrue(LegalPrompts.brainstorm(input).contains("at least 2"),
+                "人機協作是核心：頭腦風暴必須至少提出兩個只有使用者知道的事實問題，避免模型跳過等待步驟");
     }
 
     /** 每個 user prompt 都必須由指定技能啟用句開始。 */
