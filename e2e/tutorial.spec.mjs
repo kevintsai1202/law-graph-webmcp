@@ -28,39 +28,40 @@ for (const locale of ['en', 'zh-TW']) {
     await expect(page.locator('.sample')).toHaveCount(4);
     await shot('input-view');
 
-    // 2. 點示範案例 → 進度列（模型偶爾不提問就直接完成；教學需要提問畫面，最多重試 3 次拿到 WAITING）
-    let asked = false;
-    for (let attempt = 1; attempt <= 3 && !asked; attempt++) {
+    // 2–3. 點示範案例 → 提問 → 填答 → 完成。模型偶爾不提問、或圖過小（法條被硬規則剔除），
+    //       教學畫面需要完整流程，因此以「有提問且節點 ≥ 8」為合格條件，最多重試 3 次。
+    let ok = false;
+    const nStart = n;   // 重試時序號回到此處，讓新一輪截圖覆蓋舊檔
+    for (let attempt = 1; attempt <= 3 && !ok; attempt++) {
+      n = nStart;
       await page.click('[data-sample-id="car-accident"]');
       await expect(page.locator('.progress .step.active')).toBeVisible();
-      if (attempt === 1) await shot('progress-brainstorm');
-      // 頭腦風暴一結束（進度列或中間成果出現）即截「進行中＋目前成果」畫面
+      await shot('progress-brainstorm');
+      // 頭腦風暴一結束（中間成果或提問出現）即截「進行中＋目前成果」畫面
       await page.waitForSelector('.partials, #questions-form, #network-canvas canvas', { timeout: 4 * 60_000 });
-      if (attempt === 1 && await page.locator('.partials').count()) await shot('progress-with-partial-results');
+      if (await page.locator('.partials').count()) await shot('progress-with-partial-results');
       await page.waitForSelector('#questions-form, #network-canvas canvas', { timeout: 4 * 60_000 });
-      asked = (await page.locator('#questions-form').count()) > 0;
-      if (!asked) {
-        console.log(`[${locale}] 第 ${attempt} 次：模型未提問直接完成${attempt < 3 ? '，重試' : ''}`);
+      const asked = (await page.locator('#questions-form').count()) > 0;
+      if (asked) {
+        await shot('questions-empty');
+        const areas = page.locator('#questions-form textarea');
+        const count = await areas.count();
+        for (let i = 0; i < count; i++) await areas.nth(i).fill(x.answer);
+        await shot('questions-answered');
+        await page.click('#questions-form button[type=submit]');
+        await expect(page.locator('.progress .step.active')).toBeVisible();
+        await shot('progress-research');
+      }
+      await page.waitForSelector('#network-canvas canvas', { timeout: 6 * 60_000 });
+      const nodeCount = await page.evaluate(() => window.__lawGraphApp.getState().last.result.graph.nodes.length);
+      ok = asked && nodeCount >= 8;
+      if (!ok) {
+        console.log(`[${locale}] 第 ${attempt} 次不合格（asked=${asked}, nodes=${nodeCount}）${attempt < 3 ? '，重試' : '，採用本次結果'}`);
         if (attempt < 3) { await page.click('#new-case'); await expect(page.locator('#case-submit')).toBeVisible(); }
       }
     }
 
-    // 3. 等待提問 → 填答 → 送出（三次都未提問則略過此段）
-    if (asked) {
-      await shot('questions-empty');
-      const areas = page.locator('#questions-form textarea');
-      const count = await areas.count();
-      for (let i = 0; i < count; i++) await areas.nth(i).fill(x.answer);
-      await shot('questions-answered');
-      await page.click('#questions-form button[type=submit]');
-      await expect(page.locator('.progress .step.active')).toBeVisible();
-      await shot('progress-research');
-    } else {
-      console.log(`[${locale}] 模型未提問，直接完成；略過 questions 截圖`);
-    }
-
-    // 4. 完成 → 3D 圖
-    await page.waitForSelector('#network-canvas canvas', { timeout: 6 * 60_000 });
+    // 4. 完成 → 3D 圖（已於迴圈內完成等待）
     await page.waitForTimeout(2500);   // 讓力導向佈局收斂並自動框圖
     await shot('result-graph');
 
@@ -87,7 +88,10 @@ for (const locale of ['en', 'zh-TW']) {
     await run('getCaseStatus', {}, 'COMPLETED');
     await run('getGraphSummary', {}, 'nodeCounts');
     await run('getAnalysis', { section: 'analysis' }, 'elements');
-    await run('focusNode', { label: x.focus }, 'neighbors');
+    // 以圖上真的存在的節點聚焦：優先法條節點（含 focus 關鍵字者更佳），否則第一個節點，避免模型命名差異造成 not found
+    const nodes = await page.evaluate(() => window.__lawGraphApp.getState().last.result.graph.nodes);
+    const target = nodes.find((n) => n.group === 'law' && n.label.includes(x.focus)) || nodes.find((n) => n.group === 'law') || nodes[0];
+    await run('focusNode', { nodeId: target.id }, 'neighbors');
     await expect(page.locator('#detail-panel')).toHaveClass(/active/);
     await shot('focus-detail-panel');
     await run('filterGraph', { groups: ['law', 'element'] }, 'visibleNodes');
