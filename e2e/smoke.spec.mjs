@@ -61,6 +61,16 @@ test('base tools register on load; graph tools only after COMPLETED; reset retur
   await expect.poll(async () => (await names()).length).toBe(5);
 });
 
+test('waiting view offers a cancel button that returns to the input view', async ({ page }) => {
+  const waiting = { caseId: 'smoke-2', status: 'WAITING', step: 'QUESTIONS', locale: 'en',
+    questions: [{ id: 'q1', text: 'When did the accident happen?', why: 'limitation period' }] };
+  await page.evaluate((s) => window.__lawGraphApp.dispatch({ type: 'STATUS', status: s }), waiting);
+  await expect(page.locator('#questions-form textarea[name="q1"]')).toBeVisible();
+  await page.click('#cancel-case');
+  await expect(page.locator('#case-submit')).toBeVisible();
+  await expect(page.locator('#questions-form')).toHaveCount(0);
+});
+
 test('inspector runs getGraphSummary and focusNode against the rendered graph', async ({ page }) => {
   await page.evaluate((s) => window.__lawGraphApp.dispatch({ type: 'STATUS', status: s }), completed);
   await expect(page.locator('#network-canvas')).toBeVisible();

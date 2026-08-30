@@ -114,11 +114,11 @@ function nodeObject(n) {
   const smallLabel = (text, color, height, y) => { const l = new SpriteText(text); l.color = color; l.textHeight = height; l.position.set(0, y, 0); return l; };
   if (n.group === 'judgment') group.add(bigLabel((n.label || '') + (n.overturned === true ? ' ⚠️已廢棄' : ''), 12));
   else if (n.group === 'contract') group.add(bigLabel(n.label || '', 13));
-  else if (n.group === 'law') group.add(smallLabel(n.label || '', '#9db6d6', 3.4, 9));
-  else if (n.group === 'clause') group.add(smallLabel(n.label || '', n.risk ? riskColor(n) : '#9db6d6', 3.4, 9));
+  else if (n.group === 'law') group.add(smallLabel(n.label || '', LABEL_SUB, 3.4, 9));
+  else if (n.group === 'clause') group.add(smallLabel(n.label || '', n.risk ? riskColor(n) : LABEL_SUB, 3.4, 9));
   else if (n.group === 'element') {
     const mark = n.met === 'yes' ? '○ ' : n.met === 'no' ? '✗ ' : n.met === 'unknown' ? '△ ' : '';
-    group.add(smallLabel(mark + (n.label || ''), n.met ? metColor(n) : '#9db6d6', 3.2, 8));
+    group.add(smallLabel(mark + (n.label || ''), n.met ? metColor(n) : LABEL_SUB, 3.2, 8));
   }
   return group;
 }
@@ -155,6 +155,11 @@ function linkColorFn(l) {
   if (l.label === '要件認定') return l.stance === 'pro' ? COLORS.met_yes : l.stance === 'con' ? COLORS.met_no : COLORS.elemref;
   return linkStyle(l).color;
 }
+
+/** 3D 畫布底色：明亮主題，與 app.css 的 --canvas-bg 一致。 */
+const CANVAS_BG = '#f6f3ec';
+/** 次要標籤（法條／條款／要件未標註時）字色：明亮底改深藍灰。 */
+const LABEL_SUB = '#475569';
 
 /** 連線目標距離：證據貼近判決、契約與涵攝叢集內縮，其餘拉長紓解擁擠。 */
 const LINK_DISTANCE = { '證據': 26, '當事人': 60, '包含': 45, '課予': 40, '負擔': 55, '得請求': 55, '要件': 40, '該當': 55 };
@@ -372,7 +377,7 @@ export function render(data) {
   }
   initialFitDone = false; activeFamily = null;
   Graph = ForceGraph3D()(el)
-    .backgroundColor('#0f172a')
+    .backgroundColor(CANVAS_BG)
     .graphData(toGraphData(data))
     .nodeThreeObject(nodeObject).nodeThreeObjectExtend(false)
     .linkColor(linkColorFn)

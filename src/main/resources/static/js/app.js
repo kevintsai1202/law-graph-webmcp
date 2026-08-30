@@ -2,7 +2,7 @@ import { t, detectLocale, DICT } from './i18n.js';
 import { States, reduce, initialState } from './state.js';
 import { esc, mount as mountHtml } from './views/util.js';
 import { renderInput, bindInput } from './views/input.js';
-import { renderProgress } from './views/progress.js';
+import { renderProgress, renderCancel } from './views/progress.js';
 import { renderQuestions, bindQuestions } from './views/questions.js';
 import { renderResult, bindResult } from './views/result.js';
 
@@ -39,11 +39,13 @@ export function createApp({ root, client, storage, navigatorLanguage }) {
         bindInput(el, { onSubmit: start, onSample: startSample });
         break;
       case States.RUNNING:
-        mountHtml(el, renderProgress({ step: state.last?.step || 'BRAINSTORM' }, locale));
+        mountHtml(el, renderProgress({ step: state.last?.step || 'BRAINSTORM' }, locale) + renderCancel(locale));
+        bindCancel(el);
         break;
       case States.QUESTIONS:
-        mountHtml(el, renderProgress({ step: 'QUESTIONS' }, locale) + renderQuestions({ questions: state.last.questions }, locale));
+        mountHtml(el, renderProgress({ step: 'QUESTIONS' }, locale) + renderQuestions({ questions: state.last.questions }, locale) + renderCancel(locale));
         bindQuestions(el, { onSubmit: answer });
+        bindCancel(el);
         break;
       case States.RESULT:
         mountHtml(el, renderResult({ status: state.last, activeTab }, locale));
@@ -55,6 +57,11 @@ export function createApp({ root, client, storage, navigatorLanguage }) {
         el.querySelector('#retry').addEventListener('click', reset);
         break;
     }
+  }
+
+  /** 進行中／等待回答頁的「放棄此案」按鈕：停止輪詢並回輸入頁。 */
+  function bindCancel(el) {
+    el.querySelector('#cancel-case')?.addEventListener('click', reset);
   }
 
   /** 失敗頁：錯誤代碼、步驤、訊息與重試。 */

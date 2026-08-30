@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { esc } from '../src/main/resources/static/js/views/util.js';
 import { renderInput } from '../src/main/resources/static/js/views/input.js';
-import { renderProgress } from '../src/main/resources/static/js/views/progress.js';
+import { renderProgress, renderCancel } from '../src/main/resources/static/js/views/progress.js';
 import { renderQuestions } from '../src/main/resources/static/js/views/questions.js';
 import { renderResult } from '../src/main/resources/static/js/views/result.js';
 
@@ -20,6 +20,12 @@ test('progress 高亮當前步驤且之前步驤標 done', () => {
   assert.match(html, /class="step done"[^>]*data-step="BRAINSTORM"/);
   assert.match(html, /class="step active"[^>]*data-step="RESEARCH"/);
   assert.match(html, /檢索法條與判決/);
+});
+test('進行中／等待回答時提供取消按鈕，可退回輸入頁', () => {
+  const html = renderCancel('zh-TW');
+  assert.match(html, /id="cancel-case"/);
+  assert.match(html, /放棄此案/);
+  assert.match(renderCancel('en'), /Cancel/);
 });
 test('questions 每題一個 textarea，name 為 questionId', () => {
   const html = renderQuestions({ questions: [{ id: 'q1', text: 'Dashcam?', why: 'causation' }] }, 'en');
