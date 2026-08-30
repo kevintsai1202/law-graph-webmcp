@@ -2,7 +2,9 @@
 
 **One sentence:** paste a fictional Taiwan legal dispute, answer a few questions only you can answer, and get a verified, interactive 3D legal-relationship graph — every step of which your browser Agent can drive through ten WebMCP tools, except the answering.
 
-![Completed graph with the Tool Inspector running focusNode](docs/images/smoke-graph.png)
+![Completed graph for the car-accident sample (live gpt-5.4-mini run)](docs/images/completed-graph.png)
+
+![Tool Inspector running focusNode on the rendered graph](docs/images/smoke-graph.png)
 
 > 中文摘要：把 law-powers 法律技能包做成網站。貼入案情 → 頭腦風暴 → 使用者回答提問 → 檢索法規判決 → 涵攝分析 → 3D 法律關係圖；頁面以 WebMCP 暴露十個工具供 ChatGPT／Chrome Agent 操作，但「回答提問」刻意沒有工具，人不可被繞過。
 
