@@ -47,6 +47,27 @@ class StatusMapperTest {
         assertEquals(1, status.questions().size());
     }
 
+    /** 進行中即公開已完成步驟的中間成果（頭腦風暴、檢索），圖尚未產生。 */
+    @Test void runningExposesPartialResults() {
+        var status = StatusMapper.map(snapshot(AgentProcessStatusCode.RUNNING, brainstorm, null,
+                new UserAnswers(List.of()), research, null, null));
+        assertEquals("ANALYSIS", status.step());
+        assertNotNull(status.result());
+        assertNotNull(status.result().brainstorm());
+        assertNotNull(status.result().research());
+        assertNull(status.result().analysis());
+        assertNull(status.result().graph());
+    }
+
+    /** 等待回答時也附上頭腦風暴成果，讓使用者知道為何被問。 */
+    @Test void waitingExposesBrainstormAlongsideQuestions() {
+        var status = StatusMapper.map(snapshot(AgentProcessStatusCode.WAITING, brainstorm, brainstorm.questions(),
+                null, null, null, null));
+        assertNotNull(status.result());
+        assertNotNull(status.result().brainstorm());
+        assertNull(status.result().research());
+    }
+
     /** 回答完成後進入檢索。 */
     @Test void runningAfterAnswersIsResearchStep() {
         var status = StatusMapper.map(snapshot(AgentProcessStatusCode.RUNNING, brainstorm, null,

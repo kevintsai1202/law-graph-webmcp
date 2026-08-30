@@ -28,21 +28,36 @@ for (const locale of ['en', 'zh-TW']) {
     await expect(page.locator('.sample')).toHaveCount(4);
     await shot('input-view');
 
-    // 2. 點示範案例 → 進度列
-    await page.click('[data-sample-id="car-accident"]');
-    await expect(page.locator('.progress .step.active')).toBeVisible();
-    await shot('progress-brainstorm');
+    // 2. 點示範案例 → 進度列（模型偶爾不提問就直接完成；教學需要提問畫面，最多重試 3 次拿到 WAITING）
+    let asked = false;
+    for (let attempt = 1; attempt <= 3 && !asked; attempt++) {
+      await page.click('[data-sample-id="car-accident"]');
+      await expect(page.locator('.progress .step.active')).toBeVisible();
+      if (attempt === 1) await shot('progress-brainstorm');
+      // 頭腦風暴一結束（進度列或中間成果出現）即截「進行中＋目前成果」畫面
+      await page.waitForSelector('.partials, #questions-form, #network-canvas canvas', { timeout: 4 * 60_000 });
+      if (attempt === 1 && await page.locator('.partials').count()) await shot('progress-with-partial-results');
+      await page.waitForSelector('#questions-form, #network-canvas canvas', { timeout: 4 * 60_000 });
+      asked = (await page.locator('#questions-form').count()) > 0;
+      if (!asked) {
+        console.log(`[${locale}] 第 ${attempt} 次：模型未提問直接完成${attempt < 3 ? '，重試' : ''}`);
+        if (attempt < 3) { await page.click('#new-case'); await expect(page.locator('#case-submit')).toBeVisible(); }
+      }
+    }
 
-    // 3. 等待提問 → 填答 → 送出
-    await page.waitForSelector('#questions-form', { timeout: 4 * 60_000 });
-    await shot('questions-empty');
-    const areas = page.locator('#questions-form textarea');
-    const count = await areas.count();
-    for (let i = 0; i < count; i++) await areas.nth(i).fill(x.answer);
-    await shot('questions-answered');
-    await page.click('#questions-form button[type=submit]');
-    await expect(page.locator('.progress .step.active')).toBeVisible();
-    await shot('progress-research');
+    // 3. 等待提問 → 填答 → 送出（三次都未提問則略過此段）
+    if (asked) {
+      await shot('questions-empty');
+      const areas = page.locator('#questions-form textarea');
+      const count = await areas.count();
+      for (let i = 0; i < count; i++) await areas.nth(i).fill(x.answer);
+      await shot('questions-answered');
+      await page.click('#questions-form button[type=submit]');
+      await expect(page.locator('.progress .step.active')).toBeVisible();
+      await shot('progress-research');
+    } else {
+      console.log(`[${locale}] 模型未提問，直接完成；略過 questions 截圖`);
+    }
 
     // 4. 完成 → 3D 圖
     await page.waitForSelector('#network-canvas canvas', { timeout: 6 * 60_000 });

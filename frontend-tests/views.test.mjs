@@ -4,7 +4,17 @@ import { esc } from '../src/main/resources/static/js/views/util.js';
 import { renderInput } from '../src/main/resources/static/js/views/input.js';
 import { renderProgress, renderCancel } from '../src/main/resources/static/js/views/progress.js';
 import { renderQuestions } from '../src/main/resources/static/js/views/questions.js';
-import { renderResult } from '../src/main/resources/static/js/views/result.js';
+import { renderResult, renderSections } from '../src/main/resources/static/js/views/result.js';
+
+test('renderSections 只列出已有的中間成果段落，且文字經轉義', () => {
+  const partial = { brainstorm: { facts: ['<i>hit</i>'], relations: [], issues: ['Negligence'], evidenceNeeds: [] } };
+  const html = renderSections(partial, 'en');
+  assert.match(html, /data-section="brainstorm"/);
+  assert.doesNotMatch(html, /data-section="research"/);
+  assert.match(html, /&lt;i&gt;hit&lt;\/i&gt;/);
+  assert.match(html, /Results so far/);
+  assert.equal(renderSections(null, 'en'), '');
+});
 
 // 用途：view 的 render 皆為「model → HTML 字串」純函式，在 node 驗證結構與轉義。
 test('esc 轉義五個危險字元', () => {

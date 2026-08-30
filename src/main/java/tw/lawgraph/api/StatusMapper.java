@@ -26,7 +26,7 @@ public final class StatusMapper {
             }
             case WAITING -> {
                 return new CaseStatus(snapshot.caseId(), "WAITING", "QUESTIONS", snapshot.locale().code(),
-                        snapshot.pendingQuestions(), null, null);
+                        snapshot.pendingQuestions(), partial(snapshot), null);
             }
             case FAILED, TERMINATED, KILLED, STUCK -> {
                 String message = snapshot.failure() == null
@@ -35,9 +35,16 @@ public final class StatusMapper {
                 return failed(snapshot, snapshot.code().name(), message, step);
             }
             default -> {
-                return new CaseStatus(snapshot.caseId(), "RUNNING", step, snapshot.locale().code(), null, null, null);
+                return new CaseStatus(snapshot.caseId(), "RUNNING", step, snapshot.locale().code(), null,
+                        partial(snapshot), null);
             }
         }
+    }
+
+    /** 進行中／等待時的中間成果：已完成步驟的產物逐段公開，圖一律為 null；尚無任何產物則回 null。 */
+    static CaseStatus.Result partial(StatusSnapshot snapshot) {
+        if (snapshot.brainstorm() == null && snapshot.research() == null && snapshot.analysis() == null) return null;
+        return new CaseStatus.Result(snapshot.brainstorm(), snapshot.research(), snapshot.analysis(), null);
     }
 
     /** 依 blackboard 已產生的最後成果推導目前步驟。 */

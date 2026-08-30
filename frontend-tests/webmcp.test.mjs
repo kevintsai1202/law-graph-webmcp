@@ -35,6 +35,12 @@ test('registerBase 只註冊 base 階段工具，registerCompleted 再加圖工�
   assert.equal(registered.length, 10);
   w.unregisterAll(); assert.equal(aborted, 10); assert.equal(w.tools().length, 0);
 });
+test('無 WebMCP 環境時仍記錄各階段可用工具，供 Inspector 顯示', async () => {
+  const w = createWebMcp({ app: {}, graphView: {}, modelContext: undefined });
+  await w.registerBase(); assert.equal(w.tools().length, 5);
+  await w.registerCompleted(); assert.equal(w.tools().length, 10);
+  w.unregisterAll(); assert.equal(w.tools().length, 0);
+});
 test('startCase 於案件進行中拒絕；getCaseStatus 不夾帶 result 全文', async () => {
   const app = {
     getState: () => ({ view: 'RESULT', last: { caseId: 'p1', status: 'COMPLETED', result: { graph: {} } } }),

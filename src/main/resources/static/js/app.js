@@ -4,7 +4,7 @@ import { esc, mount as mountHtml } from './views/util.js';
 import { renderInput, bindInput } from './views/input.js';
 import { renderProgress, renderCancel } from './views/progress.js';
 import { renderQuestions, bindQuestions } from './views/questions.js';
-import { renderResult, bindResult } from './views/result.js';
+import { renderResult, bindResult, renderSections } from './views/result.js';
 
 /** 應用程式核心：持有狀態、驅動輪詢、切換 view；WebMCP 由 webmcp.js 透過 onChange 掛上。 */
 export function createApp({ root, client, storage, navigatorLanguage }) {
@@ -39,11 +39,13 @@ export function createApp({ root, client, storage, navigatorLanguage }) {
         bindInput(el, { onSubmit: start, onSample: startSample });
         break;
       case States.RUNNING:
-        mountHtml(el, renderProgress({ step: state.last?.step || 'BRAINSTORM' }, locale) + renderCancel(locale));
+        mountHtml(el, renderProgress({ step: state.last?.step || 'BRAINSTORM' }, locale)
+          + renderSections(state.last?.result, locale) + renderCancel(locale));
         bindCancel(el);
         break;
       case States.QUESTIONS:
-        mountHtml(el, renderProgress({ step: 'QUESTIONS' }, locale) + renderQuestions({ questions: state.last.questions }, locale) + renderCancel(locale));
+        mountHtml(el, renderProgress({ step: 'QUESTIONS' }, locale) + renderQuestions({ questions: state.last.questions }, locale)
+          + renderSections(state.last.result, locale) + renderCancel(locale));
         bindQuestions(el, { onSubmit: answer });
         bindCancel(el);
         break;

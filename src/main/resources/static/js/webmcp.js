@@ -70,7 +70,9 @@ export function createWebMcp({ app, graphView, modelContext }) {
       const last = app.getState().last;
       if (!last) return { status: 'NONE', hint: 'No case yet. Call startCase.' };
       const { result, ...rest } = last;
-      return truncate(result ? { ...rest, hasResult: true } : rest);
+      // 不夾帶全文；改列出已可讀取的段落（進行中即有中間成果），完整內容用 getAnalysis 取
+      const sections = result ? ['brainstorm', 'research', 'analysis', 'graph'].filter((k) => result[k]) : [];
+      return truncate(result ? { ...rest, hasResult: true, sections } : rest);
     },
     verifyCitation: async ({ ref }) => truncate(await app.verify(ref)),
     resetCase: async () => { app.reset(); return { ok: true }; },
@@ -81,15 +83,16 @@ export function createWebMcp({ app, graphView, modelContext }) {
     explainEdge: async ({ sourceId, targetId }) => graphView.explainEdge(sourceId, targetId) ?? { error: 'edge not found' }
   };
 
-  /** 註冊某階段尚未註冊的工具；無 WebMCP 環境時靜默略過（Inspector 仍可用 execute）。 */
+  /** 註冊某階段尚未註冊的工具。無 WebMCP 環境時不呼叫 registerTool，但仍記錄為「本階段可用」，讓 Inspector 顯示一致。 */
   async function registerPhase(phase) {
-    if (!modelContext?.registerTool) return;
     controller ??= new AbortController();
     for (const def of TOOL_DEFS.filter((d) => d.phase === phase && !registered.has(d.name))) {
-      await modelContext.registerTool({
-        name: def.name, description: def.description, inputSchema: def.inputSchema, annotations: def.annotations,
-        execute: (input) => exec[def.name](input || {})
-      }, { signal: controller.signal });
+      if (modelContext?.registerTool) {
+        await modelContext.registerTool({
+          name: def.name, description: def.description, inputSchema: def.inputSchema, annotations: def.annotations,
+          execute: (input) => exec[def.name](input || {})
+        }, { signal: controller.signal });
+      }
       registered.add(def.name);
     }
   }
