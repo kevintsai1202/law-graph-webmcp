@@ -38,9 +38,11 @@ test('進行中／等待回答時提供取消按鈕，可退回輸入頁', () =>
   assert.match(renderCancel('en'), /Cancel/);
 });
 test('questions 每題一個 textarea，name 為 questionId', () => {
-  const html = renderQuestions({ questions: [{ id: 'q1', text: 'Dashcam?', why: 'causation' }] }, 'en');
+  const html = renderQuestions({ questions: [{ id: 'q1', text: 'Dashcam?', why: 'causation' }], answers: { q1: 'Yes.' }, notice: 'Agent filled 1 visible question field(s).' }, 'en');
   assert.match(html, /<textarea[^>]*name="q1"/);
+  assert.match(html, />Yes\.<\/textarea>/);
   assert.match(html, /causation/);
+  assert.match(html, /id="question-fill-notice"/);
 });
 test('result 含四個分頁與 network-canvas，模型文字經轉義', () => {
   const status = { locale: 'en', result: {

@@ -1,7 +1,8 @@
-embabel:
-  models:
-    default-llm: gpt-5.4-nano
 spring:
+  config:
+    # 本機直接執行 Spring Boot 時，從專案根目錄載入 .env；容器內沒有檔案時則略過。
+    import: optional:file:.env[.properties]
+
   ai:
     mcp:
       client:
@@ -12,6 +13,11 @@ spring:
           connections:
             legal-mcp:
               url: ${LEGAL_MCP_URL:http://localhost:8000}
+
+embabel:
+  models:
+    # 模型由 .env 的 MODEL 設定，未設定時沿用成本優先的預設模型。
+    default-llm: ${MODEL:gpt-5.4-nano}
 lawgraph:
   skills-dir: ${LAWGRAPH_SKILLS_DIR:skills/law-powers/skills}
   rate-limit-per-hour: 10

@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 // 用途：不需 LLM 的前端煙霧測試——輸入頁、語系切換、以假 COMPLETED 狀態驗證結果頁、3D 圖、
-//       Inspector 與 WebMCP 工具分階段註冊（以假 modelContext 注入）。只需後端啟動（假金鑰亦可）。
+//       Inspector 與 WebMCP 工具依頁面狀態同步（以假 modelContext 注入）。只需後端啟動（假金鑰亦可）。
 
 /** 假的 COMPLETED CaseStatus：涵蓋事實／法條／爭點／要件四種節點與三種邊。 */
 const completed = {
@@ -32,6 +32,11 @@ test.beforeEach(async ({ page }) => {
   await page.goto('/');
 });
 
+/** 等待頁面初始化完成並公布指定 WebMCP 工具，涵蓋遠端主機較慢的 samples API。 */
+const waitForTool = (page, name) => expect.poll(async () => page.evaluate((toolName) => {
+  return document.modelContext.getTools().then((tools) => tools.some((tool) => tool.name === toolName));
+}, name)).toBe(true);
+
 test('input view lists four sample cards and switches locale', async ({ page }) => {
   await expect(page.locator('.sample')).toHaveCount(4);
   await expect(page.locator('#case-submit')).toHaveText('Analyse');
@@ -41,12 +46,137 @@ test('input view lists four sample cards and switches locale', async ({ page }) 
   await expect(page.locator('#agent-badge')).toHaveText('Agent 工具：可用');
 });
 
-test('base tools register on load; graph tools only after COMPLETED; reset returns to five', async ({ page }) => {
+test('WebMCP startCase enters the progress view before a slow start response returns', async ({ page }) => {
+  // 延遲啟動回應，驗證 WebMCP handler 不會讓畫面停在輸入頁等待後端。
+  await page.route('**/api/cases', async (route) => {
+    if (route.request().method() !== 'POST') return route.continue();
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ caseId: 'webmcp-slow-start', status: 'RUNNING', step: 'BRAINSTORM' })
+    });
+  });
+  await waitForTool(page, 'startCase');
+
+  const outcome = await page.evaluate(async () => {
+    const tool = (await document.modelContext.getTools()).find((candidate) => candidate.name === 'startCase');
+    const execution = tool.execute({ caseText: 'A car accident happened at a city crossing.', locale: 'en' });
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    const during = {
+      view: window.__lawGraphApp.getState().view,
+      hasProgress: Boolean(document.querySelector('.progress')),
+      activeStep: document.querySelector('.progress .step.active')?.dataset.step
+    };
+    return { during, result: await execution };
+  });
+
+  expect(outcome.during).toEqual({ view: 'RUNNING', hasProgress: true, activeStep: 'BRAINSTORM' });
+  expect(outcome.result).toMatchObject({ ok: true, caseId: 'webmcp-slow-start', status: 'RUNNING' });
+});
+
+test('WebMCP startCase accepts the visible sample title and stringified arguments', async ({ page }) => {
+  // ChatGPT 可能傳入畫面標題，或由 host 將 JSON arguments 序列化成字串；兩者都應啟動同一頁面狀態。
+  await page.route('**/api/cases', async (route) => {
+    if (route.request().method() !== 'POST') return route.continue();
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ caseId: 'webmcp-title-start', status: 'RUNNING', step: 'BRAINSTORM' })
+    });
+  });
+  await waitForTool(page, 'startCase');
+
+  const outcome = await page.evaluate(async () => {
+    const tool = (await document.modelContext.getTools()).find((candidate) => candidate.name === 'startCase');
+    const execution = tool.execute(JSON.stringify({ sampleId: 'Intersection traffic accident', locale: 'en' }));
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    return {
+      during: {
+        view: window.__lawGraphApp.getState().view,
+        activeStep: document.querySelector('.progress .step.active')?.dataset.step
+      },
+      result: await execution
+    };
+  });
+
+  expect(outcome.during).toEqual({ view: 'RUNNING', activeStep: 'BRAINSTORM' });
+  expect(outcome.result).toMatchObject({ ok: true, caseId: 'webmcp-title-start', status: 'RUNNING', step: 'BRAINSTORM' });
+  await expect(page.locator('.progress')).toBeVisible();
+});
+
+test('每個頁面狀態的 WebMCP 工具與 Inspector 清單一致', async ({ page }) => {
+  const stateTools = {
+    INPUT: ['listSampleCases', 'startCase', 'verifyCitation'],
+    RUNNING: ['getCaseStatus', 'resetCase'],
+    QUESTIONS: ['getCaseStatus', 'getQuestions', 'fillQuestions', 'resetCase'],
+    RESULT: ['getAnalysis', 'getCaseStatus', 'getGraphSummary', 'focusNode', 'filterGraph', 'explainEdge', 'resetCase', 'verifyCitation'],
+    FAILED: ['getCaseStatus', 'resetCase']
+  };
   const names = async () => (await page.evaluate(() => document.modelContext.getTools())).map((t) => t.name).sort();
-  expect(await names()).toEqual(['getCaseStatus', 'listSampleCases', 'resetCase', 'startCase', 'verifyCitation']);
+  let answerRequests = 0;
+  page.on('request', (request) => {
+    if (request.method() === 'POST' && request.url().includes('/answers')) answerRequests++;
+  });
+  const inspectorNames = async () => page.locator('#insp-tool option').evaluateAll((options) => options.map((option) => option.value).sort());
+  const expectState = async (view) => {
+    const expected = [...stateTools[view]].sort();
+    await expect.poll(async () => names()).toEqual(expected);
+    await expect.poll(async () => inspectorNames()).toEqual(expected);
+    await expect(page.locator('#insp-state')).toContainText(view);
+    const listed = await page.locator('#insp-tools').textContent();
+    for (const name of expected) expect(listed).toContain(name);
+  };
+
+  await expectState('INPUT');
+
+  // RUNNING：案件啟動後只能查詢或由人明確放棄，不得再送第二個 sample。
+  await page.evaluate(() => window.__lawGraphApp.dispatch({ type: 'START', caseId: 'smoke-running' }));
+  await expectState('RUNNING');
+
+  // QUESTIONS：先讀取題目對照，再讓 Agent 以 questionId 填入可見欄位。
+  await page.evaluate((s) => window.__lawGraphApp.dispatch({ type: 'STATUS', status: s }), waiting);
+  await expectState('QUESTIONS');
+
+  const questionGuide = await page.evaluate(async () => {
+    const tool = (await document.modelContext.getTools()).find((candidate) => candidate.name === 'getQuestions');
+    return tool.execute({});
+  });
+  expect(questionGuide).toMatchObject({
+    view: 'QUESTIONS',
+    questions: [{ questionId: 'q1', question: 'When did the accident happen?', why: 'limitation period', filled: false }],
+    fillQuestionsExample: { answers: [{ questionId: 'q1', answer: '' }] }
+  });
+  await page.click('#insp-toggle');
+  await page.selectOption('#insp-tool', 'fillQuestions');
+  await expect(page.locator('#insp-question-guide')).toContainText('When did the accident happen?');
+  await expect.poll(async () => JSON.parse(await page.locator('#insp-input').inputValue())).toEqual({
+    answers: [{ questionId: 'q1', answer: '' }]
+  });
+
+  // Agent 可把提議答案填入可見欄位，但不能跳過人的檢查與送出。
+  const fillOutcome = await page.evaluate(async () => {
+    const tools = await document.modelContext.getTools();
+    const fillTool = tools.find((candidate) => candidate.name === 'fillQuestions');
+    const statusTool = tools.find((candidate) => candidate.name === 'getCaseStatus');
+    const rejected = await fillTool.execute({ answers: [{ questionId: 'not-a-visible-question', answer: 'ignored' }] });
+    const fill = await fillTool.execute(JSON.stringify({ answers: [{ questionId: 'q1', answer: '2026-08-01' }] }));
+    return { rejected, fill, status: await statusTool.execute({}) };
+  });
+  expect(fillOutcome.rejected).toMatchObject({ ok: false, error: 'NO_ANSWERS_APPLIED' });
+  expect(fillOutcome.fill).toMatchObject({ ok: true, submitted: false, humanReviewRequired: true, filledQuestionCount: 1 });
+  expect(fillOutcome.status).toMatchObject({ view: 'QUESTIONS', status: 'WAITING', filledQuestionCount: 1, missingQuestionIds: [] });
+  await expect(page.locator('#questions-form textarea[name="q1"]')).toHaveValue('2026-08-01');
+  await expect(page.locator('#question-fill-notice')).toContainText('Agent filled');
+  await expect(page.locator('#questions-form')).toBeVisible();
+  expect(answerRequests).toBe(0);
+  await expectState('QUESTIONS');
+
+  // RESULT：才開放分析與圖操作工具。
   await page.evaluate((s) => window.__lawGraphApp.dispatch({ type: 'STATUS', status: s }), completed);
   await expect(page.locator('#network-canvas')).toBeVisible();
-  await expect.poll(async () => (await names()).length).toBe(10);
+  await expectState('RESULT');
   // 3D 圖：有 WebGL 時出現 canvas，否則出現錯誤橫幅（兩者皆屬明確狀態，不得空白）
   await expect(page.locator('#network-canvas canvas, #network-canvas div')).not.toHaveCount(0);
   const summary = await page.evaluate(() => window.__graphView.summary());
@@ -55,10 +185,15 @@ test('base tools register on load; graph tools only after COMPLETED; reset retur
   // 分頁：研究分頁列出驗證紀錄且已轉義
   await page.click('.tab[data-tab="research"]');
   await expect(page.locator('[data-panel="research"]')).toContainText('removed edge: x->y (unverified)');
-  // 回到輸入頁 → 只剩 5 個 base 工具
-  await page.click('#new-case');
+
+  // FAILED：錯誤狀態不應重新暴露 startCase，避免 Agent 自動換案例。
+  await page.evaluate(() => window.__lawGraphApp.dispatch({ type: 'STATUS', status: { caseId: 'smoke-failed', status: 'FAILED', step: 'BRAINSTORM', error: 'stub failure' } }));
+  await expectState('FAILED');
+
+  // 明確重置後才回到 INPUT，重新取得建立案件工具。
+  await page.evaluate(() => window.__lawGraphApp.reset());
   await expect(page.locator('#case-submit')).toBeVisible();
-  await expect.poll(async () => (await names()).length).toBe(5);
+  await expectState('INPUT');
 });
 
 /** 假的 WAITING 狀態：含頭腦風暴中間成果與一題提問。 */

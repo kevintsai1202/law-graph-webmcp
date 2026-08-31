@@ -15,7 +15,7 @@
 - 後端 Java：Spring Boot 4.1 ＋ Embabel 1.5.1 ＋ gpt-5.4-nano（2026-08-30 由 gpt-5.4-mini 降級以節省成本）
 - 法律資料只接 `taiwan-legal-db`（非 RAG 的 MCP）
 - 本機 Docker Compose ＋ Cloudflare Tunnel 上線
-- 十個 WebMCP 工具（Imperative API）
+ - 十二個 WebMCP 工具（Imperative API）
 
 ### 1.2 範圍外
 
@@ -183,22 +183,24 @@ spring.ai.mcp.client:
 
 ## 5. WebMCP 工具集
 
-原則：全部 `document.modelContext.registerTool()`；契約英文；`locale` 為參數；**無 `answerQuestions` 工具**；圖操作工具僅於 `COMPLETED` 後註冊；description ≤ 150 字、name ≤ 30 字；單次回傳 ≤ 1.5K 字元。
+原則：全部 `document.modelContext.registerTool()`；契約英文；`locale` 為參數；**無 `submitQuestions` 工具**；`fillQuestions` 只填入可見欄位，送出仍需人確認；工具清單隨頁面狀態同步，避免 Agent 取得舊狀態工具；description ≤ 150 字、name ≤ 30 字；單次回傳 ≤ 1.5K 字元。
 
-| 工具 | 可用時機 | 輸入 | 回傳 | annotations |
+| 工具 | 可用頁面狀態 | 輸入 | 回傳 | annotations |
 |---|---|---|---|---|
-| `listSampleCases` | 永遠 | `{ locale? }` | `[{ id, title, summary }]` | readOnlyHint |
-| `startCase` | 無進行中 case | `{ caseText, locale }` 或 `{ sampleId, locale }` | `{ caseId, status, step }` | — |
-| `getCaseStatus` | 有 case | `{}` | `CaseStatus`（省略 `result.graph`） | readOnlyHint |
-| `getAnalysis` | `COMPLETED` | `{ section: brainstorm\|research\|analysis }` | 該段 JSON；超長回摘要＋`truncated: true` | readOnlyHint, untrustedContentHint |
-| `getGraphSummary` | `COMPLETED` | `{}` | `{ nodeCounts, edgeCounts, topIssues[], unmetElements[] }` | readOnlyHint |
-| `focusNode` | `COMPLETED` | `{ nodeId }` 或 `{ label }` | `{ node, neighbors[] }`；鏡頭飛至節點並開詳情面板 | — |
-| `filterGraph` | `COMPLETED` | `{ groups?, family?, reset? }` | `{ visibleNodes, visibleEdges }` | — |
-| `explainEdge` | `COMPLETED` | `{ sourceId, targetId }` | `{ label, rel?, title, sourceLabel, targetLabel }` | readOnlyHint |
-| `verifyCitation` | 永遠 | `{ ref }` | `{ ref, exists, source, snippet }` | readOnlyHint |
-| `resetCase` | 有 case | `{}` | `{ ok }` | — |
+| `listSampleCases` | `INPUT` | `{ locale? }` | `[{ id, title, summary }]` | readOnlyHint |
+| `startCase` | `INPUT` | `{ caseText, locale }` 或 `{ sampleId, locale }` | `{ caseId, status, step }` | — |
+| `getCaseStatus` | `RUNNING`／`QUESTIONS`／`RESULT`／`FAILED` | `{}` | `CaseStatus`（省略 `result.graph`） | readOnlyHint |
+| `getQuestions` | `QUESTIONS` | `{}` | 題目、`questionId`、提問原因與 `fillQuestions` 輸入範例 | readOnlyHint |
+| `fillQuestions` | `QUESTIONS` | `{ answers: [{ questionId, answer }] }` | `{ ok, submitted: false, appliedQuestionIds[], missingQuestionIds[] }`；依 `getQuestions` 的 `questionId` 填入頁面欄位，若沒有實際套用則回報錯誤，且不送出 | — |
+| `getAnalysis` | `RESULT` | `{ section: brainstorm\|research\|analysis }` | 該段 JSON；超長回摘要＋`truncated: true` | readOnlyHint, untrustedContentHint |
+| `getGraphSummary` | `RESULT` | `{}` | `{ nodeCounts, edgeCounts, topIssues[], unmetElements[] }` | readOnlyHint |
+| `focusNode` | `RESULT` | `{ nodeId }` 或 `{ label }` | `{ node, neighbors[] }`；鏡頭飛至節點並開詳情面板 | — |
+| `filterGraph` | `RESULT` | `{ groups?, family?, reset? }` | `{ visibleNodes, visibleEdges }` | — |
+| `explainEdge` | `RESULT` | `{ sourceId, targetId }` | `{ label, rel?, title, sourceLabel, targetLabel }` | readOnlyHint |
+| `verifyCitation` | `INPUT`／`RESULT` | `{ ref }` | `{ ref, exists, source, snippet }` | readOnlyHint |
+| `resetCase` | `RUNNING`／`QUESTIONS`／`RESULT`／`FAILED` | `{}` | `{ ok }` | — |
 
-實作要點：同一 `AbortController` 管理全部工具，`resetCase` 與 `pagehide` 時 `abort()` 後重註冊基礎工具；`execute` 只呼叫前端領域函式（`caseClient.*`、`graphView.*`），不碰 DOM selector；`document.modelContext` 不存在時略過註冊並顯示 `Agent tools: unavailable` 徽章。
+狀態矩陣：`INPUT` = `listSampleCases`、`startCase`、`verifyCitation`；`RUNNING` = `getCaseStatus`、`resetCase`；`QUESTIONS` = `getCaseStatus`、`getQuestions`、`fillQuestions`、`resetCase`；`RESULT` = `getCaseStatus`、三個分析／摘要工具、四個圖／引用工具與 `resetCase`；`FAILED` = `getCaseStatus`、`resetCase`。`QUESTIONS` 不暴露 `startCase` 或 `submitQuestions`；Agent 先以 `getQuestions` 取得題目對照，再填入建議答案，但人必須檢查並送出。實作以每一狀態一個 `AbortController` 管理註冊；`syncForState()` 切換時先 abort 舊清單；`execute` 只呼叫前端領域函式（`caseClient.*`、`graphView.*`），不碰 DOM selector；`document.modelContext` 不存在時略過註冊但 Inspector 仍顯示同一狀態矩陣。
 
 ### 5.1 典型旅程（影片腳本骨架）
 
@@ -206,6 +208,7 @@ spring.ai.mcp.client:
 使用者(ChatGPT)：口述車禍案情
 Agent → startCase({caseText, locale:"en"})        → RUNNING/BRAINSTORM
 Agent → getCaseStatus() ×N                        → WAITING, questions[...]
+      → getQuestions() → fillQuestions()          → human reviews and submits
 Agent：轉述問題，請使用者在頁面作答               ← 人作答並送出
 … → COMPLETED
 Agent → getGraphSummary() → focusNode({label:"Civil Code Art. 217"}) → verifyCitation({ref:"民法第217條"})
@@ -227,7 +230,7 @@ js/views/progress.js 五步進度列
 js/views/questions.js WaitFor 表單（每題 textarea + why）
 js/views/result.js   分頁：Graph / Analysis / Research / Brainstorm
 js/graphView.js      包裝 law-powers 渲染器：render / focus / filter / explainEdge
-js/webmcp.js         十個工具，委派 caseClient / graphView
+ js/webmcp.js         十二個工具，委派 caseClient / app / graphView
 js/inspector.js      折疊式 Tool Inspector 面板（手動執行工具）
 vendor/              three.min.js, 3d-force-graph.min.js, three-spritetext.min.js（自 law-powers/lib 複製）
 ```
@@ -300,10 +303,10 @@ services:
 - [ ] 四個示範案例在 en／zh-TW 各跑完，圖含 fact／law／issue／element 四類節點
 - [ ] 每案例至少觸發一次 WAITING
 - [ ] 硬規則剔除項列於 `research.notes`
-- [ ] 無 WebMCP 瀏覽器可完整走完；Inspector 可手動執行十個工具
+- [ ] 無 WebMCP 瀏覽器可完整走完；Inspector 依頁面狀態只顯示並可手動執行該狀態工具
 
 **WebMCP**
-- [ ] Chrome 149 flag：INPUT 階段 `getTools()` 只見基礎工具，COMPLETED 後多出圖操作工具
+- [ ] Chrome 149 flag：`INPUT`／`RUNNING`／`QUESTIONS`／`RESULT`／`FAILED` 的 `getTools()` 分別符合狀態矩陣，切換後不殘留舊工具
 - [ ] ChatGPT 桌面版：Site tools 列出工具；`startCase`→轉述問題→人作答→`focusNode` 全程錄影
 - [ ] `getAnalysis` 單次 ≤ 1.5K 字元
 

@@ -305,11 +305,18 @@ button svg { width: 18px; height: 18px; flex: 0 0 auto; }
 .inspector #insp-toggle:hover { background: var(--color-surface-muted); }
 .inspector #insp-toggle svg { transition: transform var(--dur-base) var(--ease); }
 .inspector:not(.collapsed) #insp-toggle svg { transform: rotate(180deg); }
-.inspector .insp-body { display: flex; flex-direction: column; gap: var(--space-2); margin-top: var(--space-2); padding: 0 var(--space-1) var(--space-1); }
+.inspector .insp-body { display: flex; flex-direction: column; gap: var(--space-2); max-height: min(70vh, 600px); overflow-y: auto; margin-top: var(--space-2); padding: 0 var(--space-1) var(--space-1); }
 .inspector.collapsed .insp-body { display: none; }
 .inspector textarea { font-family: var(--font-mono); font-size: 0.82rem; }
 .inspector pre { margin: 0; max-height: 240px; overflow: auto; font-size: 0.78rem; font-family: var(--font-mono); white-space: pre-wrap; word-break: break-all; background: var(--color-surface-muted); padding: var(--space-2) var(--space-3); border-radius: var(--radius-sm); border: 1px solid var(--color-border); }
 .inspector pre:empty { display: none; }
+.insp-guide { background: var(--color-surface-muted); border: 1px solid var(--color-border); border-radius: var(--radius-sm); padding: var(--space-2) var(--space-3); font-size: 0.84rem; }
+.insp-guide p { margin: var(--space-1) 0; color: var(--color-text-sub); line-height: 1.45; }
+.insp-guide ol { margin: var(--space-1) 0 0; padding-left: 1.5rem; }
+.insp-guide li { margin: 0.35rem 0; line-height: 1.4; }
+.insp-guide code { color: var(--color-heading); font-family: var(--font-mono); font-weight: 700; }
+.insp-guide small { display: block; color: var(--color-text-sub); }
+.question-fill-notice { margin: var(--space-3) 0; padding: var(--space-2) var(--space-3); color: var(--color-heading); background: #e8f5ec; border: 1px solid #78bd8f; border-radius: var(--radius-sm); font-weight: 600; }
 
 /* ── 響應式：768 以下單欄、375 可用 ── */
 @media (max-width: 960px) {

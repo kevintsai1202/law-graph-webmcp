@@ -3,6 +3,7 @@ services:
     build: { context: ., dockerfile: docker/app/Dockerfile }
     environment:
       OPENAI_API_KEY: ${OPENAI_API_KEY}
+      MODEL: ${MODEL:-gpt-5.4-nano}
       LEGAL_MCP_URL: http://legal-mcp:8000
       LAWGRAPH_SKILLS_DIR: /app/skills
     ports: ["8080:8080"]
