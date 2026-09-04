@@ -3,6 +3,7 @@ package tw.lawgraph.api;
 import com.embabel.agent.core.AgentProcessStatusCode;
 import tw.lawgraph.domain.AnalysisResult;
 import tw.lawgraph.domain.BrainstormResult;
+import tw.lawgraph.domain.CaseAssessment;
 import tw.lawgraph.domain.DraftedDocuments;
 import tw.lawgraph.domain.GraphOutcome;
 import tw.lawgraph.domain.Locale;
@@ -15,5 +16,5 @@ import java.util.List;
 /** 從 AgentProcess blackboard 擷取的純資料快照；failureCode 由應用層指定（例如看門狗的 STEP_TIMEOUT），null 時沿用 Embabel 狀態碼。 */
 public record StatusSnapshot(String caseId, Locale locale, AgentProcessStatusCode code,
                              BrainstormResult brainstorm, List<Question> pendingQuestions, UserAnswers answers,
-                             ResearchResult research, AnalysisResult analysis, DraftedDocuments documents,
-                             GraphOutcome outcome, String failure, String failureCode) {}
+                             ResearchResult research, AnalysisResult analysis, CaseAssessment assessment,
+                             DraftedDocuments documents, GraphOutcome outcome, String failure, String failureCode) {}

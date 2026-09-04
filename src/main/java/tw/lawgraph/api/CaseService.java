@@ -18,6 +18,7 @@ import tw.lawgraph.agent.ThirdRoundQuestionsAwaitable;
 import tw.lawgraph.domain.AnalysisResult;
 import tw.lawgraph.domain.Answer;
 import tw.lawgraph.domain.BrainstormResult;
+import tw.lawgraph.domain.CaseAssessment;
 import tw.lawgraph.domain.CaseInput;
 import tw.lawgraph.domain.DraftedDocuments;
 import tw.lawgraph.domain.GraphOutcome;
@@ -148,6 +149,7 @@ public class CaseService {
         return new StatusSnapshot(caseId, locales.get(caseId), process.getStatus(),
                 blackboard.last(BrainstormResult.class), pending, blackboard.last(UserAnswers.class),
                 blackboard.last(ResearchResult.class), blackboard.last(AnalysisResult.class),
+                blackboard.last(CaseAssessment.class),
                 blackboard.last(DraftedDocuments.class),
                 blackboard.last(GraphOutcome.class),
                 timeout != null ? timeout : failure == null ? null : failure.toString(),

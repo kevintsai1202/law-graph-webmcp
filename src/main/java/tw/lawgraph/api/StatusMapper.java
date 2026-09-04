@@ -21,7 +21,7 @@ public final class StatusMapper {
                     var research = new ResearchResult(snapshot.research().laws(), snapshot.research().judgments(), notes,
                             snapshot.research().coverage(), snapshot.research().evidence());
                     return new CaseStatus(snapshot.caseId(), "COMPLETED", "GRAPH", snapshot.locale().code(), null,
-                            new CaseStatus.Result(snapshot.brainstorm(), research, snapshot.analysis(),
+                            new CaseStatus.Result(snapshot.brainstorm(), research, snapshot.analysis(), snapshot.assessment(),
                                     documents(snapshot), snapshot.outcome().graph()), null);
                 }
                 return failed(snapshot, "COMPLETED_WITHOUT_GRAPH", "process completed without a graph", step);
@@ -46,9 +46,10 @@ public final class StatusMapper {
 
     /** 進行中／等待時的中間成果：已完成步驟的產物逐段公開，圖一律為 null；尚無任何產物則回 null。 */
     static CaseStatus.Result partial(StatusSnapshot snapshot) {
-        if (snapshot.brainstorm() == null && snapshot.research() == null && snapshot.analysis() == null) return null;
+        if (snapshot.brainstorm() == null && snapshot.research() == null && snapshot.analysis() == null
+                && snapshot.assessment() == null) return null;
         return new CaseStatus.Result(snapshot.brainstorm(), snapshot.research(), snapshot.analysis(),
-                documents(snapshot), null);
+                snapshot.assessment(), documents(snapshot), null);
     }
 
     /** 已起草的書狀清單；draftDocuments 尚未執行時為 null。 */
@@ -59,7 +60,8 @@ public final class StatusMapper {
     /** 依 blackboard 已產生的最後成果推導目前步驟。 */
     static String deriveStep(StatusSnapshot snapshot) {
         if (snapshot.documents() != null) return "GRAPH";
-        if (snapshot.analysis() != null) return "DOCUMENTS";
+        if (snapshot.assessment() != null) return "DOCUMENTS";
+        if (snapshot.analysis() != null) return "ASSESSMENT";
         if (snapshot.research() != null) return "ANALYSIS";
         if (snapshot.answers() != null) return "RESEARCH";
         if (snapshot.brainstorm() != null) return "QUESTIONS";
