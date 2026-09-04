@@ -4,7 +4,7 @@ import { esc } from '../src/main/resources/static/js/views/util.js';
 import { bindInput, renderInput } from '../src/main/resources/static/js/views/input.js';
 import { renderProgress, renderCancel, STEPS } from '../src/main/resources/static/js/views/progress.js';
 import { renderQuestions } from '../src/main/resources/static/js/views/questions.js';
-import { renderResult, renderSections } from '../src/main/resources/static/js/views/result.js';
+import { renderResult, renderSections, claimStatus, checklistCsv } from '../src/main/resources/static/js/views/result.js';
 
 test('renderSections 只列出已有的中間成果段落，且文字經轉義', () => {
   const partial = { brainstorm: { facts: ['<i>hit</i>'], relations: [], issues: ['Negligence'], evidenceNeeds: [] } };
@@ -397,4 +397,67 @@ test('input 匿名且登入可提高上限時，配額說明附 Google 登入提
   const member = renderInput({ samples: [], quota: { used: 2, limit: 5, remaining: 3, exhausted: false, loggedIn: true, memberLimit: 5 } }, 'zh-TW');
   assert.doesNotMatch(member, /quota-login/);
   assert.match(member, /2 \/ 5/);
+});
+
+test('涵攝與評估分頁：請求權小結、對造抗辯表、證據舉證表、風險摘要', () => {
+  const status = { status: 'COMPLETED', step: 'GRAPH', result: {
+    brainstorm: { facts: [], relations: [], issues: [], evidenceNeeds: [] },
+    research: { laws: [], judgments: [], notes: [] },
+    analysis: { elements: [
+      { law: '民法第184條第1項', element: '故意或過失', met: 'yes', basis: 'b', fact: 'f' },
+      { law: '民法第184條第1項', element: '損害', met: 'unknown', basis: 'b', fact: 'f' },
+      { law: '民法第197條第1項', element: '二年時效', met: 'no', basis: 'b', fact: 'f' }
+    ], strategy: '先補證據', evidenceGaps: ['醫療單據'], disclaimer: '' },
+    assessment: {
+      defenses: [{ issue: '時效', defense: '已罹於時效', response: '自知悉起算未滿二年', risk: 'high' }],
+      evidencePlan: [{ fact: '知悉時點', burden: '被告', available: '無', missing: '送達證明', howToObtain: '函查郵局' }],
+      riskSummary: '整體中等風險'
+    },
+    graph: { nodes: [], edges: [] } } };
+  const html = renderResult({ status, activeTab: 'analysis', outputs: ['graph'] }, 'zh-TW');
+  assert.match(html, /各項請求能不能成立（請求權基礎小結）/);
+  assert.match(html, /民法第184條第1項[^<]*<[^>]*>[^<]*待補證據/);
+  assert.match(html, /民法第197條第1項[^<]*<[^>]*>[^<]*有要件不該當/);
+  assert.match(html, /對方可能怎麼反駁、我們怎麼回應（抗辯評估）/);
+  assert.match(html, /已罹於時效/);
+  assert.match(html, /risk-high/);
+  assert.match(html, /誰要證明什麼、還缺哪些證據（舉證責任與證據計畫）/);
+  assert.match(html, /函查郵局/);
+  assert.match(html, /整體風險[\s\S]*整體中等風險/);
+});
+
+test('claimStatus 依要件該當性彙整：全 yes 成立、有 no 不成立、其餘待補證據', () => {
+  const rows = claimStatus([
+    { law: 'A', met: 'yes' }, { law: 'A', met: 'yes' },
+    { law: 'B', met: 'yes' }, { law: 'B', met: 'no' },
+    { law: 'C', met: 'unknown' }
+  ]);
+  assert.deepEqual(rows, [{ law: 'A', status: 'established' }, { law: 'B', status: 'failed' }, { law: 'C', status: 'pending' }]);
+});
+
+test('當事人準備清單分頁：依五類分組、匯出與列印按鈕；CSV 含標頭與 BOM', () => {
+  const status = { status: 'COMPLETED', step: 'GRAPH', result: {
+    brainstorm: { facts: [], relations: [], issues: [], evidenceNeeds: [] },
+    research: { laws: [], judgments: [], notes: [] },
+    analysis: { elements: [], strategy: '', evidenceGaps: [], disclaimer: '' },
+    assessment: { defenses: [], evidencePlan: [], riskSummary: '', checklist: [
+      { category: '證據文件', item: '醫療費用單據正本', why: '證明損害額', dueHint: '起訴前' },
+      { category: '程序事項', item: '委任狀', why: '委任律師訴訟代理', dueHint: '第一次開庭前' }
+    ] },
+    graph: { nodes: [], edges: [] } } };
+  const html = renderResult({ status, activeTab: 'checklist', outputs: ['graph'] }, 'zh-TW');
+  assert.match(html, /data-tab="checklist"/);
+  assert.match(html, /你需要準備的東西/);
+  assert.match(html, /<h3>證據文件<\/h3>[\s\S]*醫療費用單據正本/);
+  assert.match(html, /<h3>程序事項<\/h3>[\s\S]*委任狀/);
+  assert.match(html, /id="checklist-export"/);
+  assert.match(html, /id="checklist-print"/);
+  const csv = checklistCsv(status.result.assessment.checklist, 'zh-TW');
+  assert.ok(csv.startsWith('﻿分類,項目,為何需要,時限'));
+  assert.match(csv, /證據文件,醫療費用單據正本,證明損害額,起訴前/);
+});
+
+test('沒有清單資料時分頁不出現', () => {
+  const status = { status: 'COMPLETED', step: 'GRAPH', result: { analysis: { elements: [] }, graph: { nodes: [], edges: [] } } };
+  assert.doesNotMatch(renderResult({ status, activeTab: 'graph', outputs: ['graph'] }, 'zh-TW'), /data-tab="checklist"/);
 });

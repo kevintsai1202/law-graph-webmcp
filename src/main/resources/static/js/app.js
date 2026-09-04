@@ -5,7 +5,7 @@ import { ICONS } from './views/icons.js';
 import { renderInput, bindInput, MIN_CHARS, LAW_POWERS_URL } from './views/input.js';
 import { renderProgress, renderCancel } from './views/progress.js';
 import { renderQuestions, bindQuestions } from './views/questions.js';
-import { renderResult, bindResult, renderSections, tabsFor, tabLabel } from './views/result.js';
+import { renderResult, bindResult, renderSections, tabsFor, tabLabel, checklistCsv } from './views/result.js';
 import { normalizeOutputs, OUTPUT_OPTIONS } from './documents.js';
 
 /** 語意檢索回報需要授權時，產生保留目前頁面的 OAuth 啟動路徑。 */
@@ -15,6 +15,15 @@ export function semanticAuthPath(status, locationLike = globalThis.location) {
   if (new URLSearchParams(search).has('mcpAuth')) return null;
   const returnTo = `${locationLike?.pathname || '/'}${search}`;
   return `/api/auth/tw-legal-rag/start?returnTo=${encodeURIComponent(returnTo)}`;
+}
+
+/** 以 Blob 觸發瀏覽器下載；測試環境無 document 或 createObjectURL 時安全略過。 */
+function downloadText(text, filename, mime) {
+  if (typeof document === 'undefined' || typeof URL?.createObjectURL !== 'function') return;
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([text], { type: mime }));
+  a.download = filename; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 0);
 }
 
 /** 應用程式核心：持有狀態、驅動輪詢、切換 view；WebMCP 由 webmcp.js 透過 onChange 掛上。 */
@@ -130,6 +139,12 @@ export function createApp({ root, client, storage, navigatorLanguage, partialCol
       case States.RESULT:
         mountHtml(el, renderResult({ status: state.last, activeTab, outputs: selectedOutputs }, locale));
         bindResult(el, { onTab: (k) => { activeTab = k; render(); }, onNewCase: reset });
+        // 當事人準備清單：CSV 下載與列印
+        el.querySelector('#checklist-export')?.addEventListener('click', () => {
+          const items = state.last?.result?.assessment?.checklist || [];
+          downloadText(checklistCsv(items, locale), t('checklist.file', locale), 'text/csv;charset=utf-8');
+        });
+        el.querySelector('#checklist-print')?.addEventListener('click', () => globalThis.print?.());
         listeners.forEach((l) => l(state, 'RESULT_RENDERED'));
         break;
       case States.FAILED:

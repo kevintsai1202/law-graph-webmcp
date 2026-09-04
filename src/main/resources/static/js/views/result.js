@@ -6,15 +6,15 @@ import { DOC_TYPES, normalizeOutputs } from '../documents.js';
 /** 三個固定殿後的輔助分頁。 */
 const AUX_TABS = ['analysis', 'research', 'brainstorm'];
 
-/** 依勾選輸出組出分頁順序：關聯圖、各書狀（doc-<type>）、輔助分頁。 */
-export function tabsFor(outputs) {
+/** 依勾選輸出組出分頁順序：關聯圖、各書狀（doc-<type>）、（有清單資料才有）當事人準備清單、輔助分頁。 */
+export function tabsFor(outputs, hasChecklist = false) {
   const selected = normalizeOutputs(outputs);
   const front = ['graph', ...DOC_TYPES].filter((o) => selected.includes(o))
     .map((o) => (o === 'graph' ? 'graph' : 'doc-' + o));
-  return [...front, ...AUX_TABS];
+  return [...front, ...(hasChecklist ? ['checklist'] : []), ...AUX_TABS];
 }
 
-/** 分頁標籤文字：graph／輔助分頁沿用 result.tab.*，書狀用 doc.* 狀別名稱。 */
+/** 分頁標籤文字：graph／輔助分頁／checklist 沿用 result.tab.*，書狀用 doc.* 狀別名稱。 */
 export function tabLabel(tab, locale) {
   return tab.startsWith('doc-') ? t('doc.' + tab.slice(4), locale) : t('result.tab.' + tab, locale);
 }
@@ -35,6 +35,60 @@ function elementsList(elements, locale) {
       <div class="el-head">${esc(e.element)} <span class="el-law">· ${esc(e.law)}</span></div><div class="el-basis">${esc(e.basis)}</div></li>`;
   }).join('');
   return `<ul class="elements">${rows}</ul>`;
+}
+
+/** 依 law 分組彙整請求權成立狀態：全部 yes → established；任一 no → failed；其餘 → pending。保留首次出現順序。 */
+export function claimStatus(elements) {
+  const byLaw = new Map();
+  (elements || []).forEach((e) => { if (!byLaw.has(e.law)) byLaw.set(e.law, []); byLaw.get(e.law).push(e.met); });
+  return [...byLaw.entries()].map(([law, mets]) => ({
+    law, status: mets.some((m) => m === 'no') ? 'failed' : mets.every((m) => m === 'yes') ? 'established' : 'pending'
+  }));
+}
+
+/** 請求權基礎小結清單。 */
+function claimSummaryList(elements, locale) {
+  const rows = claimStatus(elements).map((r) =>
+    `<li class="claim claim-${r.status}">${esc(r.law)}<span class="claim-status">${esc(t('claim.' + r.status, locale))}</span></li>`).join('');
+  return rows ? `<ul class="claim-summary">${rows}</ul>` : '';
+}
+
+/** 對造抗辯表：爭點／抗辯／回應／風險徽章。 */
+function defensesTable(defenses, locale) {
+  if (!defenses?.length) return `<p class="empty">${esc(t('result.none', locale))}</p>`;
+  const head = ['defense.issue', 'defense.defense', 'defense.response', 'defense.risk'].map((k) => `<th>${esc(t(k, locale))}</th>`).join('');
+  const rows = defenses.map((d) => `<tr><td>${esc(d.issue)}</td><td>${esc(d.defense)}</td><td>${esc(d.response)}</td><td><span class="risk risk-${esc(d.risk || 'medium')}">${esc(t('risk.' + (d.risk || 'medium'), locale))}</span></td></tr>`).join('');
+  return `<div class="table-wrap"><table class="assess-table"><thead><tr>${head}</tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+
+/** 證據與舉證責任表：待證事實／舉證責任／現有證據／缺口／取得方式。 */
+function evidenceTable(items, locale) {
+  if (!items?.length) return `<p class="empty">${esc(t('result.none', locale))}</p>`;
+  const head = ['evidence.fact', 'evidence.burden', 'evidence.available', 'evidence.missing', 'evidence.howToObtain'].map((k) => `<th>${esc(t(k, locale))}</th>`).join('');
+  const rows = items.map((e) => `<tr><td>${esc(e.fact)}</td><td>${esc(e.burden)}</td><td>${esc(e.available)}</td><td>${esc(e.missing)}</td><td>${esc(e.howToObtain)}</td></tr>`).join('');
+  return `<div class="table-wrap"><table class="assess-table"><thead><tr>${head}</tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+
+/** 五個固定分類的顯示順序；模型給出其他字串時歸入「其他」。 */
+const CHECKLIST_CATEGORIES = ['證據文件', '人證', '程序事項', '費用與期限', '其他'];
+
+/** 當事人準備清單：依分類分組的表格，加匯出與列印按鈕。 */
+function checklistTable(items, locale) {
+  const groups = new Map(CHECKLIST_CATEGORIES.map((c) => [c, []]));
+  (items || []).forEach((i) => groups.get(CHECKLIST_CATEGORIES.includes(i.category) ? i.category : '其他').push(i));
+  const sections = [...groups.entries()].filter(([, rows]) => rows.length).map(([cat, rows]) => `<h3>${esc(cat)}</h3>
+    <div class="table-wrap"><table class="assess-table checklist-table"><thead><tr><th>${esc(t('checklist.item', locale))}</th><th>${esc(t('checklist.why', locale))}</th><th>${esc(t('checklist.due', locale))}</th></tr></thead>
+    <tbody>${rows.map((r) => `<tr><td>${esc(r.item)}</td><td>${esc(r.why)}</td><td>${esc(r.dueHint || '')}</td></tr>`).join('')}</tbody></table></div>`).join('');
+  return `<section class="checklist" id="checklist-sheet"><p class="lead">${esc(t('checklist.lead', locale))}</p>${sections}
+    <div class="actions"><button type="button" id="checklist-export" class="secondary">${esc(t('checklist.export', locale))}</button>
+    <button type="button" id="checklist-print" class="secondary">${esc(t('checklist.print', locale))}</button></div></section>`;
+}
+
+/** 清單 CSV（含 BOM 讓 Excel 正確讀 UTF-8）：分類、項目、為何需要、時限；含雙引號、逗號或換行的欄位依 RFC 4180 轉義。 */
+export function checklistCsv(items, locale) {
+  const cell = (v) => { const s = String(v ?? ''); return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
+  const head = [t('checklist.category', locale), t('checklist.item', locale), t('checklist.why', locale), t('checklist.due', locale)].join(',');
+  return '﻿' + [head, ...(items || []).map((i) => [i.category, i.item, i.why, i.dueHint].map(cell).join(','))].join('\n');
 }
 
 /** 三段文字型成果（brainstorm／research／analysis）的 HTML 產生器；graph 由 graphView 渲染。 */
@@ -58,10 +112,15 @@ const SECTION_HTML = {
     return `${coverageLine}${h3('result.statutes')}${list(r.laws, (l) => `${l.title}（${l.ref}）`)}${h3('result.judgments')}${list(r.judgments, judgmentText)}
       ${h3('result.notes')}${list(r.notes)}`;
   },
-  analysis: (a, locale) => {
+  analysis: (a, locale, assessment = null) => {
     const h3 = (key) => `<h3>${esc(t(key, locale))}</h3>`;
     return `${h3('result.elements')}${elementsList(a.elements, locale)}
-      ${h3('result.strategy')}<p>${esc(a.strategy)}</p>${h3('result.evidenceGaps')}${list(a.evidenceGaps)}
+      ${h3('result.claimSummary')}${claimSummaryList(a.elements, locale)}
+      ${h3('result.defenses')}${defensesTable(assessment?.defenses, locale)}
+      ${h3('result.evidencePlan')}${evidenceTable(assessment?.evidencePlan, locale)}
+      ${h3('result.strategy')}<p>${esc(a.strategy || '')}</p>
+      ${assessment?.riskSummary ? `${h3('result.risk')}<p>${esc(assessment.riskSummary)}</p>` : ''}
+      ${h3('result.evidenceGaps')}${list(a.evidenceGaps)}
       <p class="disclaimer">${ICONS.info}<span>${esc(a.disclaimer)}</span></p>`;
   }
 };
@@ -128,14 +187,14 @@ export function renderSections(result, locale) {
   const present = ['brainstorm', 'research', 'analysis'].filter((k) => result[k]);
   if (!present.length) return '';
   const blocks = present.map((k) => `<details class="partial" data-section="${k}" open>
-      <summary>${esc(t('result.tab.' + k, locale))}</summary>${SECTION_HTML[k](result[k], locale)}</details>`).join('');
+      <summary>${esc(t('result.tab.' + k, locale))}</summary>${SECTION_HTML[k](result[k], locale, result.assessment)}</details>`).join('');
   return `<section class="partials"><h2>${esc(t('progress.partial', locale))}</h2>${blocks}</section>`;
 }
 
 /** 結果頁：勾選輸出各自一個分頁排前（Graph 骨架由 graphView 接圖、書狀公文版面），輔助分頁殿後；所有模型文字經 esc。 */
 export function renderResult({ status, activeTab = 'graph', outputs }, locale) {
   const r = status.result || {};
-  const TABS = tabsFor(outputs);
+  const TABS = tabsFor(outputs, !!r.assessment?.checklist?.length);
   if (!TABS.includes(activeTab)) activeTab = TABS[0];
   const tabs = TABS.map((k) =>
     `<button type="button" role="tab" id="tab-${k}" aria-controls="panel-${k}" aria-selected="${k === activeTab}" class="tab ${k === activeTab ? 'active' : ''}" data-tab="${k}">${esc(tabLabel(k, locale))}</button>`).join('');
@@ -151,9 +210,10 @@ export function renderResult({ status, activeTab = 'graph', outputs }, locale) {
         <aside class="detail-panel" id="detail-panel" aria-label="${esc(t('graph.detail.aria', locale))}"><button class="close-btn" id="close-panel-btn" type="button" aria-label="${esc(t('graph.close', locale))}">${ICONS.close}</button>
           <div class="detail-header"><span class="detail-tag" id="detail-tag"></span><h2 class="detail-title" id="detail-title"></h2></div>
           <div class="detail-body" id="detail-body"></div></aside></div>`,
-    analysis: SECTION_HTML.analysis(r.analysis || {}, locale),
+    analysis: SECTION_HTML.analysis(r.analysis || {}, locale, r.assessment),
     research: SECTION_HTML.research(r.research || {}, locale),
-    brainstorm: SECTION_HTML.brainstorm(r.brainstorm || {}, locale)
+    brainstorm: SECTION_HTML.brainstorm(r.brainstorm || {}, locale),
+    checklist: checklistTable(r.assessment?.checklist, locale)
   };
   // 各書狀分頁：以 type 對應後端 result.documents；缺件時顯示未產生提示
   for (const k of TABS) {

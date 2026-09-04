@@ -350,6 +350,27 @@ button svg { width: 18px; height: 18px; flex: 0 0 auto; }
 .el-no { border-left-color: var(--color-bad); } .el-no .el-badge { background: var(--color-bad-soft); color: var(--color-bad); }
 .el-unknown { border-left-color: var(--color-warn); } .el-unknown .el-badge { background: var(--color-warn-soft); color: var(--color-warn); }
 
+/* 涵攝與評估：請求權小結、抗辯表、證據表、風險徽章 */
+.claim-summary { list-style: none; padding: 0; margin: 0 0 var(--space-4); display: grid; gap: var(--space-2); }
+.claim { display: flex; justify-content: space-between; gap: var(--space-3); padding: 8px 12px; border-radius: var(--radius-md); border: 1px solid var(--color-border); }
+.claim-established { border-color: var(--color-ok); background: var(--color-ok-soft); }
+.claim-failed { border-color: var(--color-bad); background: var(--color-bad-soft); }
+.claim-pending { border-color: var(--color-warn); background: var(--color-warn-soft); }
+.claim-status { font-weight: 600; white-space: nowrap; }
+.table-wrap { overflow-x: auto; margin-bottom: var(--space-4); }
+.assess-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+.assess-table th, .assess-table td { text-align: left; vertical-align: top; padding: 8px 10px; border-bottom: 1px solid var(--color-border); }
+.assess-table th { color: var(--color-text-sub); font-weight: 600; white-space: nowrap; }
+.risk { display: inline-block; padding: 2px 8px; border-radius: var(--radius-pill); font-size: 0.8rem; font-weight: 600; }
+.risk-high { background: var(--color-bad-soft); color: var(--color-bad); }
+.risk-medium { background: var(--color-warn-soft); color: var(--color-warn); }
+.risk-low { background: var(--color-ok-soft); color: var(--color-ok); }
+
+/* 當事人準備清單：說明文字、匯出／列印按鈕列、僅列印清單本體 */
+.checklist .lead { color: var(--color-text-sub); margin-bottom: var(--space-3); }
+.checklist .actions { display: flex; gap: var(--space-2); margin-top: var(--space-3); }
+@media print { body * { visibility: hidden; } #checklist-sheet, #checklist-sheet * { visibility: visible; } #checklist-sheet { position: absolute; left: 0; top: 0; width: 100%; } #checklist-sheet .actions { display: none; } }
+
 /* 失敗頁 */
 .failed { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-5); border-left: 4px solid var(--color-bad); max-width: 720px; }
 .failed h2 { font-size: 1.3rem; display: flex; align-items: center; gap: var(--space-2); }

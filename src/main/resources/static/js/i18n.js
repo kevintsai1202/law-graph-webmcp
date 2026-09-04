@@ -77,7 +77,16 @@ export const DICT = {
     'quota.reason': 'This site is free to use. To keep it available for more people, each person can run at most {limit} analyses per day (resets at midnight, Taipei time).',
     'quota.exhausted.title': 'Today\'s {limit} analyses are used up',
     'input.lawPowers': 'This hosted site shares a daily AI budget. Prefer no limit? Install the open-source Law Powers skills and run the same analysis with your own AI agent.',
-    'input.lawPowersAction': 'Law Powers skills'
+    'input.lawPowersAction': 'Law Powers skills',
+    'result.defenses': 'Likely defenses & responses', 'result.evidencePlan': 'Evidence & burden of proof',
+    'result.risk': 'Risk summary', 'result.claimSummary': 'Claim summary', 'result.none': 'None',
+    'claim.established': 'All elements met', 'claim.failed': 'An element fails', 'claim.pending': 'Evidence needed',
+    'defense.issue': 'Issue', 'defense.defense': 'Defense', 'defense.response': 'Response', 'defense.risk': 'Risk',
+    'evidence.fact': 'Fact to prove', 'evidence.burden': 'Burden', 'evidence.available': 'Available', 'evidence.missing': 'Missing', 'evidence.howToObtain': 'How to obtain',
+    'risk.high': 'High', 'risk.medium': 'Medium', 'risk.low': 'Low',
+    'result.tab.checklist': 'Client checklist', 'checklist.lead': 'Suggested items to prepare before the next meeting or filing.',
+    'checklist.category': 'Category', 'checklist.item': 'Item', 'checklist.why': 'Why it matters', 'checklist.due': 'When',
+    'checklist.export': 'Export CSV', 'checklist.print': 'Print', 'checklist.file': 'client-checklist.csv'
   },
   'zh-TW': {
     'app.title': '法律關係圖', 'app.subtitle': '與你的 Agent 一起建構的台灣法律關係圖',
@@ -156,7 +165,16 @@ export const DICT = {
     'quota.reason': '本站免費開放，為了讓更多人都能使用，每人每天最多分析 {limit} 次（台北時間午夜重新計算）。',
     'quota.exhausted.title': '今日 {limit} 次分析已用完',
     'input.lawPowers': '本站有每日共享 AI 額度。想不受限制，可安裝開源的 Law Powers 技能，用自己的 AI Agent 做同樣的分析。',
-    'input.lawPowersAction': 'Law Powers 技能'
+    'input.lawPowersAction': 'Law Powers 技能',
+    'result.defenses': '對方可能怎麼反駁、我們怎麼回應（抗辯評估）', 'result.evidencePlan': '誰要證明什麼、還缺哪些證據（舉證責任與證據計畫）',
+    'result.risk': '整體風險', 'result.claimSummary': '各項請求能不能成立（請求權基礎小結）', 'result.none': '無',
+    'claim.established': '要件齊備', 'claim.failed': '有要件不該當', 'claim.pending': '待補證據',
+    'defense.issue': '爭點', 'defense.defense': '對造抗辯', 'defense.response': '我方回應', 'defense.risk': '風險',
+    'evidence.fact': '待證事實', 'evidence.burden': '舉證責任', 'evidence.available': '現有證據', 'evidence.missing': '缺口', 'evidence.howToObtain': '取得方式',
+    'risk.high': '高', 'risk.medium': '中', 'risk.low': '低',
+    'result.tab.checklist': '你需要準備的東西', 'checklist.lead': '下面是這個案子建議你先準備好的東西，最好在下次跟律師見面或送文件給法院之前備妥。',
+    'checklist.category': '分類', 'checklist.item': '項目', 'checklist.why': '為何需要', 'checklist.due': '時限',
+    'checklist.export': '匯出 CSV', 'checklist.print': '列印', 'checklist.file': '當事人準備清單.csv'
   }
 };
 

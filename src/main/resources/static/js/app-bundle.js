@@ -160,7 +160,36 @@
       "quota.reason": "This site is free to use. To keep it available for more people, each person can run at most {limit} analyses per day (resets at midnight, Taipei time).",
       "quota.exhausted.title": "Today's {limit} analyses are used up",
       "input.lawPowers": "This hosted site shares a daily AI budget. Prefer no limit? Install the open-source Law Powers skills and run the same analysis with your own AI agent.",
-      "input.lawPowersAction": "Law Powers skills"
+      "input.lawPowersAction": "Law Powers skills",
+      "result.defenses": "Likely defenses & responses",
+      "result.evidencePlan": "Evidence & burden of proof",
+      "result.risk": "Risk summary",
+      "result.claimSummary": "Claim summary",
+      "result.none": "None",
+      "claim.established": "All elements met",
+      "claim.failed": "An element fails",
+      "claim.pending": "Evidence needed",
+      "defense.issue": "Issue",
+      "defense.defense": "Defense",
+      "defense.response": "Response",
+      "defense.risk": "Risk",
+      "evidence.fact": "Fact to prove",
+      "evidence.burden": "Burden",
+      "evidence.available": "Available",
+      "evidence.missing": "Missing",
+      "evidence.howToObtain": "How to obtain",
+      "risk.high": "High",
+      "risk.medium": "Medium",
+      "risk.low": "Low",
+      "result.tab.checklist": "Client checklist",
+      "checklist.lead": "Suggested items to prepare before the next meeting or filing.",
+      "checklist.category": "Category",
+      "checklist.item": "Item",
+      "checklist.why": "Why it matters",
+      "checklist.due": "When",
+      "checklist.export": "Export CSV",
+      "checklist.print": "Print",
+      "checklist.file": "client-checklist.csv"
     },
     "zh-TW": {
       "app.title": "\u6CD5\u5F8B\u95DC\u4FC2\u5716",
@@ -315,7 +344,36 @@
       "quota.reason": "\u672C\u7AD9\u514D\u8CBB\u958B\u653E\uFF0C\u70BA\u4E86\u8B93\u66F4\u591A\u4EBA\u90FD\u80FD\u4F7F\u7528\uFF0C\u6BCF\u4EBA\u6BCF\u5929\u6700\u591A\u5206\u6790 {limit} \u6B21\uFF08\u53F0\u5317\u6642\u9593\u5348\u591C\u91CD\u65B0\u8A08\u7B97\uFF09\u3002",
       "quota.exhausted.title": "\u4ECA\u65E5 {limit} \u6B21\u5206\u6790\u5DF2\u7528\u5B8C",
       "input.lawPowers": "\u672C\u7AD9\u6709\u6BCF\u65E5\u5171\u4EAB AI \u984D\u5EA6\u3002\u60F3\u4E0D\u53D7\u9650\u5236\uFF0C\u53EF\u5B89\u88DD\u958B\u6E90\u7684 Law Powers \u6280\u80FD\uFF0C\u7528\u81EA\u5DF1\u7684 AI Agent \u505A\u540C\u6A23\u7684\u5206\u6790\u3002",
-      "input.lawPowersAction": "Law Powers \u6280\u80FD"
+      "input.lawPowersAction": "Law Powers \u6280\u80FD",
+      "result.defenses": "\u5C0D\u65B9\u53EF\u80FD\u600E\u9EBC\u53CD\u99C1\u3001\u6211\u5011\u600E\u9EBC\u56DE\u61C9\uFF08\u6297\u8FAF\u8A55\u4F30\uFF09",
+      "result.evidencePlan": "\u8AB0\u8981\u8B49\u660E\u4EC0\u9EBC\u3001\u9084\u7F3A\u54EA\u4E9B\u8B49\u64DA\uFF08\u8209\u8B49\u8CAC\u4EFB\u8207\u8B49\u64DA\u8A08\u756B\uFF09",
+      "result.risk": "\u6574\u9AD4\u98A8\u96AA",
+      "result.claimSummary": "\u5404\u9805\u8ACB\u6C42\u80FD\u4E0D\u80FD\u6210\u7ACB\uFF08\u8ACB\u6C42\u6B0A\u57FA\u790E\u5C0F\u7D50\uFF09",
+      "result.none": "\u7121",
+      "claim.established": "\u8981\u4EF6\u9F4A\u5099",
+      "claim.failed": "\u6709\u8981\u4EF6\u4E0D\u8A72\u7576",
+      "claim.pending": "\u5F85\u88DC\u8B49\u64DA",
+      "defense.issue": "\u722D\u9EDE",
+      "defense.defense": "\u5C0D\u9020\u6297\u8FAF",
+      "defense.response": "\u6211\u65B9\u56DE\u61C9",
+      "defense.risk": "\u98A8\u96AA",
+      "evidence.fact": "\u5F85\u8B49\u4E8B\u5BE6",
+      "evidence.burden": "\u8209\u8B49\u8CAC\u4EFB",
+      "evidence.available": "\u73FE\u6709\u8B49\u64DA",
+      "evidence.missing": "\u7F3A\u53E3",
+      "evidence.howToObtain": "\u53D6\u5F97\u65B9\u5F0F",
+      "risk.high": "\u9AD8",
+      "risk.medium": "\u4E2D",
+      "risk.low": "\u4F4E",
+      "result.tab.checklist": "\u4F60\u9700\u8981\u6E96\u5099\u7684\u6771\u897F",
+      "checklist.lead": "\u4E0B\u9762\u662F\u9019\u500B\u6848\u5B50\u5EFA\u8B70\u4F60\u5148\u6E96\u5099\u597D\u7684\u6771\u897F\uFF0C\u6700\u597D\u5728\u4E0B\u6B21\u8DDF\u5F8B\u5E2B\u898B\u9762\u6216\u9001\u6587\u4EF6\u7D66\u6CD5\u9662\u4E4B\u524D\u5099\u59A5\u3002",
+      "checklist.category": "\u5206\u985E",
+      "checklist.item": "\u9805\u76EE",
+      "checklist.why": "\u70BA\u4F55\u9700\u8981",
+      "checklist.due": "\u6642\u9650",
+      "checklist.export": "\u532F\u51FA CSV",
+      "checklist.print": "\u5217\u5370",
+      "checklist.file": "\u7576\u4E8B\u4EBA\u6E96\u5099\u6E05\u55AE.csv"
     }
   };
   function t(key, locale2) {
@@ -637,10 +695,10 @@
 
   // src/main/resources/static/js/views/result.js
   var AUX_TABS = ["analysis", "research", "brainstorm"];
-  function tabsFor(outputs) {
+  function tabsFor(outputs, hasChecklist = false) {
     const selected = normalizeOutputs(outputs);
     const front = ["graph", ...DOC_TYPES].filter((o) => selected.includes(o)).map((o) => o === "graph" ? "graph" : "doc-" + o);
-    return [...front, ...AUX_TABS];
+    return [...front, ...hasChecklist ? ["checklist"] : [], ...AUX_TABS];
   }
   function tabLabel(tab, locale2) {
     return tab.startsWith("doc-") ? t("doc." + tab.slice(4), locale2) : t("result.tab." + tab, locale2);
@@ -655,6 +713,52 @@
       <div class="el-head">${esc(e.element)} <span class="el-law">\xB7 ${esc(e.law)}</span></div><div class="el-basis">${esc(e.basis)}</div></li>`;
     }).join("");
     return `<ul class="elements">${rows}</ul>`;
+  }
+  function claimStatus(elements) {
+    const byLaw = /* @__PURE__ */ new Map();
+    (elements || []).forEach((e) => {
+      if (!byLaw.has(e.law)) byLaw.set(e.law, []);
+      byLaw.get(e.law).push(e.met);
+    });
+    return [...byLaw.entries()].map(([law, mets]) => ({
+      law,
+      status: mets.some((m) => m === "no") ? "failed" : mets.every((m) => m === "yes") ? "established" : "pending"
+    }));
+  }
+  function claimSummaryList(elements, locale2) {
+    const rows = claimStatus(elements).map((r) => `<li class="claim claim-${r.status}">${esc(r.law)}<span class="claim-status">${esc(t("claim." + r.status, locale2))}</span></li>`).join("");
+    return rows ? `<ul class="claim-summary">${rows}</ul>` : "";
+  }
+  function defensesTable(defenses, locale2) {
+    if (!defenses?.length) return `<p class="empty">${esc(t("result.none", locale2))}</p>`;
+    const head = ["defense.issue", "defense.defense", "defense.response", "defense.risk"].map((k) => `<th>${esc(t(k, locale2))}</th>`).join("");
+    const rows = defenses.map((d) => `<tr><td>${esc(d.issue)}</td><td>${esc(d.defense)}</td><td>${esc(d.response)}</td><td><span class="risk risk-${esc(d.risk || "medium")}">${esc(t("risk." + (d.risk || "medium"), locale2))}</span></td></tr>`).join("");
+    return `<div class="table-wrap"><table class="assess-table"><thead><tr>${head}</tr></thead><tbody>${rows}</tbody></table></div>`;
+  }
+  function evidenceTable(items, locale2) {
+    if (!items?.length) return `<p class="empty">${esc(t("result.none", locale2))}</p>`;
+    const head = ["evidence.fact", "evidence.burden", "evidence.available", "evidence.missing", "evidence.howToObtain"].map((k) => `<th>${esc(t(k, locale2))}</th>`).join("");
+    const rows = items.map((e) => `<tr><td>${esc(e.fact)}</td><td>${esc(e.burden)}</td><td>${esc(e.available)}</td><td>${esc(e.missing)}</td><td>${esc(e.howToObtain)}</td></tr>`).join("");
+    return `<div class="table-wrap"><table class="assess-table"><thead><tr>${head}</tr></thead><tbody>${rows}</tbody></table></div>`;
+  }
+  var CHECKLIST_CATEGORIES = ["\u8B49\u64DA\u6587\u4EF6", "\u4EBA\u8B49", "\u7A0B\u5E8F\u4E8B\u9805", "\u8CBB\u7528\u8207\u671F\u9650", "\u5176\u4ED6"];
+  function checklistTable(items, locale2) {
+    const groups = new Map(CHECKLIST_CATEGORIES.map((c) => [c, []]));
+    (items || []).forEach((i) => groups.get(CHECKLIST_CATEGORIES.includes(i.category) ? i.category : "\u5176\u4ED6").push(i));
+    const sections = [...groups.entries()].filter(([, rows]) => rows.length).map(([cat, rows]) => `<h3>${esc(cat)}</h3>
+    <div class="table-wrap"><table class="assess-table checklist-table"><thead><tr><th>${esc(t("checklist.item", locale2))}</th><th>${esc(t("checklist.why", locale2))}</th><th>${esc(t("checklist.due", locale2))}</th></tr></thead>
+    <tbody>${rows.map((r) => `<tr><td>${esc(r.item)}</td><td>${esc(r.why)}</td><td>${esc(r.dueHint || "")}</td></tr>`).join("")}</tbody></table></div>`).join("");
+    return `<section class="checklist" id="checklist-sheet"><p class="lead">${esc(t("checklist.lead", locale2))}</p>${sections}
+    <div class="actions"><button type="button" id="checklist-export" class="secondary">${esc(t("checklist.export", locale2))}</button>
+    <button type="button" id="checklist-print" class="secondary">${esc(t("checklist.print", locale2))}</button></div></section>`;
+  }
+  function checklistCsv(items, locale2) {
+    const cell = (v) => {
+      const s = String(v ?? "");
+      return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const head = [t("checklist.category", locale2), t("checklist.item", locale2), t("checklist.why", locale2), t("checklist.due", locale2)].join(",");
+    return "\uFEFF" + [head, ...(items || []).map((i) => [i.category, i.item, i.why, i.dueHint].map(cell).join(","))].join("\n");
   }
   var SECTION_HTML = {
     brainstorm: (b, locale2) => {
@@ -674,10 +778,15 @@
       return `${coverageLine}${h3("result.statutes")}${list(r.laws, (l) => `${l.title}\uFF08${l.ref}\uFF09`)}${h3("result.judgments")}${list(r.judgments, judgmentText)}
       ${h3("result.notes")}${list(r.notes)}`;
     },
-    analysis: (a, locale2) => {
+    analysis: (a, locale2, assessment = null) => {
       const h3 = (key) => `<h3>${esc(t(key, locale2))}</h3>`;
       return `${h3("result.elements")}${elementsList(a.elements, locale2)}
-      ${h3("result.strategy")}<p>${esc(a.strategy)}</p>${h3("result.evidenceGaps")}${list(a.evidenceGaps)}
+      ${h3("result.claimSummary")}${claimSummaryList(a.elements, locale2)}
+      ${h3("result.defenses")}${defensesTable(assessment?.defenses, locale2)}
+      ${h3("result.evidencePlan")}${evidenceTable(assessment?.evidencePlan, locale2)}
+      ${h3("result.strategy")}<p>${esc(a.strategy || "")}</p>
+      ${assessment?.riskSummary ? `${h3("result.risk")}<p>${esc(assessment.riskSummary)}</p>` : ""}
+      ${h3("result.evidenceGaps")}${list(a.evidenceGaps)}
       <p class="disclaimer">${ICONS.info}<span>${esc(a.disclaimer)}</span></p>`;
     }
   };
@@ -724,12 +833,12 @@
     const present = ["brainstorm", "research", "analysis"].filter((k) => result[k]);
     if (!present.length) return "";
     const blocks = present.map((k) => `<details class="partial" data-section="${k}" open>
-      <summary>${esc(t("result.tab." + k, locale2))}</summary>${SECTION_HTML[k](result[k], locale2)}</details>`).join("");
+      <summary>${esc(t("result.tab." + k, locale2))}</summary>${SECTION_HTML[k](result[k], locale2, result.assessment)}</details>`).join("");
     return `<section class="partials"><h2>${esc(t("progress.partial", locale2))}</h2>${blocks}</section>`;
   }
   function renderResult({ status, activeTab = "graph", outputs }, locale2) {
     const r = status.result || {};
-    const TABS = tabsFor(outputs);
+    const TABS = tabsFor(outputs, !!r.assessment?.checklist?.length);
     if (!TABS.includes(activeTab)) activeTab = TABS[0];
     const tabs = TABS.map((k) => `<button type="button" role="tab" id="tab-${k}" aria-controls="panel-${k}" aria-selected="${k === activeTab}" class="tab ${k === activeTab ? "active" : ""}" data-tab="${k}">${esc(tabLabel(k, locale2))}</button>`).join("");
     const panels = {
@@ -744,9 +853,10 @@
         <aside class="detail-panel" id="detail-panel" aria-label="${esc(t("graph.detail.aria", locale2))}"><button class="close-btn" id="close-panel-btn" type="button" aria-label="${esc(t("graph.close", locale2))}">${ICONS.close}</button>
           <div class="detail-header"><span class="detail-tag" id="detail-tag"></span><h2 class="detail-title" id="detail-title"></h2></div>
           <div class="detail-body" id="detail-body"></div></aside></div>`,
-      analysis: SECTION_HTML.analysis(r.analysis || {}, locale2),
+      analysis: SECTION_HTML.analysis(r.analysis || {}, locale2, r.assessment),
       research: SECTION_HTML.research(r.research || {}, locale2),
-      brainstorm: SECTION_HTML.brainstorm(r.brainstorm || {}, locale2)
+      brainstorm: SECTION_HTML.brainstorm(r.brainstorm || {}, locale2),
+      checklist: checklistTable(r.assessment?.checklist, locale2)
     };
     for (const k of TABS) {
       if (!k.startsWith("doc-")) continue;
@@ -779,6 +889,14 @@
     if (new URLSearchParams(search).has("mcpAuth")) return null;
     const returnTo = `${locationLike?.pathname || "/"}${search}`;
     return `/api/auth/tw-legal-rag/start?returnTo=${encodeURIComponent(returnTo)}`;
+  }
+  function downloadText(text, filename, mime) {
+    if (typeof document === "undefined" || typeof URL?.createObjectURL !== "function") return;
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([text], { type: mime }));
+    a.download = filename;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 0);
   }
   function createApp({ root, client, storage, navigatorLanguage, partialCollapseMs = 5e3 }) {
     let state = { ...initialState };
@@ -871,6 +989,11 @@
             activeTab = k;
             render2();
           }, onNewCase: reset });
+          el.querySelector("#checklist-export")?.addEventListener("click", () => {
+            const items = state.last?.result?.assessment?.checklist || [];
+            downloadText(checklistCsv(items, locale2), t("checklist.file", locale2), "text/csv;charset=utf-8");
+          });
+          el.querySelector("#checklist-print")?.addEventListener("click", () => globalThis.print?.());
           listeners.forEach((l) => l(state, "RESULT_RENDERED"));
           break;
         case States.FAILED:
