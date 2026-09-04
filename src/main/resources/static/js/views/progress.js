@@ -1,8 +1,8 @@
 import { t } from '../i18n.js';
 import { esc } from './util.js';
 
-/** 六個流程步驟（與後端 CaseStatus.step 同名）；未勾書狀時 DOCUMENTS 幾乎瞬間通過。 */
-export const STEPS = ['BRAINSTORM', 'QUESTIONS', 'RESEARCH', 'ANALYSIS', 'DOCUMENTS', 'GRAPH'];
+/** 七個流程步驟（與後端 CaseStatus.step 同名）；未勾書狀時 DOCUMENTS 幾乎瞬間通過。 */
+export const STEPS = ['BRAINSTORM', 'QUESTIONS', 'RESEARCH', 'ANALYSIS', 'ASSESSMENT', 'DOCUMENTS', 'GRAPH'];
 
 /** 進行中／等待回答時的退路：放棄此案回到輸入頁（由 app.js 綁到 reset）。 */
 export function renderCancel(locale) {

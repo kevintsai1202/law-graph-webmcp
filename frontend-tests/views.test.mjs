@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { esc } from '../src/main/resources/static/js/views/util.js';
 import { bindInput, renderInput } from '../src/main/resources/static/js/views/input.js';
-import { renderProgress, renderCancel } from '../src/main/resources/static/js/views/progress.js';
+import { renderProgress, renderCancel, STEPS } from '../src/main/resources/static/js/views/progress.js';
 import { renderQuestions } from '../src/main/resources/static/js/views/questions.js';
 import { renderResult, renderSections } from '../src/main/resources/static/js/views/result.js';
 
@@ -187,7 +187,16 @@ test('progress 高亮當前步驤且之前步驤標 done', () => {
   const html = renderProgress({ step: 'RESEARCH' }, 'zh-TW');
   assert.match(html, /class="step done"[^>]*data-step="BRAINSTORM"/);
   assert.match(html, /class="step active"[^>]*data-step="RESEARCH"/);
-  assert.match(html, /檢索法條與判決/);
+  assert.match(html, /找法條與判決（請求權基礎與實務見解檢索）/);
+});
+test('進度條七步，第五步為抗辯評估與舉證責任，用語為訴訟實務用語', () => {
+  assert.deepEqual(STEPS, ['BRAINSTORM', 'QUESTIONS', 'RESEARCH', 'ANALYSIS', 'ASSESSMENT', 'DOCUMENTS', 'GRAPH']);
+  const html = renderProgress({ step: 'ASSESSMENT' }, 'zh-TW');
+  // 白話為主、括號附專業名詞
+  assert.match(html, /對方會怎麼反駁、誰要負責證明（抗辯評估與舉證責任）/);
+  assert.match(html, /逐條檢查是否符合法律要件（構成要件涵攝）/);
+  assert.match(html, /找法條與判決（請求權基礎與實務見解檢索）/);
+  assert.match(renderProgress({ step: 'ASSESSMENT' }, 'en'), /Defenses &amp; burden of proof/);
 });
 test('進行中／等待回答時提供取消按鈕，可退回輸入頁', () => {
   const html = renderCancel('zh-TW');
