@@ -1026,3 +1026,10 @@ Expected: PASS，且 `eval/` 產物含 assessment。
 - 規格覆蓋：G7（Task 3b 語氣分層、Task 6／7／7b 白話標籤）、G1（Task 1–4）、G2（Task 6）、G3（Task 7）、G4（Task 4 Step 5）、G5（Task 5 NON_NULL 加欄位）、G6（Task 1 ChecklistItem、Task 3 prompt checklist、Task 7b 分頁／CSV／列印）。
 - 型別一致：`CaseAssessment(defenses, evidencePlan, checklist, riskSummary)` 於 Task 1、2、4、5、7、7b 一致；`deriveStep` 回傳 `"ASSESSMENT"` 與前端 `STEPS[4]` 一致；`LegalPrompts.draftDocuments` 五參數版本在 Task 4 定義並被 Agent 使用。
 - 無佔位詞。
+
+## 執行紀錄（2026-09-05）
+
+- Task 9 本機實跑（Meta Muse low、legal-mcp 本機 Docker、語意關閉）：機上盒案 160 秒 COMPLETED；步驤時間線 BRAINSTORM 3s → WAITING 24s → RESEARCH 27s → ANALYSIS 58s → **ASSESSMENT 82s** → GRAPH 115s → 完成 160s。assessCase 單次 33.6 秒。
+- assessment 產出：defenses 6（每爭點一列，含 high/medium/low 風險與判決字號）、evidencePlan 7（舉證責任 原告／被告／不明 皆有）、checklist 10（五類齊備：證據文件 6、人證 1、程序事項 1、費用與期限 1、其他 1），riskSummary 三句。白話層／專業層語氣分層符合預期（見 eval/quality-assess-summary.md）。
+- Task 0 cache 量測：11 次呼叫、prompt 113,616 tokens、cached 43,445、cacheHitRatio **0.38**、reasoning 4,465。命中率高於 0.2 門檻，不需調整提示詞前綴。
+- 測試：Maven 172 綠、前端 87 綠。
