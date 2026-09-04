@@ -8,6 +8,7 @@ import com.embabel.agent.tools.mcp.ToolCallContextMcpMetaConverter;
 import io.modelcontextprotocol.client.McpSyncClient;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import tw.lawgraph.research.mcp.McpClientRegistry;
 
 import java.util.List;
 import java.util.Set;
@@ -30,13 +31,16 @@ public class ToolGroupsConfig {
     /** 建立法律資料庫 MCP ToolGroup，並在 callback 層套用白名單。 */
     @Bean
     public ToolGroup legalDbToolGroup(List<McpSyncClient> mcpSyncClients) {
+        List<McpSyncClient> legalClients = new McpClientRegistry(mcpSyncClients)
+                .find("legal-mcp", ALLOWED_TOOLS.toArray(String[]::new))
+                .map(List::of).orElse(List.of());
         return new McpToolGroup(
                 ToolGroupDescription.create(
                         "Taiwan statutes (law.moj.gov.tw) and court judgments (judicial.gov.tw) lookup", LEGAL_DB),
                 "mcp-taiwan-legal-db",
                 LEGAL_DB,
                 Set.of(ToolGroupPermission.INTERNET_ACCESS),
-                mcpSyncClients,
+                legalClients,
                 callback -> allowed(callback.getToolDefinition().name()),
                 ToolCallContextMcpMetaConverter.passThrough());
     }

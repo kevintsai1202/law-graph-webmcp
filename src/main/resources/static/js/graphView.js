@@ -173,6 +173,41 @@ const LABEL_SUB = '#475569';
 /** 連線目標距離：證據貼近判決、契約與涵攝叢集內縮，其餘拉長紓解擁擠。 */
 const LINK_DISTANCE = { '證據': 26, '當事人': 60, '包含': 45, '課予': 40, '負擔': 55, '得請求': 55, '要件': 40, '該當': 55 };
 
+/**
+ * 力導向版面參數。chargeStrength 越接近 0 節點越緊；chargeDistanceMax 讓排斥力只在近距離作用，
+ * 沒有邊相連的節點才不會被一路推到畫面邊緣；isolatedGravity 再把孤立節點拉回中心附近。
+ */
+export const LAYOUT = { chargeStrength: -55, chargeDistanceMax: 150, isolatedGravity: 0.06 };
+
+/**
+ * 自訂 d3 force：只對沒有任何邊的孤立節點施加向原點的拉力。
+ * 3d-force-graph 的 d3Force(name, force) 接受任何帶 initialize 的函式；連線資訊由 render 透過 links() 傳入。
+ */
+export function isolatedGravity(strength = LAYOUT.isolatedGravity) {
+  /** 目前參與模擬的節點。 */
+  let nodes = [];
+  /** 至少有一條邊的節點 id。 */
+  let linked = new Set();
+  const force = (alpha) => {
+    const k = strength * alpha;
+    nodes.forEach((n) => {
+      if (linked.has(n.id)) return;
+      n.vx -= (n.x || 0) * k;
+      n.vy -= (n.y || 0) * k;
+      n.vz -= (n.z || 0) * k;
+    });
+  };
+  // d3 simulation.force(name, force) 會以 (nodes, random) 呼叫 initialize，第二參數不是連線，連線另由 links() 設定。
+  force.initialize = (simNodes) => { nodes = simNodes; };
+  /** 設定連線資料以判定孤立節點（render 於 graphData 設定後呼叫）。 */
+  force.links = (links = []) => {
+    linked = new Set();
+    links.forEach((l) => { linked.add(endId(l.source)); linked.add(endId(l.target)); });
+    return force;
+  };
+  return force;
+}
+
 /* ────────────────────────────── 模組狀態 ────────────────────────────── */
 
 /** 3d-force-graph 實例；尚未 render 為 null。 */
@@ -397,8 +432,12 @@ export function render(data) {
     .linkOpacity(0.6)
     .onEngineStop(() => { if (!initialFitDone) { initialFitDone = true; Graph.zoomToFit(600, 60); } });
   // force 設定須在 graphData 之後、且不可同步 d3ReheatSimulation（layout 尚未建立會拋 'tick'）
-  Graph.d3Force('charge').strength(-90);
+  Graph.d3Force('charge').strength(LAYOUT.chargeStrength).distanceMax(LAYOUT.chargeDistanceMax);
   Graph.d3Force('link').distance((l) => LINK_DISTANCE[l.label] ?? 80);
+  // 孤立節點（例如尚無證據支撐的獨立事實）拉回中心，避免散落在畫面四角
+  const gathered = Graph.graphData();
+  Graph.d3Force('isolatedGravity', isolatedGravity());
+  Graph.d3Force('isolatedGravity').links(gathered.links);
   const syncSize = () => Graph.width(el.clientWidth).height(el.clientHeight);
   syncSize();
   resizeObserver = new ResizeObserver(syncSize); resizeObserver.observe(el);

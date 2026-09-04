@@ -3,6 +3,11 @@ spring:
     # 本機直接執行 Spring Boot 時，從專案根目錄載入 .env；容器內沒有檔案時則略過。
     import: optional:file:.env[.properties]
 
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 50MB
+
   ai:
     mcp:
       client:
@@ -21,3 +26,37 @@ embabel:
 lawgraph:
   skills-dir: ${LAWGRAPH_SKILLS_DIR:skills/law-powers/skills}
   rate-limit-per-hour: 10
+  uploads:
+    max-files: ${LAWGRAPH_UPLOAD_MAX_FILES:5}
+    max-file-bytes: ${LAWGRAPH_UPLOAD_MAX_FILE_BYTES:10485760}
+    max-extracted-chars: ${LAWGRAPH_UPLOAD_MAX_EXTRACTED_CHARS:60000}
+    # 只有沒有文字層的 PDF 頁面才送交視覺模型；限制頁數以控制成本與等待時間。
+    max-vision-pages: ${LAWGRAPH_UPLOAD_MAX_VISION_PAGES:20}
+    vision-render-dpi: ${LAWGRAPH_UPLOAD_VISION_RENDER_DPI:144}
+  research:
+    # 語意 MCP 預設關閉；須通過 OAuth／tools/list 閘門後才由部署環境開啟。
+    semantic-enabled: ${LAWGRAPH_SEMANTIC_ENABLED:false}
+    keyword-timeout: ${LAWGRAPH_KEYWORD_TIMEOUT:30s}
+    semantic-timeout: ${LAWGRAPH_SEMANTIC_TIMEOUT:20s}
+    overall-timeout: ${LAWGRAPH_RESEARCH_TIMEOUT:45s}
+    max-judgments: ${LAWGRAPH_MAX_JUDGMENTS:10}
+    keyword-client-name: ${LAWGRAPH_KEYWORD_CLIENT_NAME:legal-mcp}
+    semantic-url: ${TW_LEGAL_RAG_URL:https://tlr.dr-legal.com.tw}
+    semantic-endpoint: ${TW_LEGAL_RAG_ENDPOINT:/mcp}
+    semantic-tool: ${LAWGRAPH_SEMANTIC_TOOL:search_bundle}
+    semantic-query-field: ${LAWGRAPH_SEMANTIC_QUERY_FIELD:query}
+    oauth-public-base-url: ${LAWGRAPH_PUBLIC_BASE_URL:http://localhost:8080}
+    oauth-client-name: ${LAWGRAPH_OAUTH_CLIENT_NAME:law-graph-webmcp}
+    oauth-http-timeout: ${LAWGRAPH_OAUTH_HTTP_TIMEOUT:10s}
+    oauth-token-skew: ${LAWGRAPH_OAUTH_TOKEN_SKEW:30s}
+    oauth-session-path: ${LAWGRAPH_OAUTH_SESSION_PATH:.data/tw-legal-rag-session.json}
+
+---
+# 保留 semantic-mcp profile 作為部署開關；OAuth MCP 採 lazy client，session 只在應用啟動後背景恢復。
+spring:
+  config:
+    activate:
+      on-profile: semantic-mcp
+lawgraph:
+  research:
+    semantic-enabled: ${LAWGRAPH_SEMANTIC_ENABLED:true}

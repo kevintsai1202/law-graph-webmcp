@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { toGraphData, findNode, neighborsOf, summarize, groupName, setLocale } from '../src/main/resources/static/js/graphView.js';
+import { toGraphData, findNode, neighborsOf, summarize, groupName, setLocale, isolatedGravity, LAYOUT } from '../src/main/resources/static/js/graphView.js';
 
 test('groupName 依語系顯示群組名稱；setLocale 影響預設語系', () => {
   assert.equal(groupName('fact', 'en'), 'Facts');
@@ -16,6 +16,23 @@ const data = { nodes: [
   { id: 'i1', group: 'issue', label: 'Negligence' }, { id: 'e1', group: 'element', label: 'Causation', met: 'unknown' }],
   edges: [{ from: 'f1', to: 'l1', label: '適用' }, { from: 'ghost', to: 'l1', label: '引用' }, { from: 'l1', to: 'e1', label: '要件', title: 'decomposed' }] };
 
+test('isolatedGravity 只把沒有任何邊的孤立節點往原點拉，有連線的節點不受影響', () => {
+  const g = toGraphData(data);
+  const nodes = g.nodes.map((n) => ({ ...n, x: 100, y: -50, z: 20, vx: 0, vy: 0, vz: 0 }));
+  const force = isolatedGravity(0.1);
+  force.initialize(nodes, Math.random);
+  force.links(g.links);
+  force(1);
+  const isolated = nodes.find((n) => n.id === 'i1');
+  const linked = nodes.find((n) => n.id === 'l1');
+  assert.ok(isolated.vx < 0 && isolated.vy > 0 && isolated.vz < 0, '孤立節點速度應指向原點');
+  assert.deepEqual([linked.vx, linked.vy, linked.vz], [0, 0, 0]);
+});
+test('LAYOUT 參數：排斥力有限距、孤立節點有向心力', () => {
+  assert.ok(LAYOUT.chargeStrength < 0 && LAYOUT.chargeStrength > -90, '排斥力應比原本 -90 弱');
+  assert.ok(LAYOUT.chargeDistanceMax > 0 && LAYOUT.chargeDistanceMax <= 200, '排斥力需限距，避免無關節點被推到邊緣');
+  assert.ok(LAYOUT.isolatedGravity > 0);
+});
 test('toGraphData 轉 from/to 為 source/target 並丟掉無效邊', () => {
   const g = toGraphData(data);
   assert.equal(g.links.length, 2);

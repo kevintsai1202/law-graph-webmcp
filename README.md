@@ -1,21 +1,21 @@
 # Taiwan Legal Graph × WebMCP
 
-**One sentence:** paste a fictional Taiwan legal dispute, review a few answers proposed by your Agent, and get a verified, interactive 3D legal-relationship graph — every step of which your browser Agent can drive through eleven WebMCP tools, while the human still reviews and submits the answers.
+**One sentence:** paste a fictional Taiwan legal dispute, answer up to three rounds of outcome-changing clarification when needed, and get a verified, interactive 3D legal-relationship graph — while the human still reviews and submits every answer round.
 
 ![Completed graph for the car-accident sample (live configured-model run, 繁體中文 UI)](docs/images/completed-graph.png)
 
 ![Tool Inspector running focusNode on the rendered graph](docs/images/smoke-graph.png)
 
-> 中文摘要：把 law-powers 法律技能包做成網站。貼入案情 → 頭腦風暴 → Agent 可先讀取題目並填入建議答案 → 使用者檢查並送出 → 檢索法規判決 → 涵攝分析 → 3D 法律關係圖；頁面以 WebMCP 暴露十二個工具供 ChatGPT／Chrome Agent 操作，但送出答案仍由人確認。
+> 中文摘要：把 law-powers 法律技能包做成網站。貼入案情或上傳 PDF／Markdown／DOCX，並勾選要產出的項目（關聯圖，及起訴狀、理由狀、陳報狀、準備狀、答辯狀、爭點整理、上訴狀、聲請狀八種書狀）→ 頭腦風暴 → 僅在缺少會影響結論的關鍵事實時詢問使用者，最多追問三輪 → 檢索法規判決 → 涵攝分析 → 起草勾選書狀 → 3D 法律關係圖。附件只在記憶體處理、不保存原檔；掃描型 PDF 頁面會由視覺模型忠實轉錄並標示需人工核對。頁面以 WebMCP 暴露工具供 ChatGPT／Chrome Agent 操作（`startCase` 仍為純文字契約），若產生問題，送出答案仍由人確認。
 
 ## Why WebMCP
 
 The state that matters lives only in the browser tab: the running workflow, the questions waiting for a human, the rendered 3D graph and its camera. A REST API cannot hand an Agent the *page*. WebMCP lets the page itself publish a small, typed contract:
 
 - **Agent:** `listSampleCases` → `startCase` → poll `getCaseStatus` → read `getAnalysis` / `getGraphSummary` → `focusNode` / `filterGraph` / `explainEdge` → `verifyCitation` on anything it wants to quote.
-- **Human:** reviews the Agent's proposed answers and submits the clarification form. There is deliberately **no `submitQuestions` tool** — `getQuestions` explains the visible fields, while `fillQuestions` only writes into them and never sends the case onward without human confirmation.
+- **Human:** reviews the Agent's proposed answers and submits each clarification round. After every submission the service may ask a new, non-repeated set of outcome-changing questions, up to three rounds. There is deliberately **no `submitQuestions` tool** — `getQuestions` explains the visible fields, while `fillQuestions` only writes into them and never sends the case onward without human confirmation.
 
-Tools are registered imperatively with `document.modelContext.registerTool()` and synchronised to the current page state: `INPUT` exposes 3 tools, `RUNNING` exposes status/reset (2), `QUESTIONS` exposes status/questions/fill/reset (4), `RESULT` exposes analysis and graph tools (8), and `FAILED` exposes status/reset (2). The previous state is aborted when the page changes, so an Agent cannot keep using a stale tool list to submit another sample. Every result is capped at 1,500 characters. Browsers without WebMCP get the same state-specific operations through a built-in Tool Inspector.
+Tools are registered imperatively with `document.modelContext.registerTool()` and synchronised to the current page state: `INPUT` exposes 4 tools, `RUNNING` exposes status/reset (2), `QUESTIONS` exposes status/questions/fill/reset (4), `RESULT` exposes analysis and graph tools (8), and `FAILED` exposes status/reset (2). The previous state is aborted when the page changes, so an Agent cannot keep using a stale tool list to submit another sample. Every result is capped at 1,500 characters. Browsers without WebMCP get the same state-specific operations through a built-in Tool Inspector.
 
 ## What humans and agents accomplish together
 
@@ -24,7 +24,7 @@ Human pastes facts ──► Agent: startCase ──► BRAINSTORM ──► QUE
                                                    │          │
                               Agent: getQuestions / fillQuestions ──► Human reviews and submits
                                                    │
-                        Agent: getCaseStatus ◄─────┘──► RESEARCH (taiwan-legal-db) ──► ANALYSIS ──► GRAPH
+                        Agent: getCaseStatus ◄─────┘──► RESEARCH (taiwan-legal-db) ──► ANALYSIS ──► DOCUMENTS ──► GRAPH
                                                                                                 │
                         Agent: getGraphSummary / focusNode / explainEdge / verifyCitation ◄─────┘
 ```
@@ -37,17 +37,18 @@ Video script skeleton: (1) open the site in ChatGPT, list samples; (2) Agent sta
 Browser (HTML/JS, no framework)
   ├─ views/*.js        pure render(model, locale) → HTML string (node-tested, all model text escaped)
   ├─ graphView.js      law-powers 3D renderer (three.js + 3d-force-graph) as an ES module
-   ├─ webmcp.js         twelve tool definitions + execute, state-synchronised registration
-   └─ inspector.js      manual runner for the same twelve tools
+   ├─ webmcp.js         thirteen tool definitions + execute, state-synchronised registration
+   └─ inspector.js      read-only viewer for the same thirteen tools (state + tool list; no direct execution)
         │ 2 s polling  GET /api/cases/{id}
 Spring Boot 4.1 / Embabel 1.5.1 (Java 21)
-  ├─ LegalGraphAgent   five @Action steps + WaitFor.awaitable (human questions)
+  ├─ LegalGraphAgent   seven @Action steps: planResearch → dual-track research → analyze (incl. selected pleadings) + WaitFor.awaitable
   ├─ Skills            law-powers legal-brainstorming / legal-research / legal-element-analysis / legal-graph
   ├─ GraphRules        4 hard rules after model output: every node needs a whitelisted group (inferred from
   │                    ref/jid when the model omits it), law/judgment nodes must be anchored in research,
   │                    element findings only from analysis, edge labels from a fixed whitelist
-  └─ Spring AI MCP client ──► legal-mcp sidecar (Python, mcp-taiwan-legal-db, Streamable HTTP)
-                                 └─ law.moj.gov.tw statutes · judicial.gov.tw judgments
+  └─ Spring AI MCP clients ──► legal-mcp sidecar (Python, mcp-taiwan-legal-db, Streamable HTTP)
+             └─ optional tw-legal-rag (Streamable HTTP/OAuth, lazy runtime client)
+                └─ Java orchestration: parallel retrieval → JID dedupe → citation allowlist → merged evidence
 ```
 
 Only six sidecar tools are whitelisted for the Agent: `search_regulations`, `query_regulation`, `get_pcode`, `search_judgments`, `get_judgment`, `get_citations`. The LLM is selected by the `MODEL` value in `.env` (`embabel.models.default-llm`) and defaults to `gpt-5.4-nano`; Embabel 1.5.1 ships the model definitions in `models/openai-models.yml`.
@@ -67,19 +68,20 @@ await modelContext.registerTool({ name, description, inputSchema, annotations,
 | Tool | Available view | Read-only | Purpose |
 | --- | --- | --- | --- |
 | `listSampleCases` | `INPUT` | ✓ | Fictional sample disputes (en / zh-TW) |
-| `startCase` | `INPUT` | | Start from `caseText` or `sampleId`; refuses if a case is in progress |
+| `setOutputSelection` | `INPUT` | | Tick the outputs-to-generate checkboxes (graph + pleadings); never starts the case |
+| `startCase` | `INPUT` | | Start from `caseText` or `sampleId`; optional `documents` picks pleadings to draft; refuses if a case is in progress |
 | `getCaseStatus` | `RUNNING`, `QUESTIONS`, `RESULT`, `FAILED` | ✓ | Current view/status, questions and next action (never the full result) |
 | `getQuestions` | `QUESTIONS` | ✓ | List each visible question, its `questionId`, why it is asked and the `fillQuestions` JSON shape |
 | `fillQuestions` | `QUESTIONS` | | Fill proposed answers into visible fields by `questionId`; rejects unapplied answers, never submits, human review required |
 | `verifyCitation` | `INPUT`, `RESULT` | ✓ | Does 民法第184條 / 最高法院…字第…號 exist in the official databases? |
 | `resetCase` | `RUNNING`, `QUESTIONS`, `RESULT`, `FAILED` | | Back to the input screen after the human explicitly asks |
-| `getAnalysis` | `RESULT` | ✓ (untrusted content) | One section: `brainstorm`, `research`, `analysis` |
+| `getAnalysis` | `RESULT` | ✓ (untrusted content) | One section: `brainstorm`, `research`, `analysis`, `documents` |
 | `getGraphSummary` | `RESULT` | ✓ | Node counts by group, edges, issues, unmet elements |
 | `focusNode` | `RESULT` | | Fly the camera to a node by id or label text; returns neighbours |
 | `filterGraph` | `RESULT` | | Show only some groups / one family; `reset` |
 | `explainEdge` | `RESULT` | ✓ | Label, relation type and note of one edge |
 
-Environment notes: in **Chrome 149+** enable `chrome://flags/#enable-webmcp-testing`, then `await document.modelContext.getTools()` returns the tools for the current view (3 / 2 / 4 / 8 / 2 for `INPUT` / `RUNNING` / `QUESTIONS` / `RESULT` / `FAILED`). In the **ChatGPT desktop app**, the address-bar *Site tools* list is page-scoped and should be refreshed after a state transition. The declarative (`<form>`-based) WebMCP API is not used.
+Environment notes: in **Chrome 149+** enable `chrome://flags/#enable-webmcp-testing`, then `await document.modelContext.getTools()` returns the tools for the current view (6 / 2 / 4 / 9 / 2 for `INPUT` / `RUNNING` / `QUESTIONS` / `RESULT` / `FAILED`; the WebMCP layer ships as a separate `js/webmcp-bundle.js` loaded synchronously in `<head>` so tools are registered before the app bundle runs). In the **ChatGPT desktop app**, the address-bar *Site tools* list is page-scoped and should be refreshed after a state transition. The declarative (`<form>`-based) WebMCP API is not used.
 
 ## UI design system
 
@@ -103,12 +105,27 @@ $env:LEGAL_MCP_URL = 'http://localhost:8000'
 mvn spring-boot:run
 ```
 
+語意軌預設關閉，以避免尚未完成 OAuth 的 remote MCP 影響網站。完成互動式 OAuth、確認 `tools/list`（預期 `search_bundle`）與服務條款後，才在受控環境設定。OAuth 會由網站的 `/api/auth/tw-legal-rag/start` 導向 provider；callback 成功後，程式會以新 token 初始化 MCP client。access token 只留在 runtime memory；`client_id` 與 refresh token 會以原子替換寫入 `LAWGRAPH_OAUTH_SESSION_PATH`，並限制成檔案擁有者可存取。
+
+```powershell
+$env:SPRING_PROFILES_ACTIVE = 'semantic-mcp'
+$env:LAWGRAPH_SEMANTIC_ENABLED = 'true'
+$env:TW_LEGAL_RAG_URL = 'https://tlr.dr-legal.com.tw'
+$env:LAWGRAPH_PUBLIC_BASE_URL = 'https://law-graph-webmcp.zeabur.app'
+$env:LAWGRAPH_OAUTH_SESSION_PATH = 'D:\secure-data\tw-legal-rag-session.json'
+mvn spring-boot:run
+```
+
+session 恢復會在應用啟動完成後於背景執行，不會阻塞健康檢查或 keyword 軌道。refresh token 被 token endpoint 以 4xx 明確拒絕時才清除 session 檔；timeout、5xx 或暫時性 metadata 錯誤會保留檔案供下次重試。所有錯誤仍會保留 keyword 結果，並在 `research.coverage`／`notes` 標示降級。不會關閉 TLS 驗證，也不會把 token 放入環境輸出、REST 結果或 log。
+
+Zeabur 啟用語意軌時，必須把 `LAWGRAPH_OAUTH_SESSION_PATH` 指向僅此服務可存取的持久化 volume（例如 `/data/tw-legal-rag-session.json`）；若未掛載持久化 volume，容器重建後仍需重新授權。多副本正式環境應改用共享且具加密與輪替能力的 security component，不可共用一般檔案目錄。
+
 The sidecar binds `0.0.0.0:8000` explicitly (`mcp.settings.host`), because `mcp-taiwan-legal-db` 1.0.0 ignores `FASTMCP_HOST` and would otherwise listen on `127.0.0.1` inside the container.
 
 ## Tests
 
 ```powershell
-mvn test                                    # 36 unit tests (domain rules, prompts, agent, REST, rate limit)
+mvn test                                    # Maven unit tests (domain rules, dual MCP, prompts, agent, REST)
 mvn verify -Dtest=LegalMcpIT                # starts the real sidecar via Testcontainers, verifies 民法第184條
 npm test                                    # 34 node --test cases: i18n, state machine, client, views, graph, WebMCP contract
 npm run e2e                                 # Playwright: smoke (no LLM; fake modelContext) + journey (needs E2E_LIVE=1)
@@ -133,7 +150,8 @@ $env:E2E_LIVE='1'; npx playwright test -c e2e/playwright.config.mjs e2e/tutorial
 - The configured `MODEL` output quality varies; the hard rules remove unverifiable nodes rather than "fix" them, so graphs can be small. Choose a stronger model in `.env` when quality matters more than cost.
 - The judicial.gov.tw WAF can block judgment lookups; the sidecar falls back to Playwright but may still fail.
 - Case state is in memory only; a restart loses running cases. Rate limit is 10 cases / hour / IP.
-- No file upload; the semantic `dr-lawbot` search from law-powers is intentionally not connected.
+- Uploads accept at most 5 PDF, UTF-8 Markdown, or DOCX files, 10 MB each and 60,000 extracted characters in total. Files are processed in memory and not persisted. PDF pages without a text layer are sent to the configured vision-capable model (up to 20 pages), labeled with their page number and review requirement; encrypted PDFs are rejected.
+- Semantic `tw-legal-rag` uses a lazy runtime OAuth client and feature flag; production enablement remains gated on authenticated `tools/list` schema and service-term confirmation.
 - Live E2E / eval / tunnel steps require a real `OPENAI_API_KEY` and `CF_TUNNEL_TOKEN`; they are not run in CI.
 
 ## Legal notice

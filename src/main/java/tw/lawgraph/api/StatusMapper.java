@@ -1,5 +1,6 @@
 package tw.lawgraph.api;
 
+import tw.lawgraph.domain.DraftedDocument;
 import tw.lawgraph.domain.ResearchResult;
 
 import java.util.ArrayList;
@@ -17,10 +18,11 @@ public final class StatusMapper {
                 if (snapshot.outcome() != null) {
                     List<String> notes = new ArrayList<>(snapshot.research().notes());
                     notes.addAll(snapshot.outcome().notes());
-                    var research = new ResearchResult(snapshot.research().laws(), snapshot.research().judgments(), notes);
+                    var research = new ResearchResult(snapshot.research().laws(), snapshot.research().judgments(), notes,
+                            snapshot.research().coverage(), snapshot.research().evidence());
                     return new CaseStatus(snapshot.caseId(), "COMPLETED", "GRAPH", snapshot.locale().code(), null,
                             new CaseStatus.Result(snapshot.brainstorm(), research, snapshot.analysis(),
-                                    snapshot.outcome().graph()), null);
+                                    documents(snapshot), snapshot.outcome().graph()), null);
                 }
                 return failed(snapshot, "COMPLETED_WITHOUT_GRAPH", "process completed without a graph", step);
             }
@@ -44,12 +46,19 @@ public final class StatusMapper {
     /** 進行中／等待時的中間成果：已完成步驟的產物逐段公開，圖一律為 null；尚無任何產物則回 null。 */
     static CaseStatus.Result partial(StatusSnapshot snapshot) {
         if (snapshot.brainstorm() == null && snapshot.research() == null && snapshot.analysis() == null) return null;
-        return new CaseStatus.Result(snapshot.brainstorm(), snapshot.research(), snapshot.analysis(), null);
+        return new CaseStatus.Result(snapshot.brainstorm(), snapshot.research(), snapshot.analysis(),
+                documents(snapshot), null);
+    }
+
+    /** 已起草的書狀清單；draftDocuments 尚未執行時為 null。 */
+    private static List<DraftedDocument> documents(StatusSnapshot snapshot) {
+        return snapshot.documents() == null ? null : snapshot.documents().documents();
     }
 
     /** 依 blackboard 已產生的最後成果推導目前步驟。 */
     static String deriveStep(StatusSnapshot snapshot) {
-        if (snapshot.analysis() != null) return "GRAPH";
+        if (snapshot.documents() != null) return "GRAPH";
+        if (snapshot.analysis() != null) return "DOCUMENTS";
         if (snapshot.research() != null) return "ANALYSIS";
         if (snapshot.answers() != null) return "RESEARCH";
         if (snapshot.brainstorm() != null) return "QUESTIONS";

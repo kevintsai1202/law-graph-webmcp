@@ -15,6 +15,8 @@ export const ICONS = {
   chevronDown: wrap('<path d="m6 9 6 6 6-6"/>'),
   /** 加號：新案件。 */
   plus: wrap('<path d="M12 5v14M5 12h14"/>'),
+  /** 上傳：檔案拖放區的主要視覺提示。 */
+  upload: wrap('<path d="M12 16V4M7 9l5-5 5 5"/><path d="M5 15v4h14v-4"/>'),
   /** 送出（紙飛機）：開始分析／繼續。 */
   send: wrap('<path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z"/>'),
   /** 重試（循環箭頭）。 */

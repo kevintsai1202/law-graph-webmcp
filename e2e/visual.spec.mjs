@@ -36,6 +36,22 @@ const waiting = { caseId: 'vis-3', status: 'WAITING', step: 'QUESTIONS', locale:
   result: { brainstorm: completed.result.brainstorm } };
 /** 假的失敗狀態。 */
 const failed = { caseId: 'vis-4', status: 'FAILED', step: 'RESEARCH', locale: 'zh-TW', error: { code: 'MCP_TIMEOUT', step: 'RESEARCH', message: 'legal-mcp did not respond within 60s' } };
+/** 假的完成狀態（含起訴狀與爭點整理兩份書狀，驗證公文書狀版面）。 */
+const completedDocs = {
+  ...completed, caseId: 'vis-5',
+  result: {
+    ...completed.result,
+    documents: [
+      { type: 'complaint', title: '民事起訴狀', court: '臺灣臺北地方法院',
+        parties: [{ role: '原告', name: '乙' }, { role: '被告', name: '甲' }],
+        paragraphs: ['一、緣被告甲於民國○年○月○日駕車行經市區十字路口，未依號誌指示貿然前行，致與原告所駕車輛發生碰撞，原告因此受有右腕骨折之傷害。', '二、按民法第184條第1項前段規定，因故意或過失不法侵害他人之權利者，負損害賠償責任。爰依上開規定請求被告賠償醫療費用及不能工作之損失。'],
+        attachments: ['證一：診斷證明書一件', '證二：行車紀錄器影像光碟一件'], date: '中華民國115年9月1日' },
+      { type: 'issues', title: '爭點整理狀', court: '臺灣臺北地方法院', parties: [],
+        paragraphs: ['一、兩造不爭執事項：兩車於系爭路口發生碰撞、原告受有右腕骨折傷害。', '二、本件爭點：被告有無違反號誌之過失？原告得請求之損害範圍為何？'],
+        attachments: [], date: '' }
+    ]
+  }
+};
 
 const WIDTHS = [375, 768, 1440];
 
@@ -113,6 +129,33 @@ for (const w of WIDTHS) {
       await shot(page, '06-result-research');
     });
 
+    test('outputs：全不勾停用送出；勾選書狀後結果頁出現公文書狀分頁', async ({ page }) => {
+      await page.fill('#case-text', '甲駕車進入市區十字路口後，與乙車發生碰撞，乙主張甲闖紅燈並請求醫療費與薪資損失。');
+      await expect(page.locator('#case-submit')).toBeEnabled();
+      // 取消唯一勾選的關聯圖後不得送出
+      await page.uncheck('input[name="outputs"][value="graph"]');
+      await expect(page.locator('#case-submit')).toBeDisabled();
+      await page.check('input[name="outputs"][value="graph"]');
+      await page.check('input[name="outputs"][value="complaint"]');
+      await page.check('input[name="outputs"][value="issues"]');
+      // 以 route mock 走真實送出流程，讓勾選輸出實際帶入結果頁分頁
+      await page.route('**/api/cases', (route) => route.request().method() === 'POST'
+        ? route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify({ caseId: 'vis-5', status: 'RUNNING', step: 'BRAINSTORM' }) })
+        : route.continue());
+      await page.route('**/api/cases/vis-5', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(completedDocs) }));
+      await page.click('#case-submit');
+      // graph＋起訴狀＋爭點整理＋三個輔助分頁
+      await expect(page.locator('[role="tablist"] [role="tab"]')).toHaveCount(6);
+      await page.click('[data-tab="doc-complaint"]');
+      await expect(page.locator('[data-panel="doc-complaint"] .doc-title')).toHaveText('民事起訴狀');
+      await expect(page.locator('[data-panel="doc-complaint"] .doc-attachments li')).toHaveCount(2);
+      await noHScroll(page);
+      await shot(page, '09-result-document');
+      await page.click('[data-tab="doc-issues"]');
+      await expect(page.locator('[data-panel="doc-issues"]')).toBeVisible();
+      await expect(page.locator('[data-panel="doc-issues"] .doc-title')).toHaveText('爭點整理狀');
+    });
+
     test('failed：alert 語意與重試', async ({ page }) => {
       await dispatch(page, failed);
       await expect(page.locator('.failed[role="alert"]')).toBeVisible();
@@ -120,6 +163,21 @@ for (const w of WIDTHS) {
       await shot(page, '07-failed');
       await page.click('#retry');
       await expect(page.locator('#case-submit')).toBeVisible();
+    });
+
+    test('WebMCP host 晚注入時仍會接上：徽章轉可用並補註冊 INPUT 工具', async ({ page }) => {
+      await expect(page.locator('#agent-badge')).toContainText('不可用');
+      // 模擬 Agent host（如 ChatGPT Site tools）在頁面腳本執行後才注入 modelContext
+      await page.evaluate(() => {
+        const tools = new Map();
+        document.modelContext = {
+          registerTool: async (tool, opts) => { tools.set(tool.name, tool); opts?.signal?.addEventListener('abort', () => tools.delete(tool.name)); },
+          getTools: async () => [...tools.values()]
+        };
+      });
+      await expect(page.locator('#agent-badge')).toContainText('可用');
+      await expect.poll(() => page.evaluate(() => document.modelContext.getTools().then((tools) => tools.map((tool) => tool.name).sort())))
+        .toEqual(['getInputForm', 'getOutputOptions', 'listSampleCases', 'setOutputSelection', 'startCase', 'verifyCitation']);
     });
 
     test('inspector：aria-expanded 同步折疊狀態', async ({ page }) => {

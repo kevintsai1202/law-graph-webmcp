@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { esc } from '../src/main/resources/static/js/views/util.js';
-import { renderInput } from '../src/main/resources/static/js/views/input.js';
+import { bindInput, renderInput } from '../src/main/resources/static/js/views/input.js';
 import { renderProgress, renderCancel } from '../src/main/resources/static/js/views/progress.js';
 import { renderQuestions } from '../src/main/resources/static/js/views/questions.js';
 import { renderResult, renderSections } from '../src/main/resources/static/js/views/result.js';
@@ -24,6 +24,120 @@ test('input 列出示範案例卡片並含 data-sample-id', () => {
   const html = renderInput({ samples: [{ id: 'car-accident', title: 'Car', summary: 's' }] }, 'en');
   assert.match(html, /data-sample-id="car-accident"/);
   assert.match(html, /Analyse/);
+});
+test('input 提供 PDF、Markdown、DOCX 多檔上傳與限制說明', () => {
+  const html = renderInput({ samples: [] }, 'zh-TW');
+  assert.match(html, /id="case-files"[^>]*accept="\.pdf,\.md,\.markdown,\.docx"[^>]*multiple/);
+  assert.match(html, /id="file-dropzone"/);
+  assert.match(html, /將參考文件拖曳到這裡/);
+  assert.match(html, /id="file-list"[^>]*role="list"/);
+  assert.match(html, /最多 5 份/);
+  assert.match(html, /掃描型 PDF 會由視覺模型轉錄，結果需人工核對/);
+});
+
+test('input 在語意檢索未授權時顯示提示與授權入口', () => {
+  const html = renderInput({
+    samples: [],
+    semanticAuth: { enabled: true, authorized: false, startPath: '/api/auth/tw-legal-rag/start?returnTo=%2F' }
+  }, 'zh-TW');
+  assert.match(html, /語意檢索：未授權/);
+  assert.match(html, /完成授權後，本次分析才會納入判決語意檢索/);
+  assert.match(html, /href="\/api\/auth\/tw-legal-rag\/start\?returnTo=%2F"/);
+});
+
+test('input 綁定時使用目前語系，初始化完成後分析按鈕可送出', () => {
+  /** 建立最小 DOM 節點替身，驗證初始化不會在 click 綁定前中斷。 */
+  const node = (extra = {}) => ({
+    listeners: new Map(),
+    classList: { toggle() {}, add() {}, remove() {} },
+    addEventListener(type, listener) { this.listeners.set(type, listener); },
+    ...extra
+  });
+  const textarea = node({ value: '' });
+  const files = node({ files: [], value: '', click() {} });
+  const submit = node({ disabled: true });
+  const count = node({ textContent: '' });
+  const fileStatus = node({ textContent: '' });
+  const dropzone = node();
+  const fileList = node({ replaceChildren() {} });
+  const output = node({ checked: true, value: 'graph' });
+  const bySelector = {
+    '#case-text': textarea,
+    '#case-files': files,
+    '#case-submit': submit,
+    '#case-count': count,
+    '#file-status': fileStatus,
+    '#file-dropzone': dropzone,
+    '#file-list': fileList
+  };
+  const root = {
+    querySelector: (selector) => bySelector[selector],
+    querySelectorAll: (selector) => selector.includes('outputs') ? [output] : []
+  };
+  let submittedText = null;
+
+  bindInput(root, { onSubmit: (text) => { submittedText = text; }, onSample() {} }, 'zh-TW');
+  assert.equal(fileStatus.textContent, '尚未選擇檔案。');
+  assert.ok(submit.listeners.has('click'), '初始化後必須完成 click 事件綁定');
+
+  textarea.value = '這是一段已達最低字數且可以送出的案件內容。';
+  textarea.listeners.get('input')();
+  assert.equal(submit.disabled, false);
+  submit.listeners.get('click')();
+  assert.equal(submittedText, textarea.value);
+});
+test('input 已附參考文件時不強制 20 字：短描述可送出，提示改為附檔說明，計數不再顯示 / 20', () => {
+  const node = (extra = {}) => ({
+    listeners: new Map(),
+    classes: new Set(),
+    classList: {
+      toggle(name, force) { if (force) this.owner.classes.add(name); else this.owner.classes.delete(name); },
+      add() {}, remove() {}
+    },
+    addEventListener(type, listener) { this.listeners.set(type, listener); },
+    ...extra
+  });
+  const own = (n) => { n.classList.owner = n; return n; };
+  const textarea = own(node({ value: 'e' }));
+  const files = own(node({ files: [], value: '', click() {} }));
+  const submit = own(node({ disabled: true }));
+  const count = own(node({ textContent: '' }));
+  const hintText = own(node({ textContent: '' }));
+  const fileStatus = own(node({ textContent: '' }));
+  const dropzone = own(node());
+  /** 最小 document 替身：renderFileList 以 createElement 建立檔案卡片，這裡只需可鏈式操作的空物件。 */
+  const fakeDoc = { createElement: () => ({ dataset: {}, classList: { add() {} }, setAttribute() {}, append() {}, set innerHTML(v) {} }) };
+  const fileList = own(node({ replaceChildren() {}, append() {}, ownerDocument: fakeDoc }));
+  const output = own(node({ checked: true, value: 'graph' }));
+  const bySelector = {
+    '#case-text': textarea, '#case-files': files, '#case-submit': submit, '#case-count': count,
+    '#case-hint-text': hintText, '#file-status': fileStatus, '#file-dropzone': dropzone, '#file-list': fileList
+  };
+  const root = {
+    querySelector: (selector) => bySelector[selector],
+    querySelectorAll: (selector) => selector.includes('outputs') ? [output] : []
+  };
+  bindInput(root, { onSubmit() {}, onSample() {} }, 'zh-TW');
+
+  // 未附檔：1 字不足 20，送出停用，提示為原本的最低字數說明
+  assert.equal(submit.disabled, true);
+  assert.equal(count.textContent, '1 / 20');
+  assert.equal(hintText.textContent, '至少 20 字。事實越具體，分析越精準。');
+
+  // 附上一份檔案後：送出啟用、提示改為附檔說明、計數不再帶 / 20 且標記 ok
+  files.files = [{ name: 'contract.pdf', size: 1024 }];
+  files.listeners.get('change')();
+  assert.equal(submit.disabled, false);
+  assert.equal(hintText.textContent, '已附參考文件，描述可留空或簡述即可。');
+  assert.equal(count.textContent, '1');
+  assert.ok(count.classes.has('ok'));
+
+  // 移除檔案後回到原本規則
+  files.files = [];
+  files.listeners.get('change')();
+  assert.equal(submit.disabled, true);
+  assert.equal(count.textContent, '1 / 20');
+  assert.equal(hintText.textContent, '至少 20 字。事實越具體，分析越精準。');
 });
 test('progress 高亮當前步驤且之前步驤標 done', () => {
   const html = renderProgress({ step: 'RESEARCH' }, 'zh-TW');
@@ -61,6 +175,53 @@ test('result 缺少任一段落時不會拋錯', () => {
   assert.match(html, /關係圖/);
 });
 
+// ── 輸出項目勾選與書狀分頁 ──
+test('input 有輸出項目勾選區：關聯圖預設勾選、八種書狀未勾選', () => {
+  const html = renderInput({ samples: [] }, 'zh-TW');
+  assert.match(html, /name="outputs" value="graph"[^>]*checked/);
+  assert.match(html, /name="outputs" value="complaint"(?![^>]*checked)/);
+  assert.match(html, /name="outputs" value="motion"/);
+  assert.match(html, /關聯圖/);
+  assert.match(html, /起訴狀/);
+  assert.match(html, /爭點整理/);
+});
+test('progress 在 ANALYSIS 與 GRAPH 之間有 DOCUMENTS 步驟', () => {
+  const html = renderProgress({ step: 'DOCUMENTS' }, 'zh-TW');
+  assert.match(html, /class="step done"[^>]*data-step="ANALYSIS"/);
+  assert.match(html, /class="step active"[^>]*data-step="DOCUMENTS"/);
+  assert.match(html, /class="step"[^>]*data-step="GRAPH"/);
+});
+test('result 依 outputs 產生書狀分頁並以公文書狀版面呈現，未勾關聯圖則無圖分頁', () => {
+  const status = { locale: 'zh-TW', result: {
+    documents: [{ type: 'complaint', title: '民事起訴狀', court: '臺灣臺北地方法院',
+      parties: [{ role: '原告', name: '<甲>' }], paragraphs: ['一、緣被告駕車…'],
+      attachments: ['證一：行車紀錄器'], date: '中華民國115年9月1日' }],
+    graph: { nodes: [], edges: [] } } };
+  const html = renderResult({ status, outputs: ['complaint'] }, 'zh-TW');
+  assert.match(html, /data-tab="doc-complaint"/);
+  assert.doesNotMatch(html, /data-tab="graph"/);
+  assert.doesNotMatch(html, /id="network-canvas"/);
+  assert.match(html, /class="legal-doc"/);
+  assert.match(html, /民事起訴狀/);
+  assert.match(html, /&lt;甲&gt;/);
+  assert.match(html, /此致/);
+  assert.match(html, /證一：行車紀錄器/);
+  assert.match(html, /中華民國115年9月1日/);
+});
+test('result 勾選書狀但後端沒回該書狀時顯示未產生提示，不拋錯', () => {
+  const status = { locale: 'zh-TW', result: { graph: { nodes: [], edges: [] } } };
+  const html = renderResult({ status, outputs: ['graph', 'defense'] }, 'zh-TW');
+  assert.match(html, /data-tab="graph"/);
+  assert.match(html, /data-tab="doc-defense"/);
+  assert.match(html, /doc-missing/);
+});
+test('result 未給 outputs 時維持既有預設（關聯圖＋三個輔助分頁）', () => {
+  const status = { locale: 'en', result: { graph: { nodes: [], edges: [] } } };
+  const html = renderResult({ status }, 'en');
+  assert.match(html, /data-tab="graph"/);
+  assert.match(html, /data-tab="analysis"/);
+});
+
 // ── ui-ux-pro-max 強化後的語意與可及性標記 ──
 test('input 有可見 label、字數提示，送出鈕初始停用', () => {
   const html = renderInput({ samples: [] }, 'zh-TW');
@@ -95,4 +256,18 @@ test('analysis 要件列依 met 產生三色類別，符號＋文字雙重編碼
   assert.match(html, /class="el el-no"><span class="el-badge">✗ 不該當<\/span>/);
   assert.match(html, /class="el el-unknown"><span class="el-badge">△ 事實不明/);
   assert.match(html, /&lt;過失&gt;/);
+});
+
+test('research 顯示雙軌 coverage 與來源，且仍相容只有舊 judgments 欄位的結果', () => {
+  const status = { locale: 'zh-TW', result: { research: {
+    laws: [],
+    judgments: [{ jid: 'J1', citation: '最高法院判決' }],
+    notes: [],
+    coverage: { keywordStatus: 'SUCCESS', semanticStatus: 'UNAVAILABLE', mergedCount: 1 },
+    evidence: [{ judgment: { jid: 'J1' }, sources: ['KEYWORD'], fullTextVerified: false }]
+  } } };
+  const html = renderResult({ status, activeTab: 'research' }, 'zh-TW');
+  assert.match(html, /檢索涵蓋狀態/);
+  assert.match(html, /semantic=UNAVAILABLE/);
+  assert.match(html, /最高法院判決 \[KEYWORD\]/);
 });

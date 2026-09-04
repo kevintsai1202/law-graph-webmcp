@@ -2,7 +2,7 @@ import { createApp } from './app.js';
 import { createCaseClient } from './caseClient.js';
 import { t } from './i18n.js';
 import * as graphView from './graphView.js';
-import { createWebMcp, resolveModelContext } from './webmcp.js';
+import { createWebMcpBoot } from './webmcpBoot.js';
 import { mountInspector } from './inspector.js';
 
 /** 瀏覽器入口：注入真實依賴並掛載；暴露到 window 供 E2E 與 console 除錯使用。 */
@@ -14,15 +14,51 @@ const app = createApp({
 });
 window.__lawGraphApp = app;
 window.__graphView = graphView;
+// Inspector 已改唯讀；E2E 與 console 除錯改由此入口直接呼叫 WebMCP 工具
+
 graphView.setLocale(app.getLocale());
 
-/** WebMCP 控制器：兼容 Chrome 149 的 navigator.modelContext 與新版 document.modelContext。 */
-const modelContext = resolveModelContext();
-const webmcp = createWebMcp({ app, graphView, modelContext });
+/**
+ * WebMCP 控制器：優先沿用 webmcp-bundle.js 在 <head> 早期建立的啟動器（工具已先註冊給 host），
+ * 這裡只把真正的 app／graphView 綁上；若該 bundle 未載入（例如只載 app-bundle.js 的舊頁面）則就地建立。
+ */
+const boot = window.__webmcpBoot || createWebMcpBoot({ runtime: globalThis });
+window.__webmcpBoot = boot;
+const webmcp = boot.bind(app, graphView);
+window.__webmcp = webmcp;
 const badge = document.getElementById('agent-badge');
-const hasWebMcp = !!modelContext?.registerTool;
-badge.dataset.i18n = hasWebMcp ? 'agent.available' : 'agent.unavailable';
-badge.classList.toggle('on', hasWebMcp);
+const semanticBadge = document.getElementById('semantic-badge');
+
+/** 更新右上角語意檢索 MCP 授權徽章。 */
+const updateSemanticBadge = () => {
+  if (!semanticBadge) return;
+  const auth = app.getAuthStatus();
+  if (!auth || !auth.enabled) {
+    semanticBadge.style.display = 'none';
+    return;
+  }
+  semanticBadge.style.display = '';
+  semanticBadge.classList.toggle('on', auth.authorized);
+  semanticBadge.classList.toggle('warn', !auth.authorized);
+  if (auth.authorized) {
+    semanticBadge.textContent = t('auth.semantic.ready', app.getLocale());
+  } else {
+    const link = document.createElement('a');
+    link.href = auth.startPath || '/api/auth/tw-legal-rag/start';
+    link.textContent = `${t('auth.semantic.required', app.getLocale())} (${t('auth.semantic.action', app.getLocale())})`;
+    semanticBadge.replaceChildren(link);
+  }
+};
+
+/** 更新右上角 Agent 工具徽章（含即時換字，不等下一次 render）。 */
+const setBadge = (available) => {
+  badge.dataset.i18n = available ? 'agent.available' : 'agent.unavailable';
+  badge.classList.toggle('on', available);
+  badge.textContent = t(badge.dataset.i18n, app.getLocale());
+};
+setBadge(webmcp.hasHost());
+// Agent host（如 ChatGPT／Codex Site tools）可能晚於腳本才注入 modelContext；啟動器持續偵測並補註冊，這裡同步徽章
+boot.onHost((available) => { setBadge(available); inspector?.refresh(); });
 
 /** 將連續狀態變化排隊，避免舊狀態的工具註冊覆蓋新狀態。 */
 let toolSync = Promise.resolve();
@@ -39,9 +75,13 @@ const syncTools = (view) => {
 app.onChange(async (state, kind) => {
   if (kind === 'LOCALE') {
     graphView.setLocale(app.getLocale());
+    updateSemanticBadge();
     inspector?.refresh();
   }
-  if (kind === 'STATE') syncTools(state.view);
+  if (kind === 'STATE') {
+    updateSemanticBadge();
+    syncTools(state.view);
+  }
   if (kind === 'RESULT_RENDERED') {
     if (state.last?.result?.graph && document.getElementById('network-canvas')) graphView.render(state.last.result.graph);
     syncTools('RESULT');
@@ -49,8 +89,14 @@ app.onChange(async (state, kind) => {
 });
 
 // 先完成示範案例與既有案件的初始化，再讓 Agent 看見與當前狀態一致的工具。
-await app.mount();
-await syncTools(app.getState().view);
-inspector = mountInspector(document, webmcp, t, () => app.getLocale());
-inspector.refresh();
-window.addEventListener('pagehide', () => webmcp.unregisterAll(), { once: true });
+// 以 async IIFE 包裝而非 top-level await：打包成 classic script（app-bundle.js）時 IIFE 格式不支援 TLA。
+(async () => {
+  await app.mount();
+  updateSemanticBadge();
+  await syncTools(app.getState().view);
+  // 示範案例與既有案件都就緒後才放行早期註冊的工具，避免 Agent 讀到尚未渲染的頁面
+  boot.markReady();
+  inspector = mountInspector(document, webmcp, t, () => app.getLocale());
+  inspector.refresh();
+})();
+window.addEventListener('pagehide', () => boot.stop(), { once: true });

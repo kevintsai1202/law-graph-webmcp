@@ -1,4 +1,5 @@
 /** WebMCP 工具層：依頁面狀態註冊可用工具；沒有代答工具。 */
+import { DOC_TYPES } from './documents.js';
 
 /** 產生 object 型 inputSchema（一律 additionalProperties:false）。 */
 const S = (props, required = []) => ({ type: 'object', properties: props, required, additionalProperties: false });
@@ -12,7 +13,20 @@ export const TOOL_DEFS = [
     inputSchema: S({ locale: LOCALE }) },
   { name: 'startCase', phase: 'base', annotations: {},
     description: 'Start one Taiwan legal dispute from caseText or a sampleId. Only use when the page is in INPUT; never replace an active case.',
-    inputSchema: S({ caseText: { type: 'string', minLength: 20 }, sampleId: { type: 'string', description: 'Exact id or title returned by listSampleCases, e.g. car-accident.' }, locale: LOCALE }) },
+    inputSchema: S({ caseText: { type: 'string', minLength: 20 }, sampleId: { type: 'string', description: 'Exact id or title returned by listSampleCases, e.g. car-accident.' }, locale: LOCALE,
+      documents: { type: 'array', description: 'Litigation documents to draft besides the graph, e.g. complaint (起訴狀), defense (答辯狀).', items: { type: 'string', enum: [...DOC_TYPES] } } }) },
+  { name: 'setOutputSelection', phase: 'base', annotations: {},
+    description: 'Tick the "outputs to generate" checkboxes on the input form (graph and Taiwan pleading types). Does not start the case.',
+    inputSchema: S({ outputs: { type: 'array', minItems: 1, description: 'Outputs to tick; unlisted ones are unticked.', items: { type: 'string', enum: ['graph', ...DOC_TYPES] } } }, ['outputs']) },
+  { name: 'getOutputOptions', phase: 'base', annotations: { readOnlyHint: true },
+    description: 'List the "outputs to generate" checkboxes shown on the input form: count, code, label, and which are ticked.',
+    inputSchema: S({}) },
+  { name: 'getInputForm', phase: 'base', annotations: { readOnlyHint: true },
+    description: 'Read everything shown on the input page: typed case text, character count, minimum, submit state, output checkboxes and sample count.',
+    inputSchema: S({}) },
+  { name: 'getResultTabs', phase: 'completed', annotations: { readOnlyHint: true },
+    description: 'List the tabs shown on the result page (graph, drafted documents, analysis, research, brainstorm), which is active and which have content.',
+    inputSchema: S({}) },
   { name: 'getCaseStatus', phase: 'base', annotations: { readOnlyHint: true },
     description: 'Read the current page case state. WAITING means the human must answer visible questions; call getQuestions before filling.',
     inputSchema: S({}) },
@@ -30,7 +44,7 @@ export const TOOL_DEFS = [
     inputSchema: S({}) },
   { name: 'getAnalysis', phase: 'completed', annotations: { readOnlyHint: true, untrustedContentHint: true },
     description: 'Return one section of the completed analysis: brainstorm, research or analysis. Long output is summarised.',
-    inputSchema: S({ section: { type: 'string', enum: ['brainstorm', 'research', 'analysis'] } }, ['section']) },
+    inputSchema: S({ section: { type: 'string', enum: ['brainstorm', 'research', 'analysis', 'documents'] } }, ['section']) },
   { name: 'getGraphSummary', phase: 'completed', annotations: { readOnlyHint: true },
     description: 'Counts by node group, edge count, main issues and elements not yet satisfied.',
     inputSchema: S({}) },
@@ -47,10 +61,10 @@ export const TOOL_DEFS = [
 
 /** 各頁面狀態允許 Agent 看到與呼叫的工具；QUESTIONS 只允許填入答案，不允許自動送出或換案。 */
 export const TOOL_NAMES_BY_VIEW = Object.freeze({
-  INPUT: Object.freeze(['listSampleCases', 'startCase', 'verifyCitation']),
+  INPUT: Object.freeze(['listSampleCases', 'startCase', 'setOutputSelection', 'getOutputOptions', 'getInputForm', 'verifyCitation']),
   RUNNING: Object.freeze(['getCaseStatus', 'resetCase']),
   QUESTIONS: Object.freeze(['getCaseStatus', 'getQuestions', 'fillQuestions', 'resetCase']),
-  RESULT: Object.freeze(['getCaseStatus', 'getAnalysis', 'getGraphSummary', 'focusNode', 'filterGraph', 'explainEdge', 'verifyCitation', 'resetCase']),
+  RESULT: Object.freeze(['getCaseStatus', 'getResultTabs', 'getAnalysis', 'getGraphSummary', 'focusNode', 'filterGraph', 'explainEdge', 'verifyCitation', 'resetCase']),
   FAILED: Object.freeze(['getCaseStatus', 'resetCase'])
 });
 
@@ -66,8 +80,33 @@ export function resolveModelContext(runtime = globalThis) {
   return runtime.document?.modelContext ?? runtime.navigator?.modelContext;
 }
 
-/** 建立 WebMCP 控制器；modelContext 可注入假物件測試。 */
-export function createWebMcp({ app, graphView, modelContext }) {
+/**
+ * 偵測 host 晚注入的 modelContext：Agent 瀏覽器（如 ChatGPT Site tools）可能在頁面腳本
+ * 執行後才提供 API，啟動時檢查一次會誤判「不可用」。輪詢直到出現（只回呼一次）或逾時；
+ * 回傳 stop() 供頁面離開時清理。
+ */
+export function watchModelContext(runtime, onFound, { intervalMs = 500, timeoutMs = 20000 } = {}) {
+  const startedAt = Date.now();
+  const timer = setInterval(() => {
+    const mc = resolveModelContext(runtime);
+    if (mc) {
+      clearInterval(timer);
+      onFound(mc);
+    } else if (Date.now() - startedAt >= timeoutMs) {
+      clearInterval(timer);
+    }
+  }, intervalMs);
+  return () => clearInterval(timer);
+}
+
+/**
+ * 建立 WebMCP 控制器；modelContext 可注入假物件測試。
+ * ready：app 尚未綁定前（webmcp-bundle.js 比 app-bundle.js 先載入）所有 execute 先等此 promise，
+ * 讓工具能在頁面最早期就註冊給 Agent host，實際執行則等應用層就緒。
+ */
+export function createWebMcp({ app, graphView, modelContext, ready = Promise.resolve() }) {
+  /** 目前接上的 host modelContext；可由 attachModelContext 於晚注入時補上。 */
+  let hostContext = modelContext;
   /** 同一狀態的註冊共用一個 AbortController，切換狀態時可一次解除舊工具。 */
   let controller = null;
   /** 目前已註冊且可供 Agent 使用的工具名稱。 */
@@ -170,7 +209,7 @@ export function createWebMcp({ app, graphView, modelContext }) {
       if (locale && locale !== app.getLocale()) await app.setLocale(locale);
       return app.getSamples().map(({ id, title, summary }) => ({ id, title, summary }));
     },
-    startCase: async ({ caseText, sampleId, locale }) => {
+    startCase: async ({ caseText, sampleId, locale, documents }) => {
       if (app.getState().view !== 'INPUT') {
         const current = pageStatus();
         return {
@@ -182,7 +221,9 @@ export function createWebMcp({ app, graphView, modelContext }) {
         };
       }
       if (locale && locale !== app.getLocale()) await app.setLocale(locale);
-      const s = sampleId ? await app.startSample(sampleId) : await app.start(caseText);
+      // 關聯圖為 Agent 啟動時的預設輸出；documents 另外加上勾選書狀
+      const outputs = ['graph', ...(Array.isArray(documents) ? documents : [])];
+      const s = sampleId ? await app.startSample(sampleId, outputs) : await app.start(caseText, outputs);
       if (!s) return { ok: false, error: 'Unknown sampleId or empty caseText.' };
       return {
         ok: true,
@@ -192,13 +233,30 @@ export function createWebMcp({ app, graphView, modelContext }) {
         nextAction: 'Poll getCaseStatus. If it returns WAITING, ask the human to answer the visible questions; do not start another case.'
       };
     },
+    setOutputSelection: async ({ outputs } = {}) => {
+      if (!isToolAvailable('setOutputSelection')) return unavailable('setOutputSelection');
+      return app.setOutputs(outputs);
+    },
+    getOutputOptions: async () => {
+      if (!isToolAvailable('getOutputOptions')) return unavailable('getOutputOptions');
+      return app.getOutputOptions();
+    },
+    getInputForm: async () => {
+      if (!isToolAvailable('getInputForm')) return unavailable('getInputForm');
+      // 不套 1500 字元護欄：9 個選項＋標籤本身就近上限；案情文字改由 app 端截短並標示
+      return app.getInputForm();
+    },
+    getResultTabs: async () => {
+      if (!isToolAvailable('getResultTabs')) return unavailable('getResultTabs');
+      return app.getResultTabs();
+    },
     getCaseStatus: async () => {
       const page = app.getState?.() || {};
       const last = page.last;
       if (!last) return pageStatus();
       const { result, ...rest } = last;
       // 不夾帶全文；改列出已可讀取的段落（進行中即有中間成果），完整內容用 getAnalysis 取
-      const sections = result ? ['brainstorm', 'research', 'analysis', 'graph'].filter((k) => result[k]) : [];
+      const sections = result ? ['brainstorm', 'research', 'analysis', 'documents', 'graph'].filter((k) => result[k]) : [];
       return truncate({
         ...rest,
         ...pageStatus(),
@@ -221,8 +279,15 @@ export function createWebMcp({ app, graphView, modelContext }) {
     explainEdge: async ({ sourceId, targetId }) => graphView.explainEdge(sourceId, targetId) ?? { error: 'edge not found' }
   };
 
-  /** 註冊某個頁面狀態的工具，切換時解除上一狀態，讓 Agent 取得即時工具清單。 */
-  async function syncForState(view) {
+  /** 註冊串行化：早期啟動器與應用層可能同時呼叫 syncForState，排隊避免舊註冊插隊覆蓋。 */
+  let syncQueue = Promise.resolve();
+  /** 註冊某個頁面狀態的工具，切換時解除上一狀態，讓 Agent 取得即時工具清單（呼叫會依序執行）。 */
+  function syncForState(view) {
+    const run = syncQueue.then(() => syncForStateNow(view));
+    syncQueue = run.catch(() => {});
+    return run;
+  }
+  async function syncForStateNow(view) {
     const nextView = TOOL_NAMES_BY_VIEW[view] ? view : 'INPUT';
     const desired = TOOL_NAMES_BY_VIEW[nextView];
     const unchanged = activeView === nextView && registered.size === desired.length && desired.every((name) => registered.has(name));
@@ -234,10 +299,13 @@ export function createWebMcp({ app, graphView, modelContext }) {
     for (const name of desired) {
       const def = TOOL_DEFS.find((candidate) => candidate.name === name);
       if (!def) continue;
-      if (modelContext?.registerTool) {
-        await modelContext.registerTool({
+      if (hostContext?.registerTool) {
+        await hostContext.registerTool({
           name: def.name, description: def.description, inputSchema: def.inputSchema, annotations: def.annotations,
-          execute: (input) => isToolAvailable(def.name) ? exec[def.name](normalizeInput(input)) : unavailable(def.name)
+          execute: async (input) => {
+            await ready;
+            return isToolAvailable(def.name) ? exec[def.name](normalizeInput(input)) : unavailable(def.name);
+          }
         }, { signal: controller.signal });
       }
       registered.add(def.name);
@@ -253,6 +321,15 @@ export function createWebMcp({ app, graphView, modelContext }) {
     registerCompleted: () => syncForState('RESULT'),
     /** 依 app view 同步目前可用工具；回傳實際註冊名稱供測試與 Inspector 使用。 */
     syncForState,
+    /** host 晚注入 modelContext 時補接上並重新註冊目前狀態的工具。 */
+    attachModelContext: (next) => {
+      hostContext = next;
+      const view = app.getState?.()?.view || activeView || 'INPUT';
+      activeView = null; // 強制重跑註冊，即使 view 沒變
+      return syncForState(view);
+    },
+    /** 是否已接上可註冊工具的 host。 */
+    hasHost: () => Boolean(hostContext?.registerTool),
     /** 全部解除，通常只在頁面離開或測試清理時使用。 */
     unregisterAll: () => { controller?.abort(); controller = null; registered.clear(); activeView = null; },
     tools: () => [...registered],
@@ -260,6 +337,6 @@ export function createWebMcp({ app, graphView, modelContext }) {
     questionGuide,
     availableForState: (view) => [...(TOOL_NAMES_BY_VIEW[view] || TOOL_NAMES_BY_VIEW.INPUT)],
     /** Inspector 與測試用：直接執行某工具。 */
-    execute: (name, input) => exec[name](normalizeInput(input))
+    execute: async (name, input) => { await ready; return exec[name](normalizeInput(input)); }
   };
 }

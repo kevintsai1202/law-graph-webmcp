@@ -24,4 +24,10 @@ public class ApiExceptionHandler {
     public Map<String, String> conflict(CaseNotWaitingException exception) {
         return error("CASE_NOT_WAITING", exception.getMessage());
     }
+
+    /** 將不支援、損壞或超限的附件轉成 400。 */
+    @ExceptionHandler(InvalidAttachmentException.class) @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public Map<String, String> invalidAttachment(InvalidAttachmentException exception) {
+        return error(exception.code(), exception.getMessage());
+    }
 }

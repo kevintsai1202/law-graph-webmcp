@@ -6,11 +6,11 @@
 
 ## 1. 目的與範圍
 
-把 `law-powers` 法律分析技能包做成網站：使用者貼入案情（或點選示範案例），系統依「頭腦風暴 → 提問使用者 → 檢索法規判決 → 涵攝分析 → 產出法律關係圖」的標準流程，產生可互動的 3D 法律關係圖。頁面同時以 WebMCP 暴露工具，讓來訪的 AI Agent（ChatGPT 內建瀏覽器、Chrome 149+）能啟動流程、讀取結果、操作圖形；**回答系統提問這一步刻意保留給人**。
+把 `law-powers` 法律分析技能包做成網站：使用者貼入案情、上傳參考文件（或點選示範案例），系統依「頭腦風暴 → 必要時提問使用者 → 檢索法規判決 → 涵攝分析 → 產出法律關係圖」的標準流程，產生可互動的 3D 法律關係圖。資料已明確且沒有會改變法律結論、程序期限或證據評價的缺漏時，問題清單為空並直接續跑；若確有問題，**回答與送出仍刻意保留給人**。
 
 ### 1.1 範圍內（參賽版）
 
-- 純文字輸入＋四個可點選的虛構示範案例
+- 純文字輸入、PDF／UTF-8 Markdown／DOCX 上傳＋四個可點選的虛構示範案例
 - 中英雙語 UI 與 LLM 產出，預設英文
 - 後端 Java：Spring Boot 4.1 ＋ Embabel 1.5.1 ＋ gpt-5.4-nano（2026-08-30 由 gpt-5.4-mini 降級以節省成本）
 - 法律資料只接 `taiwan-legal-db`（非 RAG 的 MCP）
@@ -19,7 +19,7 @@
 
 ### 1.2 範圍外
 
-- 檔案上傳（PDF／DOCX）
+- 附件持久化，以及文字型 PDF／DOCX 內嵌圖片辨識
 - 帳號、持久化資料庫、歷史紀錄
 - `dr-lawbot` 語意判例檢索（需互動式 OAuth，伺服器無法完成）
 - Declarative API（`toolname` 表單屬性）——ChatGPT Site tools 不支援
@@ -127,7 +127,15 @@ CaseInput ─brainstorm─▶ BrainstormResult ─askUser─▶ UserAnswers
 | `analyze` | `ResearchResult + BrainstormResult → AnalysisResult` | `legal-element-analysis` | `query_regulation`、`get_judgment` | mini |
 | `buildGraph` | 全部 → `GraphData` | `legal-graph` 步驟一～三 | 無 | mini |
 
-`askUser`：`questions` 為空時回傳空 `UserAnswers` 直接續跑。
+`askUser`：頭腦風暴只對會實質影響結論、期限或證據評價的缺漏產生 1–5 題；資料已明確時 `questions` 為空，回傳空 `UserAnswers` 直接續跑。第一輪回答後重新判斷完整度，不足時可再提出不重複的新問題，最多三輪。使用者回答不知道、沒有資料或無法取得時，該項轉列 `evidenceGaps` 且不得重問；第三輪後無論是否完整均進入研究，以 `unknown`／證據缺口降低結論確定性。
+
+### 4.1.1 附件解析
+
+- `POST /api/cases` 保留 JSON 契約；有附件時使用同路徑的 `multipart/form-data`。
+- 每次最多 5 份、每份 10 MB，抽取後合計最多 60,000 字；支援文字型與掃描型 PDF、UTF-8 `.md`／`.markdown`、`.docx`。
+- 原檔只在記憶體解析且不持久化；附件以明確來源標記併入 `CaseInput.text`，system prompt 視為不可信來源資料而非指令。
+- PDF 逐頁處理：有文字層時直接抽取；無文字層時在記憶體渲染為 PNG 並交由視覺模型忠實轉錄，最多 20 頁。模型不得推測模糊的日期、金額、人名、印章、簽名或手寫內容，輸出保留頁碼並標示需人工核對。
+- 損壞、加密、格式偽裝、超過掃描頁限制或視覺模型失敗的附件整批拒絕，不靜默漏讀。
 
 ### 4.2 技能掛載
 

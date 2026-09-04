@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import { TOOL_DEFS, TOOL_NAMES_BY_VIEW, truncate, createWebMcp, resolveModelContext } from '../src/main/resources/static/js/webmcp.js';
 
 // 用途：WebMCP 十二工具契約、狀態矩陣（名稱／描述長度、annotations、無自動送出工具）與 1500 字元護欄。
-test('十二個工具，名稱/描述長度符合 Chrome 安全預算', () => {
-  assert.equal(TOOL_DEFS.length, 12);
+test('十六個工具，名稱/描述長度符合 Chrome 安全預算', () => {
+  assert.equal(TOOL_DEFS.length, 16);
   for (const d of TOOL_DEFS) {
     assert.ok(d.name.length <= 30, d.name);
     assert.ok(d.description.length <= 150, d.name);
@@ -59,9 +59,9 @@ test('每個頁面狀態只註冊該狀態工具，切換狀態會 abort 舊清�
     assert.deepEqual([...active.keys()].sort(), [...expected].sort(), view);
     assert.deepEqual([...w.tools()].sort(), [...expected].sort(), `recorded ${view}`);
   }
-  assert.equal(aborted, 3 + 2 + 4 + 8, '每次真正切換都應解除上一批工具');
+  assert.equal(aborted, 6 + 2 + 4 + 9, '每次真正切換都應解除上一批工具');
   w.unregisterAll();
-  assert.equal(aborted, 3 + 2 + 4 + 8 + 2, '清理時應解除最後一批工具');
+  assert.equal(aborted, 6 + 2 + 4 + 9 + 2, '清理時應解除最後一批工具');
   assert.equal(active.size, 0);
   assert.equal(w.tools().length, 0);
 });
@@ -120,4 +120,127 @@ test('startCase 於案件進行中拒絕；getCaseStatus 不夾帶 result 全文
   assert.equal(questions.view, 'QUESTIONS');
   assert.deepEqual(questions.questions, [{ questionId: 'q1', question: 'When?', why: 'timing', filled: true }]);
   assert.deepEqual(questions.fillQuestionsExample, { answers: [{ questionId: 'q1', answer: '' }] });
+});
+test('startCase 契約含 documents 勾選參數並轉交 app.start', async () => {
+  const byName = Object.fromEntries(TOOL_DEFS.map((d) => [d.name, d]));
+  const docs = byName.startCase.inputSchema.properties.documents;
+  assert.equal(docs.type, 'array');
+  assert.ok(docs.items.enum.includes('complaint'));
+  assert.ok(docs.items.enum.includes('motion'));
+  assert.equal(docs.items.enum.length, 8);
+  assert.ok(byName.getAnalysis.inputSchema.properties.section.enum.includes('documents'),
+    '完成後 Agent 應可讀取已起草書狀');
+  const calls = [];
+  const app = {
+    getState: () => ({ view: 'INPUT' }),
+    getLocale: () => 'en',
+    start: async (text, outputs) => { calls.push([text, outputs]); return { caseId: 'p1', status: 'RUNNING', step: 'BRAINSTORM' }; }
+  };
+  const w = createWebMcp({ app, graphView: {}, modelContext: null });
+  const r = await w.execute('startCase', { caseText: 'x'.repeat(30), documents: ['complaint'] });
+  assert.equal(r.ok, true);
+  assert.deepEqual(calls[0][1], ['graph', 'complaint'], 'Agent 啟動時關聯圖仍預設包含');
+});
+test('watchModelContext：host 晚注入 modelContext 時仍會偵測到並只回呼一次', async () => {
+  const runtime = { document: {}, navigator: {} };
+  const found = [];
+  const { watchModelContext } = await import('../src/main/resources/static/js/webmcp.js');
+  watchModelContext(runtime, (mc) => found.push(mc), { intervalMs: 5, timeoutMs: 200 });
+  await new Promise((r) => setTimeout(r, 15));
+  assert.equal(found.length, 0, '尚未注入前不得回呼');
+  runtime.document.modelContext = { registerTool: async () => {} };
+  await new Promise((r) => setTimeout(r, 30));
+  assert.equal(found.length, 1);
+  assert.equal(found[0], runtime.document.modelContext);
+  await new Promise((r) => setTimeout(r, 30));
+  assert.equal(found.length, 1, '偵測到之後應停止輪詢，不得重複回呼');
+});
+test('attachModelContext：晚接上的 host 會補註冊目前狀態的工具', async () => {
+  const active = new Map();
+  const appState = { view: 'INPUT' };
+  const w = createWebMcp({ app: { getState: () => appState, getLocale: () => 'en' }, graphView: {}, modelContext: undefined });
+  await w.syncForState('INPUT');
+  assert.equal(active.size, 0, '尚未有 host 前不會真正註冊');
+  const late = { registerTool: async (tool, opts) => { active.set(tool.name, tool); opts.signal.addEventListener('abort', () => active.delete(tool.name)); } };
+  await w.attachModelContext(late);
+  assert.deepEqual([...active.keys()].sort(), [...TOOL_NAMES_BY_VIEW.INPUT].sort());
+});
+test('setOutputSelection：INPUT 限定，代勾可見輸出勾選框但不送出', async () => {
+  const byName = Object.fromEntries(TOOL_DEFS.map((d) => [d.name, d]));
+  const schema = byName.setOutputSelection.inputSchema.properties.outputs;
+  assert.equal(schema.type, 'array');
+  assert.ok(schema.items.enum.includes('graph'), '關聯圖也是可勾選項目');
+  assert.equal(schema.items.enum.length, 9);
+  assert.ok(TOOL_NAMES_BY_VIEW.INPUT.includes('setOutputSelection'));
+  assert.ok(!TOOL_NAMES_BY_VIEW.RESULT.includes('setOutputSelection'), '只在輸入頁提供');
+  const calls = [];
+  const appState = { view: 'INPUT' };
+  const app = {
+    getState: () => appState,
+    getLocale: () => 'en',
+    setOutputs: (outputs) => { calls.push(outputs); return { ok: true, submitted: false, applied: ['graph', 'complaint'] }; }
+  };
+  const w = createWebMcp({ app, graphView: {}, modelContext: null });
+  const r = await w.execute('setOutputSelection', { outputs: ['complaint', 'graph'] });
+  assert.equal(r.ok, true);
+  assert.equal(r.submitted, false);
+  assert.deepEqual(calls[0], ['complaint', 'graph']);
+  // 非 INPUT 狀態拒絕
+  appState.view = 'RESULT';
+  appState.last = { status: 'COMPLETED' };
+  const refused = await w.execute('setOutputSelection', { outputs: ['graph'] });
+  assert.equal(refused.error, 'TOOL_UNAVAILABLE');
+});
+
+// 用途：頁面上可見內容都有對應讀取工具——輸出勾選區（幾項可勾／已勾）、輸入頁全貌、結果頁分頁。
+test('getOutputOptions／getInputForm 只在 INPUT 提供，轉交 app 讀取可見內容', async () => {
+  const byName = Object.fromEntries(TOOL_DEFS.map((d) => [d.name, d]));
+  assert.equal(byName.getOutputOptions.annotations.readOnlyHint, true);
+  assert.equal(byName.getInputForm.annotations.readOnlyHint, true);
+  assert.ok(TOOL_NAMES_BY_VIEW.INPUT.includes('getOutputOptions'));
+  assert.ok(TOOL_NAMES_BY_VIEW.INPUT.includes('getInputForm'));
+  assert.ok(!TOOL_NAMES_BY_VIEW.RESULT.includes('getOutputOptions'));
+  const appState = { view: 'INPUT' };
+  const options = { ok: true, count: 9, checkedCount: 1, options: [{ code: 'graph', checked: true }] };
+  const app = {
+    getState: () => appState, getLocale: () => 'en',
+    getOutputOptions: () => options,
+    getInputForm: () => ({ ok: true, caseText: '', charCount: 0, minChars: 20, canSubmit: false, outputs: options, sampleCount: 4 })
+  };
+  const w = createWebMcp({ app, graphView: {}, modelContext: null });
+  const r = await w.execute('getOutputOptions', {});
+  assert.equal(r.count, 9);
+  assert.equal(r.checkedCount, 1);
+  const form = await w.execute('getInputForm', {});
+  assert.equal(form.minChars, 20);
+  assert.equal(form.sampleCount, 4);
+  appState.view = 'RUNNING'; appState.last = { status: 'RUNNING' };
+  assert.equal((await w.execute('getOutputOptions', {})).error, 'TOOL_UNAVAILABLE');
+});
+test('getResultTabs 只在 RESULT 提供並轉交 app', async () => {
+  const byName = Object.fromEntries(TOOL_DEFS.map((d) => [d.name, d]));
+  assert.equal(byName.getResultTabs.annotations.readOnlyHint, true);
+  assert.ok(TOOL_NAMES_BY_VIEW.RESULT.includes('getResultTabs'));
+  assert.ok(!TOOL_NAMES_BY_VIEW.INPUT.includes('getResultTabs'));
+  const appState = { view: 'RESULT', last: { status: 'COMPLETED' } };
+  const app = { getState: () => appState, getLocale: () => 'en', getResultTabs: () => ({ ok: true, count: 4, activeTab: 'graph', tabs: [] }) };
+  const w = createWebMcp({ app, graphView: {}, modelContext: null });
+  assert.equal((await w.execute('getResultTabs', {})).count, 4);
+  appState.view = 'INPUT'; appState.last = null;
+  assert.equal((await w.execute('getResultTabs', {})).error, 'TOOL_UNAVAILABLE');
+});
+test('ready 尚未解決前 host callback 不執行工具，解決後才回結果', async () => {
+  const active = new Map();
+  let resolveReady; const ready = new Promise((r) => { resolveReady = r; });
+  const w = createWebMcp({
+    app: { getState: () => ({ view: 'INPUT' }), getLocale: () => 'en', getSamples: () => [{ id: 'a', title: 'A', summary: 's' }] },
+    graphView: {}, modelContext: { registerTool: async (tool) => active.set(tool.name, tool) }, ready
+  });
+  await w.syncForState('INPUT');
+  let done = false;
+  const pending = active.get('listSampleCases').execute({}).then((r) => { done = true; return r; });
+  await new Promise((r) => setTimeout(r, 5));
+  assert.equal(done, false, 'app 未綁定前不得執行');
+  resolveReady();
+  assert.deepEqual(await pending, [{ id: 'a', title: 'A', summary: 's' }]);
 });

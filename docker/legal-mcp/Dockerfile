@@ -1,10 +1,14 @@
 # 台灣法規判例 MCP 以 Streamable HTTP 對外服務，含 Playwright WAF fallback
-FROM python:3.12-slim
+# 固定 Debian 12 Bookworm，避免 slim 浮動到 Debian Trixie／OpenSSL 3.6 的嚴格鏈驗證。
+FROM python:3.12-slim-bookworm
 WORKDIR /app
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt \
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends ca-certificates curl \
+ && update-ca-certificates \
+ && pip install --no-cache-dir -r requirements.txt \
  && playwright install --with-deps chromium \
- && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
+ && rm -rf /var/lib/apt/lists/*
 # 注意：mcp-taiwan-legal-db 1.0.0 的 FastMCP 實例不讀 FASTMCP_HOST／FASTMCP_PORT，
 # 預設只綁 127.0.0.1，容器外連不到（HTTP EOF）；故於啟動指令直接覆寫 settings.host／port。
 EXPOSE 8000

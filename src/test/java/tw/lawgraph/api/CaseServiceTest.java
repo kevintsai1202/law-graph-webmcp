@@ -10,10 +10,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import tw.lawgraph.agent.LegalGraphAgent;
 import tw.lawgraph.agent.QuestionsAwaitable;
+import tw.lawgraph.agent.SecondRoundQuestionsAwaitable;
 import tw.lawgraph.domain.Answer;
 import tw.lawgraph.domain.CaseInput;
 import tw.lawgraph.domain.Locale;
 import tw.lawgraph.domain.Question;
+import tw.lawgraph.domain.SecondRoundAnswers;
 import tw.lawgraph.domain.UserAnswers;
 
 import java.util.List;
@@ -51,13 +53,13 @@ class CaseServiceTest {
         service = new CaseService(platform);
     }
 
-    /** 啟動時綁定輸入並呼叫非同步 start。 */
+    /** 啟動時綁定輸入（含勾選書狀）並呼叫非同步 start。 */
     @Test void startCreatesProcessBindsCaseInputAndStartsAsync() {
-        var status = service.start("A hit B", Locale.ZH_TW);
+        var status = service.start("A hit B", Locale.ZH_TW, List.of("complaint"));
         assertEquals("p1", status.caseId()); assertEquals("RUNNING", status.status());
         assertEquals("zh-TW", status.locale());
         verify(platform).createAgentProcessFrom(eq(agent), any(ProcessOptions.class),
-                eq(new CaseInput("A hit B", Locale.ZH_TW)));
+                eq(new CaseInput("A hit B", Locale.ZH_TW, List.of("complaint"))));
         verify(platform).start(process);
     }
 
@@ -68,19 +70,30 @@ class CaseServiceTest {
 
     /** 非 WAITING 不接受回答。 */
     @Test void answerWhenNotWaitingThrows409() {
-        service.start("x", Locale.EN);
+        service.start("x", Locale.EN, List.of());
         assertThrows(CaseNotWaitingException.class,
                 () -> service.answer("p1", List.of(new Answer("q1", "yes"))));
     }
 
     /** WAITING 時寫入答案並重新啟動流程。 */
     @Test void answerWhenWaitingFeedsAwaitableAndResumes() {
-        service.start("x", Locale.EN);
+        service.start("x", Locale.EN, List.of());
         var awaitable = new QuestionsAwaitable(List.of(new Question("q1", "?", "why")));
         when(process.getStatus()).thenReturn(AgentProcessStatusCode.WAITING);
         when(blackboard.last(QuestionsAwaitable.class)).thenReturn(awaitable);
         var status = service.answer("p1", List.of(new Answer("q1", "yes")));
         verify(blackboard).addObject(new UserAnswers(List.of(new Answer("q1", "yes"))));
+        verify(platform, times(2)).start(process); assertNotNull(status);
+    }
+
+    /** 第二輪 WAITING 必須把答案寫成獨立型別，避免被第一輪 UserAnswers 吞掉。 */
+    @Test void answerSecondRoundUsesDistinctPayloadAndResumes() {
+        service.start("x", Locale.EN, List.of());
+        var awaitable = new SecondRoundQuestionsAwaitable(List.of(new Question("r2q1", "?", "why")));
+        when(process.getStatus()).thenReturn(AgentProcessStatusCode.WAITING);
+        when(blackboard.last(SecondRoundQuestionsAwaitable.class)).thenReturn(awaitable);
+        var status = service.answer("p1", List.of(new Answer("r2q1", "second")));
+        verify(blackboard).addObject(new SecondRoundAnswers(List.of(new Answer("r2q1", "second"))));
         verify(platform, times(2)).start(process); assertNotNull(status);
     }
 }

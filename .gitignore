@@ -6,3 +6,12 @@ eval/
 .env
 *.log
 src/main/resources/static/js/_renderer-source.txt
+.data/
+*session*.json
+
+# 本機記憶／向量庫／測試產物，不進版控
+.codebase-memory/
+artifacts/
+chroma_hybrid_db/
+cold-notes/
+test-results/

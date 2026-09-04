@@ -3,6 +3,7 @@ package tw.lawgraph.api;
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.spec.McpSchema;
 import org.springframework.stereotype.Service;
+import tw.lawgraph.research.mcp.McpClientRegistry;
 
 import java.util.List;
 import java.util.Map;
@@ -21,10 +22,13 @@ public class CitationVerifier {
 
     private static final Pattern LAW = Pattern.compile("([\\u4e00-\\u9fff]{2,20}?)第(\\d+(?:-\\d+)?)條");
     private static final Pattern JUDGMENT = Pattern.compile("([\\u4e00-\\u9fff]+法院)(\\d+)年度([\\u4e00-\\u9fff]+)字第(\\d+)號");
-    private final List<McpSyncClient> clients;
+    private final McpSyncClient client;
 
-    /** 注入 Spring AI 建立的同步 MCP clients。 */
-    public CitationVerifier(List<McpSyncClient> clients) { this.clients = clients; }
+    /** 注入 Spring AI clients，依 identity 選出 legal-mcp，避免依賴清單順序。 */
+    public CitationVerifier(List<McpSyncClient> clients) {
+        this.client = new McpClientRegistry(clients).find("legal-mcp", "query_regulation", "search_judgments")
+                .orElse(null);
+    }
 
     /** 純解析：先找裁判字號，再找法條。 */
     public static Target parse(String ref) {
@@ -40,14 +44,14 @@ public class CitationVerifier {
     /** 呼叫 MCP 工具驗證；例外轉為 exists=false。 */
     public Verification verify(String ref) {
         Target target = parse(ref);
-        if (target.kind() == Kind.UNKNOWN || clients.isEmpty()) {
+        if (target.kind() == Kind.UNKNOWN || client == null) {
             return new Verification(ref, false, null, "unrecognised reference");
         }
         try {
             McpSchema.CallToolResult result = switch (target.kind()) {
-                case LAW -> clients.getFirst().callTool(new McpSchema.CallToolRequest("query_regulation",
+                case LAW -> client.callTool(new McpSchema.CallToolRequest("query_regulation",
                         Map.of("law_name", target.lawName(), "article_no", target.articleNo())));
-                case JUDGMENT -> clients.getFirst().callTool(new McpSchema.CallToolRequest("search_judgments",
+                case JUDGMENT -> client.callTool(new McpSchema.CallToolRequest("search_judgments",
                         Map.of("keyword", target.judgmentKeyword())));
                 default -> throw new IllegalStateException();
             };

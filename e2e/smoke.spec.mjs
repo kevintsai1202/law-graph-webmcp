@@ -46,6 +46,37 @@ test('input view lists four sample cards and switches locale', async ({ page }) 
   await expect(page.locator('#agent-badge')).toHaveText('Agent 工具：可用');
 });
 
+test('modern upload component shows file details and supports removal', async ({ page }) => {
+  await page.selectOption('#lang-select', 'zh-TW');
+  await expect(page.locator('#file-dropzone')).toContainText('將參考文件拖曳到這裡');
+
+  await page.locator('#case-files').setInputFiles({
+    name: '租賃契約.md',
+    mimeType: 'text/markdown',
+    buffer: Buffer.from('租賃契約與押金返還爭議')
+  });
+  await expect(page.locator('.file-item')).toHaveCount(1);
+  await expect(page.locator('.file-name')).toHaveText('租賃契約.md');
+  await expect(page.locator('.file-size')).toHaveText(/B$/);
+  await expect(page.locator('#file-status')).toHaveText('已選擇 1 份檔案。');
+  await expect(page.locator('#case-submit')).toBeEnabled();
+
+  await page.locator('.file-remove').click();
+  await expect(page.locator('.file-item')).toHaveCount(0);
+  await expect(page.locator('#file-status')).toHaveText('尚未選擇檔案。');
+  await expect(page.locator('#case-submit')).toBeDisabled();
+
+  await page.locator('#file-dropzone').evaluate((dropzone) => {
+    const transfer = new DataTransfer();
+    transfer.items.add(new File(['PDF test content'], '裁判書.pdf', { type: 'application/pdf', lastModified: 1 }));
+    dropzone.dispatchEvent(new DragEvent('dragenter', { bubbles: true, dataTransfer: transfer }));
+    dropzone.dispatchEvent(new DragEvent('drop', { bubbles: true, dataTransfer: transfer }));
+  });
+  await expect(page.locator('.file-name')).toHaveText('裁判書.pdf');
+  await expect(page.locator('#file-status')).toHaveText('已選擇 1 份檔案。');
+  await expect(page.locator('#case-submit')).toBeEnabled();
+});
+
 test('WebMCP startCase enters the progress view before a slow start response returns', async ({ page }) => {
   // 延遲啟動回應，驗證 WebMCP handler 不會讓畫面停在輸入頁等待後端。
   await page.route('**/api/cases', async (route) => {
@@ -106,12 +137,74 @@ test('WebMCP startCase accepts the visible sample title and stringified argument
   await expect(page.locator('.progress')).toBeVisible();
 });
 
+test('WebMCP setOutputSelection ticks visible output checkboxes without starting the case', async ({ page }) => {
+  await waitForTool(page, 'setOutputSelection');
+  const outcome = await page.evaluate(async () => {
+    const tool = (await document.modelContext.getTools()).find((candidate) => candidate.name === 'setOutputSelection');
+    return tool.execute({ outputs: ['issues', 'complaint'] });
+  });
+  expect(outcome).toMatchObject({ ok: true, submitted: false, humanReviewRequired: true, applied: ['complaint', 'issues'] });
+  await expect(page.locator('input[name="outputs"][value="complaint"]')).toBeChecked();
+  await expect(page.locator('input[name="outputs"][value="issues"]')).toBeChecked();
+  await expect(page.locator('input[name="outputs"][value="graph"]')).not.toBeChecked();
+  // 只代勾不代送：案情未達最少字數，送出鈕仍停用、頁面仍在輸入頁
+  await expect(page.locator('#case-submit')).toBeDisabled();
+  await expect(page.locator('.progress')).toHaveCount(0);
+});
+
+test('WebMCP 工具在 <head> 的 webmcp-bundle.js 載入時即註冊，早於應用層 app-bundle.js', async ({ page }) => {
+  // 以 init script 記錄每次 registerTool 當下 window.__lawGraphApp 是否已存在
+  await page.addInitScript(() => {
+    const original = document.modelContext.registerTool;
+    window.__registrationLog = [];
+    document.modelContext.registerTool = async (tool, opts) => {
+      window.__registrationLog.push({ name: tool.name, appLoaded: Boolean(window.__lawGraphApp) });
+      return original(tool, opts);
+    };
+  });
+  await page.goto('/');
+  await waitForTool(page, 'startCase');
+  const log = await page.evaluate(() => window.__registrationLog);
+  const first = log.find((entry) => entry.name === 'startCase');
+  expect(first.appLoaded).toBe(false);
+  // 早期註冊的工具在 app 綁定後可正常執行
+  const samples = await page.evaluate(async () => {
+    const tool = (await document.modelContext.getTools()).find((candidate) => candidate.name === 'listSampleCases');
+    return tool.execute({});
+  });
+  expect(samples.length).toBe(4);
+});
+
+test('WebMCP getOutputOptions／getInputForm 回報輸入頁可見內容：9 個可勾輸出、字數與送出狀態', async ({ page }) => {
+  await waitForTool(page, 'getOutputOptions');
+  const call = (name, input = {}) => page.evaluate(async ([toolName, args]) => {
+    const tool = (await document.modelContext.getTools()).find((candidate) => candidate.name === toolName);
+    return tool.execute(args);
+  }, [name, input]);
+  const options = await call('getOutputOptions');
+  expect(options).toMatchObject({ ok: true, rendered: true, count: 9, checkedCount: 1, minRequired: 1 });
+  expect(options.options.filter((o) => o.checked).map((o) => o.code)).toEqual(['graph']);
+  expect(options.options.map((o) => o.code)).toEqual(['graph', 'complaint', 'reasons', 'report', 'preparatory', 'defense', 'issues', 'appeal', 'motion']);
+  expect(options.options[1].label).toContain('起訴狀');
+  // 代勾後再讀，數量要跟畫面一致
+  await call('setOutputSelection', { outputs: ['graph', 'issues'] });
+  expect((await call('getOutputOptions')).checkedCount).toBe(2);
+  // 輸入頁全貌：尚未輸入案情，送出鈕停用
+  const form = await call('getInputForm');
+  expect(form).toMatchObject({ ok: true, charCount: 0, minChars: 20, canSubmit: false, sampleCount: 4 });
+  await page.fill('#case-text', 'A ran a red light and crashed into B, who now claims damages.');
+  const filled = await call('getInputForm');
+  expect(filled.canSubmit).toBe(true);
+  expect(filled.charCount).toBeGreaterThanOrEqual(20);
+  expect(filled.outputs.checkedCount).toBe(2);
+});
+
 test('每個頁面狀態的 WebMCP 工具與 Inspector 清單一致', async ({ page }) => {
   const stateTools = {
-    INPUT: ['listSampleCases', 'startCase', 'verifyCitation'],
+    INPUT: ['listSampleCases', 'startCase', 'setOutputSelection', 'getOutputOptions', 'getInputForm', 'verifyCitation'],
     RUNNING: ['getCaseStatus', 'resetCase'],
     QUESTIONS: ['getCaseStatus', 'getQuestions', 'fillQuestions', 'resetCase'],
-    RESULT: ['getAnalysis', 'getCaseStatus', 'getGraphSummary', 'focusNode', 'filterGraph', 'explainEdge', 'resetCase', 'verifyCitation'],
+    RESULT: ['getAnalysis', 'getCaseStatus', 'getResultTabs', 'getGraphSummary', 'focusNode', 'filterGraph', 'explainEdge', 'resetCase', 'verifyCitation'],
     FAILED: ['getCaseStatus', 'resetCase']
   };
   const names = async () => (await page.evaluate(() => document.modelContext.getTools())).map((t) => t.name).sort();
@@ -119,14 +212,13 @@ test('每個頁面狀態的 WebMCP 工具與 Inspector 清單一致', async ({ p
   page.on('request', (request) => {
     if (request.method() === 'POST' && request.url().includes('/answers')) answerRequests++;
   });
-  const inspectorNames = async () => page.locator('#insp-tool option').evaluateAll((options) => options.map((option) => option.value).sort());
+  // Inspector 已唯讀：清單改為 #insp-list 的 <code> 工具名
+  const inspectorNames = async () => page.locator('#insp-list li code').evaluateAll((codes) => codes.map((code) => code.textContent).sort());
   const expectState = async (view) => {
     const expected = [...stateTools[view]].sort();
     await expect.poll(async () => names()).toEqual(expected);
     await expect.poll(async () => inspectorNames()).toEqual(expected);
     await expect(page.locator('#insp-state')).toContainText(view);
-    const listed = await page.locator('#insp-tools').textContent();
-    for (const name of expected) expect(listed).toContain(name);
   };
 
   await expectState('INPUT');
@@ -148,12 +240,10 @@ test('每個頁面狀態的 WebMCP 工具與 Inspector 清單一致', async ({ p
     questions: [{ questionId: 'q1', question: 'When did the accident happen?', why: 'limitation period', filled: false }],
     fillQuestionsExample: { answers: [{ questionId: 'q1', answer: '' }] }
   });
+  // Inspector 唯讀：QUESTIONS 狀態也不提供任何執行或填答 UI
   await page.click('#insp-toggle');
-  await page.selectOption('#insp-tool', 'fillQuestions');
-  await expect(page.locator('#insp-question-guide')).toContainText('When did the accident happen?');
-  await expect.poll(async () => JSON.parse(await page.locator('#insp-input').inputValue())).toEqual({
-    answers: [{ questionId: 'q1', answer: '' }]
-  });
+  await expect(page.locator('#insp-list')).toContainText('fillQuestions');
+  await expect(page.locator('#insp-run, #insp-tool, #insp-input')).toHaveCount(0);
 
   // Agent 可把提議答案填入可見欄位，但不能跳過人的檢查與送出。
   const fillOutcome = await page.evaluate(async () => {
@@ -226,19 +316,24 @@ test('waiting view offers a cancel button that returns to the input view', async
   await expect(page.locator('#questions-form')).toHaveCount(0);
 });
 
-test('inspector runs getGraphSummary and focusNode against the rendered graph', async ({ page }) => {
+test('inspector is read-only: shows state and tool list, no run controls; tools still work via WebMCP layer', async ({ page }) => {
   await page.evaluate((s) => window.__lawGraphApp.dispatch({ type: 'STATUS', status: s }), completed);
   await expect(page.locator('#network-canvas')).toBeVisible();
   await page.click('#insp-toggle');
-  await page.selectOption('#insp-tool', 'getGraphSummary');
-  await page.click('#insp-run');
-  await expect(page.locator('#insp-out')).toContainText('nodeCounts');
+  // 唯讀：只顯示頁面狀態與可用工具清單，不提供直接執行
+  await expect(page.locator('#insp-state')).toContainText('RESULT');
+  await expect(page.locator('#insp-list li')).toHaveCount(9);
+  await expect(page.locator('#insp-list')).toContainText('getGraphSummary');
+  await expect(page.locator('#insp-run')).toHaveCount(0);
+  await expect(page.locator('#insp-tool')).toHaveCount(0);
+  await expect(page.locator('#insp-input')).toHaveCount(0);
+  // 工具本身仍可由 Agent 經 WebMCP 層執行（E2E 走 window.__webmcp）
+  const summary = await page.evaluate(() => window.__webmcp.execute('getGraphSummary', {}));
+  expect(summary).toHaveProperty('nodeCounts');
   const hasCanvas = (await page.locator('#network-canvas canvas').count()) > 0;
   test.skip(!hasCanvas, 'WebGL 不可用，跳過 focusNode 鏡頭測試');
-  await page.selectOption('#insp-tool', 'focusNode');
-  await page.fill('#insp-input', JSON.stringify({ label: '民法' }));
-  await page.click('#insp-run');
-  await expect(page.locator('#insp-out')).toContainText('neighbors');
+  const focus = await page.evaluate(() => window.__webmcp.execute('focusNode', { label: '民法' }));
+  expect(focus).toHaveProperty('neighbors');
   await expect(page.locator('#detail-panel')).toHaveClass(/active/);
   await expect(page.locator('#detail-title')).toContainText('民法第184條');
   await page.screenshot({ path: 'e2e/screenshots/smoke-graph.png', fullPage: true });

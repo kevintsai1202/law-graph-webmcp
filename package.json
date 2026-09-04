@@ -4,12 +4,14 @@
   "type": "module",
   "scripts": {
     "test": "node --test \"frontend-tests/**/*.test.mjs\"",
-    "e2e": "playwright test -c e2e/playwright.config.mjs",
+    "bundle": "esbuild src/main/resources/static/js/webmcp-entry.js --bundle --format=iife --outfile=src/main/resources/static/js/webmcp-bundle.js && esbuild src/main/resources/static/js/main.js --bundle --format=iife --outfile=src/main/resources/static/js/app-bundle.js",
+    "e2e": "npm run bundle && playwright test -c e2e/playwright.config.mjs",
     "eval": "node scripts/eval-samples.mjs",
-    "stub": "node e2e/stub-server.mjs",
-    "e2e:visual": "playwright test -c e2e/playwright.config.mjs e2e/visual.spec.mjs"
+    "stub": "npm run bundle && node e2e/stub-server.mjs",
+    "e2e:visual": "npm run bundle && playwright test -c e2e/playwright.config.mjs e2e/visual.spec.mjs"
   },
   "devDependencies": {
-    "@playwright/test": "^1.55.0"
+    "@playwright/test": "^1.55.0",
+    "esbuild": "^0.28.2"
   }
 }

@@ -11,6 +11,10 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=EB+Garamond:wght@500;600;700&family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@600;700&display=swap">
   <link rel="stylesheet" href="css/app.css">
+  <!-- WebMCP 工具層獨立 bundle（npm run bundle 由 js/webmcp-entry.js 打包）：於 <head> 同步載入、不加 defer，
+       頁面一開始就把工具註冊給 Agent host（ChatGPT／Codex Site tools 只在載入初期掃描一次）；
+       應用層 app-bundle.js 載入後再經 window.__webmcpBoot.bind() 接上真正的 app。 -->
+  <script src="js/webmcp-bundle.js"></script>
 </head>
 <body>
   <a class="skip-link" href="#stage" data-i18n="a11y.skip">Skip to main content</a>
@@ -25,15 +29,19 @@
       <div><h1 data-i18n="app.title">Law Graph</h1><p data-i18n="app.subtitle"></p></div>
     </div>
     <div class="topbar-right">
+      <span id="semantic-badge" class="badge" role="status" style="display:none"></span>
       <span id="agent-badge" class="badge" role="status" data-i18n="agent.unavailable"></span>
       <select id="lang-select" aria-label="Language"><option value="en">English</option><option value="zh-TW">繁體中文</option></select>
     </div>
   </header>
   <main id="stage" tabindex="-1"></main>
-  <!-- 3D 渲染器依賴（自 law-powers 單檔抽出，見 scripts/extract-renderer.mjs），須在應用層模組之前載入 -->
+  <!-- 3D 渲染器依賴（自 law-powers 單檔抽出，見 scripts/extract-renderer.mjs），須在應用層之前載入 -->
   <script src="vendor/three.min.js"></script>
   <script src="vendor/three-spritetext.min.js"></script>
   <script src="vendor/3d-force-graph.min.js"></script>
-  <script type="module" src="js/main.js"></script>
+  <!-- 應用層改用單一 classic script（npm run bundle 由 js/main.js 打包）：
+       避免 type="module" 的延遲載入／模組隔離造成部分 Agent host（Site tools）偵測不到工具註冊。
+       js/*.js 模組原始碼仍為單一事實來源，node 測試直接吃模組；改碼後須重跑 npm run bundle。 -->
+  <script defer src="js/app-bundle.js"></script>
 </body>
 </html>

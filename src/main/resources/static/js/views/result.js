@@ -1,9 +1,23 @@
 import { t } from '../i18n.js';
 import { esc } from './util.js';
 import { ICONS } from './icons.js';
+import { DOC_TYPES, normalizeOutputs } from '../documents.js';
 
-/** 結果頁四個分頁的固定順序。 */
-const TABS = ['graph', 'analysis', 'research', 'brainstorm'];
+/** 三個固定殿後的輔助分頁。 */
+const AUX_TABS = ['analysis', 'research', 'brainstorm'];
+
+/** 依勾選輸出組出分頁順序：關聯圖、各書狀（doc-<type>）、輔助分頁。 */
+export function tabsFor(outputs) {
+  const selected = normalizeOutputs(outputs);
+  const front = ['graph', ...DOC_TYPES].filter((o) => selected.includes(o))
+    .map((o) => (o === 'graph' ? 'graph' : 'doc-' + o));
+  return [...front, ...AUX_TABS];
+}
+
+/** 分頁標籤文字：graph／輔助分頁沿用 result.tab.*，書狀用 doc.* 狀別名稱。 */
+export function tabLabel(tab, locale) {
+  return tab.startsWith('doc-') ? t('doc.' + tab.slice(4), locale) : t('result.tab.' + tab, locale);
+}
 
 /** 要件該當性符號（對應 legal-element-analysis 涵攝表）。 */
 const metMark = (m) => (m === 'yes' ? '○' : m === 'no' ? '✗' : '△');
@@ -32,7 +46,16 @@ const SECTION_HTML = {
   },
   research: (r, locale) => {
     const h3 = (key) => `<h3>${esc(t(key, locale))}</h3>`;
-    return `${h3('result.statutes')}${list(r.laws, (l) => `${l.title}（${l.ref}）`)}${h3('result.judgments')}${list(r.judgments, (j) => j.citation)}
+    const coverage = r.coverage || {};
+    const evidenceByJid = new Map((r.evidence || []).map((e) => [e.judgment?.jid, e]));
+    const coverageLine = r.coverage
+      ? `<p class="research-coverage">${esc(t('result.coverage', locale))}：keyword=${esc(coverage.keywordStatus || '')}；semantic=${esc(coverage.semanticStatus || '')}；merged=${esc(String(coverage.mergedCount ?? 0))}</p>`
+      : '';
+    const judgmentText = (j) => {
+      const sources = evidenceByJid.get(j.jid)?.sources || [];
+      return sources.length ? `${j.citation} [${sources.join('+')}]` : j.citation;
+    };
+    return `${coverageLine}${h3('result.statutes')}${list(r.laws, (l) => `${l.title}（${l.ref}）`)}${h3('result.judgments')}${list(r.judgments, judgmentText)}
       ${h3('result.notes')}${list(r.notes)}`;
   },
   analysis: (a, locale) => {
@@ -42,6 +65,25 @@ const SECTION_HTML = {
       <p class="disclaimer">${ICONS.info}<span>${esc(a.disclaimer)}</span></p>`;
   }
 };
+
+/** 台灣公文書狀版面：狀別標題、當事人欄、本文段落、證物清單、此致法院與日期；全文經 esc。 */
+function renderDocument(doc, locale) {
+  if (!doc) return `<p class="doc-missing">${ICONS.info}<span>${esc(t('doc.missing', locale))}</span></p>`;
+  const parties = (doc.parties || []).map((p) =>
+    `<tr><th scope="row">${esc(p.role)}</th><td>${esc(p.name)}</td></tr>`).join('');
+  const paragraphs = (doc.paragraphs || []).map((p) => `<p>${esc(p)}</p>`).join('');
+  const attachments = (doc.attachments || []).length
+    ? `<h4 class="doc-section">${esc(t('doc.attachments', locale))}</h4><ol class="doc-attachments">${doc.attachments.map((a) => `<li>${esc(a)}</li>`).join('')}</ol>`
+    : '';
+  return `<article class="legal-doc">
+      <h3 class="doc-title">${esc(doc.title || '')}</h3>
+      ${parties ? `<table class="doc-parties" aria-label="${esc(t('doc.parties', locale))}"><tbody>${parties}</tbody></table>` : ''}
+      <div class="doc-body">${paragraphs}</div>
+      ${attachments}
+      <p class="doc-footer"><span class="doc-to">${esc(t('doc.to', locale))} ${esc(doc.court || '')}</span><span class="doc-date">${esc(doc.date || '')}</span></p>
+      <p class="disclaimer">${ICONS.info}<span>${esc(t('doc.disclaimer', locale))}</span></p>
+    </article>`;
+}
 
 /** 進行中／等待回答時的「目前成果」：只列出已產生的段落（brainstorm → research → analysis），無任何段落回空字串。 */
 export function renderSections(result, locale) {
@@ -53,11 +95,13 @@ export function renderSections(result, locale) {
   return `<section class="partials"><h2>${esc(t('progress.partial', locale))}</h2>${blocks}</section>`;
 }
 
-/** 結果頁：Graph 分頁放渲染器骨架（graphView 接圖），其餘分頁以清單呈現；分頁具 tablist／tab／tabpanel 語意；所有模型文字經 esc。 */
-export function renderResult({ status, activeTab = 'graph' }, locale) {
+/** 結果頁：勾選輸出各自一個分頁排前（Graph 骨架由 graphView 接圖、書狀公文版面），輔助分頁殿後；所有模型文字經 esc。 */
+export function renderResult({ status, activeTab = 'graph', outputs }, locale) {
   const r = status.result || {};
+  const TABS = tabsFor(outputs);
+  if (!TABS.includes(activeTab)) activeTab = TABS[0];
   const tabs = TABS.map((k) =>
-    `<button type="button" role="tab" id="tab-${k}" aria-controls="panel-${k}" aria-selected="${k === activeTab}" class="tab ${k === activeTab ? 'active' : ''}" data-tab="${k}">${esc(t('result.tab.' + k, locale))}</button>`).join('');
+    `<button type="button" role="tab" id="tab-${k}" aria-controls="panel-${k}" aria-selected="${k === activeTab}" class="tab ${k === activeTab ? 'active' : ''}" data-tab="${k}">${esc(tabLabel(k, locale))}</button>`).join('');
   const panels = {
     graph: `<div class="graph-wrap">
         <div class="graph-side control-panel">
@@ -74,6 +118,12 @@ export function renderResult({ status, activeTab = 'graph' }, locale) {
     research: SECTION_HTML.research(r.research || {}, locale),
     brainstorm: SECTION_HTML.brainstorm(r.brainstorm || {}, locale)
   };
+  // 各書狀分頁：以 type 對應後端 result.documents；缺件時顯示未產生提示
+  for (const k of TABS) {
+    if (!k.startsWith('doc-')) continue;
+    const type = k.slice(4);
+    panels[k] = renderDocument((r.documents || []).find((d) => d.type === type), locale);
+  }
   return `<section class="result"><nav class="tabs"><div class="tablist" role="tablist" aria-label="${esc(t('result.tabs.aria', locale))}">${tabs}</div><span class="gen">${esc(t('result.generatedIn', locale))}: ${esc(status.locale)}</span>
     <button id="new-case" type="button">${ICONS.plus}${esc(t('result.newCase', locale))}</button></nav>
     ${TABS.map((k) => `<div class="panel card" role="tabpanel" id="panel-${k}" aria-labelledby="tab-${k}" data-panel="${k}" ${k === activeTab ? '' : 'hidden'}>${panels[k]}</div>`).join('')}</section>`;

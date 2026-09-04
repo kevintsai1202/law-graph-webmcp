@@ -116,6 +116,29 @@ a { color: var(--color-primary); }
 .badge::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--color-border-strong); }
 .badge.on { color: var(--color-ok); border-color: rgba(21, 128, 61, 0.45); background: var(--color-ok-soft); }
 .badge.on::before { background: var(--color-ok); box-shadow: 0 0 0 3px rgba(21, 128, 61, 0.18); }
+.badge.warn { color: var(--color-warn); border-color: rgba(180, 83, 9, 0.45); background: var(--color-warn-soft); }
+.badge.warn::before { background: var(--color-warn); box-shadow: 0 0 0 3px rgba(180, 83, 9, 0.18); }
+.badge a { color: inherit; text-decoration: none; }
+.badge a:hover { text-decoration: underline; }
+
+.semantic-auth-banner {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--space-3);
+  padding: 10px 16px; margin-bottom: var(--space-4); border-radius: var(--radius-md);
+  background: var(--color-warn-soft); border: 1px solid rgba(180, 83, 9, 0.35);
+  color: var(--color-warn); font-size: 0.88rem;
+}
+.semantic-auth-banner .auth-icon { display: inline-flex; align-items: center; flex-shrink: 0; }
+.semantic-auth-banner .auth-icon svg { width: 20px; height: 20px; }
+.semantic-auth-banner .auth-message { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+.semantic-auth-banner .auth-message strong { font-weight: 600; color: var(--color-text); }
+.semantic-auth-banner .auth-message span { font-size: 0.8rem; color: var(--color-text-sub); }
+.semantic-auth-banner .auth-link {
+  display: inline-flex; align-items: center; padding: 6px 14px;
+  border-radius: var(--radius-pill); background: var(--color-primary);
+  color: #fff; text-decoration: none; font-weight: 600; font-size: 0.82rem;
+  white-space: nowrap; transition: opacity var(--dur-fast) var(--ease);
+}
+.semantic-auth-banner .auth-link:hover { opacity: 0.9; }
 
 /* ── 表單控件 ── */
 select, textarea, input[type=text] {
@@ -136,6 +159,35 @@ label { display: block; }
 .field-hint { display: flex; justify-content: space-between; gap: var(--space-3); font-size: 0.82rem; color: var(--color-text-sub); }
 .field-hint .count { font-variant-numeric: tabular-nums; }
 .field-hint .count.ok { color: var(--color-ok); font-weight: 600; }
+.upload-field { display: flex; flex-direction: column; gap: var(--space-2); }
+.upload-input { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+.upload-dropzone {
+  width: 100%; min-height: 148px; padding: var(--space-4); flex-direction: column;
+  border: 1.5px dashed var(--color-border-strong); border-radius: var(--radius-lg);
+  background: linear-gradient(145deg, var(--color-surface) 0%, var(--color-surface-muted) 100%);
+  color: var(--color-text-sub); text-align: center;
+}
+.upload-dropzone:hover, .upload-dropzone.is-dragging {
+  border-color: var(--color-primary); background: #f3f6ff; color: var(--color-primary); box-shadow: 0 0 0 3px rgba(30, 58, 138, 0.1);
+}
+.upload-dropzone.is-dragging { transform: translateY(-1px); }
+.upload-icon { width: 44px; height: 44px; display: grid; place-items: center; border-radius: 50%; background: var(--color-gold-soft); color: var(--color-gold-text); }
+.upload-icon svg { width: 23px; height: 23px; }
+.upload-copy { display: flex; flex-direction: column; gap: 2px; }
+.upload-copy strong { color: var(--color-heading); font-size: 0.95rem; }
+.upload-copy span { font-size: 0.84rem; }
+.upload-formats { padding: 3px 10px; border: 1px solid var(--color-border); border-radius: var(--radius-pill); background: rgba(255, 255, 255, 0.72); font-size: 0.76rem; color: var(--color-text-sub); }
+.file-list { display: flex; flex-direction: column; gap: var(--space-2); }
+.file-list:empty { display: none; }
+.file-item { display: grid; grid-template-columns: 44px minmax(0, 1fr) 40px; align-items: center; gap: var(--space-3); min-height: 58px; padding: var(--space-2) var(--space-3); border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); box-shadow: var(--shadow-sm); }
+.file-extension { display: grid; place-items: center; width: 42px; height: 42px; border-radius: var(--radius-sm); background: var(--color-gold-soft); color: var(--color-gold-text); font-size: 0.68rem; font-weight: 700; letter-spacing: 0.04em; }
+.file-detail { min-width: 0; display: flex; flex-direction: column; gap: 2px; text-align: left; }
+.file-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--color-heading); font-size: 0.88rem; }
+.file-size { color: var(--color-text-sub); font-size: 0.76rem; font-variant-numeric: tabular-nums; }
+.file-remove { width: 36px; min-height: 36px; padding: 0; border-color: transparent; border-radius: 50%; color: var(--color-text-sub); }
+.file-remove:hover { color: var(--color-bad); border-color: rgba(185, 28, 28, 0.25); background: var(--color-bad-soft); }
+.file-status { font-size: 0.82rem; color: var(--color-text-sub); }
+.file-status.error { color: var(--color-bad); font-weight: 600; }
 
 /* ── 按鈕：一頁只有一個 primary；secondary／ghost 視覺從屬 ── */
 button {
@@ -330,6 +382,7 @@ button svg { width: 18px; height: 18px; flex: 0 0 auto; }
   #stage { padding: var(--space-4) var(--space-3) var(--space-8); }
   .input-main, .questions, .panel, .failed { padding: var(--space-4); }
   .input-actions .primary { width: 100%; }
+  .upload-dropzone { min-height: 132px; padding: var(--space-3); }
   .progress { grid-template-columns: 1fr; gap: var(--space-1); }
   .step { flex-direction: row; text-align: left; min-height: var(--touch); }
   .graph-wrap { grid-template-columns: 1fr; height: 60vh; }
@@ -350,3 +403,46 @@ button svg { width: 18px; height: 18px; flex: 0 0 auto; }
   *, *::before, *::after { animation: none !important; transition-duration: 0.01ms !important; }
   .sample:hover, button:active { transform: none; }
 }
+
+/* ── 輸出項目勾選區（輸入頁）─────────────────────────────────────────────── */
+.outputs { border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: var(--space-3) var(--space-4) var(--space-4); margin-top: var(--space-4); background: var(--color-surface); }
+.outputs legend { font-weight: 600; color: var(--color-heading); padding: 0 var(--space-2); font-size: 0.92rem; }
+.output-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: var(--space-1) var(--space-3); }
+.output-item { display: flex; align-items: center; gap: var(--space-2); min-height: var(--touch); cursor: pointer; font-size: 0.9rem; border-radius: var(--radius-sm); padding: 0 var(--space-2); transition: background var(--dur-fast) var(--ease); }
+.output-item:hover { background: var(--color-surface-muted); }
+.output-item input { width: 16px; height: 16px; accent-color: var(--color-primary); flex: 0 0 auto; }
+.output-item:has(input:checked) { color: var(--color-heading); font-weight: 600; }
+.outputs .field-hint { margin-top: var(--space-2); justify-content: flex-start; }
+
+/* ── 公文書狀版面（結果頁 doc-* 分頁）───────────────────────────────────── */
+.legal-doc { max-width: 720px; margin: 0 auto; padding: var(--space-6) var(--space-5); background: var(--color-surface); border: 1px solid var(--color-border); border-top: 3px double var(--color-gold); box-shadow: var(--shadow-sm); font-family: var(--font-heading); line-height: 2; color: var(--color-text); }
+.legal-doc .doc-title { text-align: center; font-size: 1.5rem; letter-spacing: 0.35em; text-indent: 0.35em; color: var(--color-heading); margin: 0 0 var(--space-5); }
+.legal-doc .doc-parties { width: auto; margin: 0 0 var(--space-5); border-collapse: collapse; }
+.legal-doc .doc-parties th { text-align: justify; text-align-last: justify; min-width: 5em; padding: var(--space-1) var(--space-4) var(--space-1) 0; font-weight: 600; color: var(--color-heading); vertical-align: top; }
+.legal-doc .doc-parties td { padding: var(--space-1) 0; }
+.legal-doc .doc-body p { margin: 0 0 var(--space-3); text-align: justify; text-indent: 0; }
+.legal-doc .doc-section { margin: var(--space-5) 0 var(--space-2); font-size: 1.02rem; color: var(--color-heading); display: flex; align-items: center; gap: var(--space-2); }
+.legal-doc .doc-section::before { content: ''; width: 3px; height: 1em; background: var(--color-gold); border-radius: 2px; }
+.legal-doc .doc-attachments { margin: 0 0 var(--space-4); padding-left: 1.5em; }
+.legal-doc .doc-attachments li { margin-bottom: var(--space-1); }
+.legal-doc .doc-footer { margin-top: var(--space-6); padding-top: var(--space-4); border-top: 1px solid var(--color-border); display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--space-3); }
+.legal-doc .doc-to { font-weight: 600; color: var(--color-heading); }
+.legal-doc .doc-date { text-align: right; margin-left: auto; }
+.legal-doc .disclaimer { margin-top: var(--space-4); font-family: var(--font-body); }
+.doc-missing { display: flex; gap: var(--space-2); align-items: flex-start; color: var(--color-text-sub); background: var(--color-warn-soft); border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: var(--space-4); }
+.doc-missing svg { width: 18px; height: 18px; flex: 0 0 auto; margin-top: 3px; color: var(--color-warn); }
+@media (max-width: 640px) { .legal-doc { padding: var(--space-5) var(--space-4); } }
+
+/* 書狀標題：蓋掉 .panel h3 的小節樣式，恢復置中狀別標題（含 h4 證物節，維持小節條） */
+.panel .legal-doc .doc-title { display: block; text-align: center; font-family: var(--font-heading); font-size: 1.5rem; margin: 0 0 var(--space-5); }
+.panel .legal-doc .doc-title::before { content: none; }
+
+/* ── 唯讀 Tool Inspector 工具清單 ─────────────────────────────────────────── */
+#insp-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-1); }
+#insp-list li { background: var(--color-surface-muted); border: 1px solid var(--color-border); border-radius: var(--radius-sm); padding: var(--space-2) var(--space-3); font-size: 0.82rem; line-height: 1.45; }
+#insp-list li code { font-family: var(--font-mono); font-weight: 700; color: var(--color-heading); }
+#insp-list li small { display: block; margin-top: 2px; color: var(--color-text-sub); }
+#insp-list .insp-ro { margin-left: var(--space-2); font-size: 0.7rem; font-weight: 600; color: var(--color-gold-text); background: var(--color-gold-soft); border: 1px solid var(--color-gold); border-radius: var(--radius-pill); padding: 0 var(--space-2); vertical-align: middle; }
+#insp-list .insp-empty { color: var(--color-text-sub); border-style: dashed; }
+.insp-note { margin: 0; font-size: 0.76rem; color: var(--color-text-sub); line-height: 1.5; }
+#insp-state { margin: 0; font-size: 0.84rem; font-weight: 600; color: var(--color-heading); }

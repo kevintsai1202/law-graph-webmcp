@@ -1,8 +1,9 @@
 /** REST 封裝；fetchImpl 可注入以便測試。 */
 export function createCaseClient(fetchImpl = globalThis.fetch, base = '') {
-  /** 共用呼叫：JSON 進出；非 2xx 丟出帶 status／code 的 Error。 */
+  /** 共用呼叫：JSON 或 FormData 進、JSON 出；非 2xx 丟出帶 status／code 的 Error。 */
   async function call(path, init) {
-    const res = await fetchImpl(base + path, { headers: { 'Content-Type': 'application/json' }, ...init });
+    const isForm = typeof FormData !== 'undefined' && init?.body instanceof FormData;
+    const res = await fetchImpl(base + path, { ...(!isForm && { headers: { 'Content-Type': 'application/json' } }), ...init });
     const body = await res.json().catch(() => ({}));
     if (!res.ok) {
       const e = new Error(body.message || String(res.status));
@@ -11,11 +12,26 @@ export function createCaseClient(fetchImpl = globalThis.fetch, base = '') {
     return body;
   }
   return {
-    start: (caseText, locale) => call('/api/cases', { method: 'POST', body: JSON.stringify({ caseText, locale }) }),
+    /** 有附件時改用 multipart；無附件維持既有 JSON 契約與 WebMCP 相容性。 */
+    start: (caseText, locale, documents, files = []) => {
+      if (Array.isArray(files) && files.length) {
+        const form = new FormData();
+        form.append('caseText', caseText || '');
+        form.append('locale', locale);
+        (Array.isArray(documents) ? documents : []).forEach((document) => form.append('documents', document));
+        files.forEach((file) => form.append('files', file, file.name));
+        return call('/api/cases', { method: 'POST', body: form });
+      }
+      return call('/api/cases', {
+        method: 'POST',
+        body: JSON.stringify(Array.isArray(documents) && documents.length ? { caseText, locale, documents } : { caseText, locale })
+      });
+    },
     status: (id) => call(`/api/cases/${encodeURIComponent(id)}`),
     answer: (id, answers) => call(`/api/cases/${encodeURIComponent(id)}/answers`, { method: 'POST', body: JSON.stringify({ answers }) }),
     samples: (locale) => call(`/api/samples?locale=${encodeURIComponent(locale)}`),
     verify: (ref) => call(`/api/laws/verify?ref=${encodeURIComponent(ref)}`),
+    authStatus: () => call('/api/auth/tw-legal-rag/status'),
     /** 每 intervalMs 輪詢一次；COMPLETED／FAILED／WAITING 自動停（WAITING 由人工回答後以 answer 續接）；回傳 stop()。 */
     poll(id, onStatus, intervalMs = 2000) {
       let stopped = false; let timer = null;

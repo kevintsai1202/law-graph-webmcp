@@ -2,10 +2,20 @@ import { t, detectLocale, DICT } from './i18n.js';
 import { States, reduce, initialState } from './state.js';
 import { esc, mount as mountHtml } from './views/util.js';
 import { ICONS } from './views/icons.js';
-import { renderInput, bindInput } from './views/input.js';
+import { renderInput, bindInput, MIN_CHARS } from './views/input.js';
 import { renderProgress, renderCancel } from './views/progress.js';
 import { renderQuestions, bindQuestions } from './views/questions.js';
-import { renderResult, bindResult, renderSections } from './views/result.js';
+import { renderResult, bindResult, renderSections, tabsFor, tabLabel } from './views/result.js';
+import { normalizeOutputs, OUTPUT_OPTIONS } from './documents.js';
+
+/** 語意檢索回報需要授權時，產生保留目前頁面的 OAuth 啟動路徑。 */
+export function semanticAuthPath(status, locationLike = globalThis.location) {
+  if (!status?.result?.research?.coverage?.authorizationRequired) return null;
+  const search = locationLike?.search || '';
+  if (new URLSearchParams(search).has('mcpAuth')) return null;
+  const returnTo = `${locationLike?.pathname || '/'}${search}`;
+  return `/api/auth/tw-legal-rag/start?returnTo=${encodeURIComponent(returnTo)}`;
+}
 
 /** 應用程式核心：持有狀態、驅動輪詢、切換 view；WebMCP 由 webmcp.js 透過 onChange 掛上。 */
 export function createApp({ root, client, storage, navigatorLanguage, partialCollapseMs = 5000 }) {
@@ -21,10 +31,30 @@ export function createApp({ root, client, storage, navigatorLanguage, partialCol
   let startRequestId = 0;
   /** 結果頁目前分頁。 */
   let activeTab = 'graph';
+  /** 此案件選擇的輸出；需跨輪詢與重新整理保留，才能呈現正確結果分頁。 */
+  let selectedOutputs = ['graph'];
   /** QUESTIONS 頁的答案草稿；AI 填入後仍由人檢查並送出。 */
   let questionDraft = {};
   /** 最近一次 Agent 實際填入欄位的提示；避免只回報模擬成功但畫面沒有證據。 */
   let questionFillNotice = null;
+  /** 語意檢索 MCP 授權狀態（null、未啟用、或已啟用未授權／已授權）。 */
+  let semanticAuth = null;
+  /** OAuth callback query 已被消耗時，不再自動導向，避免授權失敗造成重導迴圈。 */
+  const hadAuthCallback = consumeAuthCallbackQuery();
+  /** 同一頁面生命週期只允許自動導向授權一次。 */
+  let authRedirected = hadAuthCallback;
+
+  /** 向後端查詢語意 MCP 的授權狀態。 */
+  async function refreshAuthStatus() {
+    if (typeof client?.authStatus === 'function') {
+      try {
+        semanticAuth = await client.authStatus();
+      } catch {
+        semanticAuth = null;
+      }
+    }
+    return semanticAuth;
+  }
   /** onChange 訂閱者：(state, kind) => void；kind 為 'STATE' 或 'RESULT_RENDERED'。 */
   const listeners = new Set();
   const stage = () => root.querySelector('#stage');
@@ -40,6 +70,11 @@ export function createApp({ root, client, storage, navigatorLanguage, partialCol
       questionDraft = Object.fromEntries(Object.entries(questionDraft).filter(([id]) => ids.has(id)));
     }
     state = nextState;
+    const authPath = semanticAuthPath(nextState.last);
+    if (!authRedirected && authPath && typeof globalThis.location?.assign === 'function') {
+      authRedirected = true;
+      globalThis.location.assign(authPath);
+    }
     render();
     listeners.forEach((l) => l(state, 'STATE'));
   }
@@ -51,8 +86,8 @@ export function createApp({ root, client, storage, navigatorLanguage, partialCol
     root.querySelectorAll('[data-i18n]').forEach((n) => { n.textContent = t(n.dataset.i18n, locale); });
     switch (state.view) {
       case States.INPUT:
-        mountHtml(el, renderInput({ samples }, locale));
-        bindInput(el, { onSubmit: start, onSample: startSample });
+        mountHtml(el, renderInput({ samples, semanticAuth }, locale));
+        bindInput(el, { onSubmit: start, onSample: startSample }, locale);
         break;
       case States.RUNNING:
         // 放棄按鈕緊接進度列，捲動前就看得到
@@ -69,7 +104,7 @@ export function createApp({ root, client, storage, navigatorLanguage, partialCol
         scheduleCollapse(el);
         break;
       case States.RESULT:
-        mountHtml(el, renderResult({ status: state.last, activeTab }, locale));
+        mountHtml(el, renderResult({ status: state.last, activeTab, outputs: selectedOutputs }, locale));
         bindResult(el, { onTab: (k) => { activeTab = k; render(); }, onNewCase: reset });
         listeners.forEach((l) => l(state, 'RESULT_RENDERED'));
         break;
@@ -103,14 +138,26 @@ export function createApp({ root, client, storage, navigatorLanguage, partialCol
   }
 
   /** 開始（或重新開始）輪詢指定案件。 */
-  function beginPolling(caseId) {
+  function beginPolling(caseId, { resumed = false } = {}) {
     if (stopPolling) stopPolling();
-    stopPolling = client.poll(caseId, (s) => dispatch({ type: 'STATUS', status: s }));
+    stopPolling = client.poll(caseId, (s) => {
+      // 續接（F5／重開頁面）時若案件已不存在（服務重啟後記憶體案件清空），直接清除記錄回到輸入頁，不當成分析失敗。
+      if (resumed && s?.status === 'FAILED' && s?.error?.code === 'CASE_NOT_FOUND') {
+        storage.removeItem('caseId');
+        storage.removeItem('outputs');
+        dispatch({ type: 'RESET' });
+        return;
+      }
+      dispatch({ type: 'STATUS', status: s });
+    });
   }
 
   /** 啟動新案件；回傳 CaseStatus（空白文字回 null）。 */
-  async function start(text) {
-    if (!text || !text.trim()) return null;
+  async function start(text, outputs, files = []) {
+    if ((!text || !text.trim()) && (!Array.isArray(files) || !files.length)) return null;
+
+    selectedOutputs = normalizeOutputs(outputs);
+    activeTab = selectedOutputs.includes('graph') ? 'graph' : 'doc-' + selectedOutputs[0];
 
     // WebMCP 呼叫可能因網路或 Agent host 延遲；先切換進度頁，讓使用者立即看到案件已進入啟動流程。
     const requestId = ++startRequestId;
@@ -118,7 +165,7 @@ export function createApp({ root, client, storage, navigatorLanguage, partialCol
 
     let s;
     try {
-      s = await client.start(text.trim(), locale);
+      s = await client.start((text || '').trim(), locale, selectedOutputs.filter((o) => o !== 'graph'), files);
     } catch (error) {
       // 已取消或已被另一個請求取代時，不讓過期錯誤覆蓋目前畫面。
       if (requestId === startRequestId) {
@@ -138,13 +185,14 @@ export function createApp({ root, client, storage, navigatorLanguage, partialCol
     // 使用者在 POST 完成前按下取消時，忽略這個已失效的案件回應。
     if (requestId !== startRequestId) return null;
     storage.setItem('caseId', s.caseId);
+    storage.setItem('outputs', JSON.stringify(selectedOutputs));
     dispatch({ type: 'START', caseId: s.caseId });
     beginPolling(s.caseId);
     return s;
   }
 
   /** 以示範案例 id 啟動；找不到回 null。 */
-  async function startSample(id) {
+  async function startSample(id, outputs) {
     // Agent 通常會使用 listSampleCases 的 id；也接受畫面上的標題，降低自然語言呼叫的脆弱性。
     const value = String(id || '').trim();
     let smp = samples.find((x) => x.id === value || x.title === value);
@@ -154,7 +202,7 @@ export function createApp({ root, client, storage, navigatorLanguage, partialCol
       if (loaded.length) samples = loaded;
       smp = samples.find((x) => x.id === value || x.title === value);
     }
-    return smp ? start(smp.text) : null;
+    return smp ? start(smp.text, outputs) : null;
   }
 
   /** 送出回答並續接輪詢。 */
@@ -281,13 +329,121 @@ export function createApp({ root, client, storage, navigatorLanguage, partialCol
     };
   }
 
+  /** 將 WebMCP 指定的輸出套用到可見勾選框；只更新表單，不會直接送出案件。 */
+  function setOutputs(outputs) {
+    if (state.view !== States.INPUT) {
+      return { ok: false, error: 'INPUT_NOT_VISIBLE', message: 'Output checkboxes are only visible on the input page.' };
+    }
+    const requested = Array.isArray(outputs) ? outputs : [];
+    if (!requested.some((output) => OUTPUT_OPTIONS.includes(output))) {
+      return { ok: false, error: 'INVALID_OUTPUTS', validOutputs: [...OUTPUT_OPTIONS], message: 'outputs must contain at least one valid option.' };
+    }
+    const applied = normalizeOutputs(requested);
+    const boxes = [...root.querySelectorAll('input[name="outputs"]')];
+    if (!boxes.length) {
+      return { ok: false, error: 'INPUT_NOT_VISIBLE', message: 'Output checkboxes are not rendered yet.' };
+    }
+    boxes.forEach((box) => { box.checked = applied.includes(box.value); });
+    boxes[0].dispatchEvent(new Event('change', { bubbles: true }));
+    return {
+      ok: true,
+      submitted: false,
+      humanReviewRequired: true,
+      applied,
+      message: 'Outputs ticked on the visible form. The human must review and click Analyse, or call startCase with documents to start directly.'
+    };
+  }
+
+  /** 取得單一輸出代碼在目前語系的顯示名稱。 */
+  function outputLabel(code) {
+    return code === 'graph' ? t('output.graph', locale) : t('doc.' + code, locale);
+  }
+
+  /** 回傳輸出選項及勾選狀態，供 WebMCP 讀取可見表單。 */
+  function getOutputOptions() {
+    const boxes = state.view === States.INPUT ? [...root.querySelectorAll('input[name="outputs"]')] : [];
+    const checkedSet = new Set(boxes.length ? boxes.filter((box) => box.checked).map((box) => box.value) : selectedOutputs);
+    const options = OUTPUT_OPTIONS.map((code) => ({
+      code,
+      label: outputLabel(code),
+      kind: code === 'graph' ? 'graph' : 'document',
+      checked: checkedSet.has(code),
+      isDefault: code === 'graph'
+    }));
+    return {
+      ok: true,
+      view: state.view,
+      rendered: boxes.length > 0,
+      count: options.length,
+      checkedCount: options.filter((option) => option.checked).length,
+      minRequired: 1,
+      options,
+      nextAction: state.view === States.INPUT
+        ? 'Use setOutputSelection to tick outputs, or pass documents to startCase.'
+        : 'Output checkboxes are only editable on the input page.'
+    };
+  }
+
+  /** 回傳輸入頁可見內容摘要；案情文字設長度上限，避免 WebMCP 回傳過大。 */
+  function getInputForm() {
+    if (state.view !== States.INPUT) {
+      return { ok: false, error: 'INPUT_NOT_VISIBLE', view: state.view, message: 'The input form is only visible on the input page.' };
+    }
+    const fullText = root.querySelector('#case-text')?.value ?? '';
+    const CASE_TEXT_PREVIEW = 800;
+    const submit = root.querySelector('#case-submit');
+    return {
+      ok: true,
+      view: state.view,
+      locale,
+      caseText: fullText.slice(0, CASE_TEXT_PREVIEW),
+      caseTextTruncated: fullText.length > CASE_TEXT_PREVIEW,
+      charCount: fullText.trim().length,
+      minChars: MIN_CHARS,
+      canSubmit: Boolean(submit) && !submit.disabled,
+      outputs: getOutputOptions(),
+      sampleCount: samples.length,
+      samples: samples.map(({ id, title }) => ({ id, title }))
+    };
+  }
+
+  /** 回傳完成頁分頁、目前分頁及對應成果是否實際存在。 */
+  function getResultTabs() {
+    if (state.view !== States.RESULT) {
+      return { ok: false, error: 'RESULT_NOT_VISIBLE', view: state.view, message: 'Result tabs are only visible after the case is completed.' };
+    }
+    const result = state.last?.result || {};
+    const tabs = tabsFor(selectedOutputs).map((id) => {
+      const available = id === 'graph'
+        ? Boolean(result.graph)
+        : id.startsWith('doc-')
+          ? (result.documents || []).some((document) => document.type === id.slice(4))
+          : Boolean(result[id]);
+      return { id, label: tabLabel(id, locale), active: id === activeTab, available };
+    });
+    return {
+      ok: true,
+      view: state.view,
+      generatedLocale: state.last?.locale || locale,
+      outputs: [...selectedOutputs],
+      count: tabs.length,
+      activeTab,
+      tabs,
+      nextAction: 'Use getAnalysis with section brainstorm/research/analysis/documents, or getGraphSummary for the graph.'
+    };
+  }
+
   /** 捨棄目前案件，回到輸入頁。 */
-  function reset() {
+  async function reset() {
     startRequestId++;
     if (stopPolling) stopPolling();
     stopPolling = null;
     storage.removeItem('caseId');
+    storage.removeItem('outputs');
     activeTab = 'graph';
+    selectedOutputs = ['graph'];
+    authRedirected = false;
+    await refreshAuthStatus();
     dispatch({ type: 'RESET' });
   }
 
@@ -306,15 +462,41 @@ export function createApp({ root, client, storage, navigatorLanguage, partialCol
     const sel = root.querySelector('#lang-select');
     sel.value = locale;
     sel.addEventListener('change', () => setLocale(sel.value));
+    await refreshAuthStatus();
     samples = await client.samples(locale).catch(() => []);
     const saved = storage.getItem('caseId');
-    if (saved) { dispatch({ type: 'START', caseId: saved }); beginPolling(saved); } else render();
+    if (saved) {
+      try {
+        selectedOutputs = normalizeOutputs(JSON.parse(storage.getItem('outputs')));
+      } catch {
+        selectedOutputs = ['graph'];
+      }
+      activeTab = selectedOutputs.includes('graph') ? 'graph' : 'doc-' + selectedOutputs[0];
+      dispatch({ type: 'START', caseId: saved });
+      beginPolling(saved, { resumed: true });
+    } else render();
   }
 
   return {
     mount, dispatch, getState: () => state, getLocale: () => locale, getSamples: () => samples,
-    setLocale, start, startSample, answer, fillQuestions, getQuestionProgress, reset,
+    getAuthStatus: () => semanticAuth, refreshAuthStatus,
+    setLocale, start, startSample, answer, fillQuestions, getQuestionProgress,
+    setOutputs, getOutputOptions, getInputForm, getResultTabs, reset,
     verify: (ref) => client.verify(ref),
     onChange: (l) => listeners.add(l)
   };
+}
+
+/** 消耗 OAuth callback 標記並清理網址，避免重新整理後重複處理授權結果。 */
+function consumeAuthCallbackQuery() {
+  const location = globalThis.location;
+  const params = new URLSearchParams(location?.search || '');
+  if (!params.has('mcpAuth')) return false;
+  params.delete('mcpAuth');
+  if (typeof globalThis.history?.replaceState === 'function') {
+    const query = params.toString();
+    const path = (location?.pathname || '/') + (query ? '?' + query : '') + (location?.hash || '');
+    globalThis.history.replaceState(null, '', path);
+  }
+  return true;
 }
