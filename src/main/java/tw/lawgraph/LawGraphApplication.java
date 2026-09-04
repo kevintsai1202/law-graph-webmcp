@@ -6,6 +6,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 /** 應用程式入口：啟用 Embabel Agent 平台與 Spring MVC。 */
 @SpringBootApplication
+@org.springframework.scheduling.annotation.EnableScheduling
 @EnableAgents
 public class LawGraphApplication {
 

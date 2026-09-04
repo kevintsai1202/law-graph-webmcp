@@ -42,22 +42,22 @@ test('選單上有 Law Powers 技能常駐連結，切換語系後文字跟著�
   const link = page.locator('#lawpowers-link');
   await expect(link).toHaveAttribute('href', 'https://kevintsai1202.github.io/law-powers/');
   await expect(link).toHaveAttribute('target', '_blank');
-  await page.selectOption('#lang-select', 'zh-TW');
+  await page.evaluate((l) => window.__lawGraphApp.setLocale(l), 'zh-TW'); // 頁首已無語系選單，改由 app API 切換
   await expect(link).toHaveText(/Law Powers 技能/);
-  await page.selectOption('#lang-select', 'en');
+  await page.evaluate((l) => window.__lawGraphApp.setLocale(l), 'en'); // 頁首已無語系選單，改由 app API 切換
   await expect(link).toHaveText(/Law Powers skills/);
 });
 test('input view lists four sample cards and switches locale', async ({ page }) => {
   await expect(page.locator('.sample')).toHaveCount(4);
   await expect(page.locator('#case-submit')).toHaveText('Analyse');
-  await page.selectOption('#lang-select', 'zh-TW');
+  await page.evaluate((l) => window.__lawGraphApp.setLocale(l), 'zh-TW'); // 頁首已無語系選單，改由 app API 切換
   await expect(page.locator('#case-submit')).toHaveText('開始分析');
   await expect(page.locator('h1')).toHaveText('法律關係圖');
   await expect(page.locator('#agent-badge')).toHaveText('Agent 工具：可用');
 });
 
 test('modern upload component shows file details and supports removal', async ({ page }) => {
-  await page.selectOption('#lang-select', 'zh-TW');
+  await page.evaluate((l) => window.__lawGraphApp.setLocale(l), 'zh-TW'); // 頁首已無語系選單，改由 app API 切換
   await expect(page.locator('#file-dropzone')).toContainText('將參考文件拖曳到這裡');
 
   await page.locator('#case-files').setInputFiles({

@@ -27,7 +27,9 @@ class LegalPromptsTest {
         assertTrue(prompt.contains("dr-lawbot"), "需宣告語意軌的來源 identity");
         assertTrue(prompt.contains("semantic track"), "需宣告雙軌 coverage 與降級規則");
         assertTrue(prompt.contains("Respond in zh-TW"));
-        assertTrue(prompt.contains("（"), "識別碼雙寫規則需含全形括號範例");
+        assertTrue(prompt.contains("written once, in Chinese"), "中文介面識別碼只寫一次，不得雙寫");
+        assertTrue(prompt.contains("Never repeat the same identifier in parentheses"));
+        assertTrue(LegalPrompts.system(Locale.EN).contains("（"), "英文介面才要求英文標籤＋全形括號中文雙寫");
         assertTrue(prompt.contains("questions"), "技能要求詢問使用者時改寫入 questions[]");
         assertTrue(LegalPrompts.brainstorm(input).contains("empty questions[]"),
                 "案情與附件已明確時，模型必須能回空問題清單並略過等待步驟");
@@ -82,8 +84,26 @@ class LegalPromptsTest {
         assertTrue(prompt.contains("民法第184條第1項"), "研究結果要原文列入 prompt 供複製");
         assertTrue(prompt.contains("copied verbatim"), "引用只能逐字複製已驗證的法條與判決");
         assertTrue(prompt.contains("issues[]"), "爭點整理要求以表格列（issues[]）輸出");
-        assertTrue(prompt.contains("plaintiff") && prompt.contains("defendant") && prompt.contains("evidence"),
-                "每列需含兩造主張與證據欄");
+        assertTrue(prompt.contains("plaintiffEvidence") && prompt.contains("defendantEvidence") && prompt.contains("claimsBasis[]")
+                && prompt.contains("undisputed[]"), "需對應司法院官方四表欄位");
+        assertTrue(prompt.contains("訴之聲明") && prompt.contains("願供擔保，請准宣告假執行"), "起訴狀需帶入司法院範本結構");
+        assertTrue(prompt.contains("民事訴訟法第268條之1"), "爭點整理需帶入官方表格依據");
+        assertFalse(prompt.contains("民事答辯狀（司法院範本"), "未勾選的狀別不得帶入其範本");
+        assertTrue(prompt.contains("Taiwan terminology only"));
+    }
+
+    /** 勾選聲請狀且填寫聲請事項時，prompt 要帶入聲請事項與聲請狀範本；系統 prompt 需含用語與精簡規範。 */
+    @Test
+    void motionRequestAndRegisterRulesFlowIntoPrompts() {
+        var motionInput = new CaseInput("A rear-ended B.", Locale.ZH_TW, java.util.List.of("motion"), "聲請調查行車紀錄器影像");
+        String prompt = LegalPrompts.draftDocuments(motionInput,
+                new BrainstormResult(List.of(), List.of(), List.of(), List.of(), List.of()),
+                new ResearchResult(List.of(), List.of(), List.of()), new AnalysisResult(List.of(), "", List.of(), ""));
+        assertTrue(prompt.contains("聲請調查行車紀錄器影像"));
+        assertTrue(prompt.contains("民事聲請○○狀"));
+        String system = LegalPrompts.system(Locale.ZH_TW);
+        assertTrue(system.contains("契約 not 合同") && system.contains("兩造"), "系統 prompt 需列台灣用語規範");
+        assertTrue(system.contains("one legal point per paragraph"), "系統 prompt 需要求精簡攻防寫法");
     }
 
     /** 建圖 prompt 必須要求 ref、jid 逐字複製且禁止模型自填 met。 */

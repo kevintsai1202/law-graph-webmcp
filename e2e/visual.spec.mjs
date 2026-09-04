@@ -67,7 +67,7 @@ for (const w of WIDTHS) {
     test.beforeEach(async ({ page }) => {
       mkdirSync(dir, { recursive: true });
       await page.goto('/');
-      await page.selectOption('#lang-select', 'zh-TW');
+      await page.evaluate((l) => window.__lawGraphApp.setLocale(l), 'zh-TW'); // 頁首已無語系選單，改由 app API 切換
       await expect(page.locator('.sample')).toHaveCount(4);
     });
 
@@ -79,7 +79,7 @@ for (const w of WIDTHS) {
       await page.fill('#case-text', '甲駕車進入市區十字路口後，與乙車發生碰撞，乙主張甲闖紅燈並請求醫療費與薪資損失。');
       await expect(page.locator('#case-submit')).toBeEnabled();
       await expect(page.locator('#case-count')).toHaveClass(/ok/);
-      for (const sel of ['#case-submit', '.sample', '#lang-select']) {
+      for (const sel of ['#case-submit', '.sample', '#auth-slot']) {
         const box = await page.locator(sel).first().boundingBox();
         expect(box.height, `${sel} 高度`).toBeGreaterThanOrEqual(44);
       }

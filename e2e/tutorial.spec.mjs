@@ -24,7 +24,7 @@ for (const locale of ['en', 'zh-TW']) {
 
     // 1. 輸入頁與語系
     await page.goto('/');
-    await page.selectOption('#lang-select', locale);
+    await page.evaluate((l) => window.__lawGraphApp.setLocale(l), locale); // 頁首已無語系選單，改由 app API 切換
     await expect(page.locator('.sample')).toHaveCount(4);
     await shot('input-view');
 

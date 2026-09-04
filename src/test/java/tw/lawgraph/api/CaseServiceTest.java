@@ -18,15 +18,21 @@ import tw.lawgraph.domain.Question;
 import tw.lawgraph.domain.SecondRoundAnswers;
 import tw.lawgraph.domain.UserAnswers;
 
+import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -95,5 +101,36 @@ class CaseServiceTest {
         var status = service.answer("p1", List.of(new Answer("r2q1", "second")));
         verify(blackboard).addObject(new SecondRoundAnswers(List.of(new Answer("r2q1", "second"))));
         verify(platform, times(2)).start(process); assertNotNull(status);
+    }
+
+    /** 同一步驤超過上限：看門狗 kill 流程，狀態回 FAILED／STEP_TIMEOUT 並帶中文逾時訊息。 */
+    @Test void sweepKillsStuckStepAndReportsTimeout() {
+        var clock = mock(Clock.class);
+        when(clock.millis()).thenReturn(0L, 301_000L);
+        var timed = new CaseService(platform, new StepWatchdog(Duration.ofSeconds(300)), clock);
+        timed.start("x", Locale.ZH_TW, List.of());
+        timed.sweep();
+        verify(process, never()).kill();
+        when(process.getStatus()).thenReturn(AgentProcessStatusCode.RUNNING, AgentProcessStatusCode.RUNNING,
+                AgentProcessStatusCode.KILLED);
+        timed.sweep();
+        verify(process).kill();
+        var status = timed.status("p1");
+        assertEquals("FAILED", status.status());
+        assertEquals("STEP_TIMEOUT", status.error().code());
+        assertEquals("BRAINSTORM", status.error().step());
+        assertTrue(status.error().message().contains("300"), status.error().message());
+        assertTrue(status.error().message().contains("逾時"), status.error().message());
+    }
+
+    /** 等待回答不計入逾時。 */
+    @Test void sweepIgnoresWaitingProcesses() {
+        var clock = mock(Clock.class);
+        when(clock.millis()).thenReturn(0L, 900_000L);
+        var timed = new CaseService(platform, new StepWatchdog(Duration.ofSeconds(300)), clock);
+        timed.start("x", Locale.EN, List.of());
+        when(process.getStatus()).thenReturn(AgentProcessStatusCode.WAITING);
+        timed.sweep(); timed.sweep();
+        verify(process, never()).kill();
     }
 }

@@ -41,6 +41,8 @@ export function createApp({ root, client, storage, navigatorLanguage, partialCol
   let semanticAuth = null;
   /** 今日 token 用量快照（/api/usage）；null 代表尚未取得。 */
   let usage = null;
+  /** 呼叫端今日案件配額（/api/quota）；null 代表尚未取得或後端不限制。 */
+  let quota = null;
   /** OAuth callback query 已被消耗時，不再自動導向，避免授權失敗造成重導迴圈。 */
   const hadAuthCallback = consumeAuthCallbackQuery();
   /** 同一頁面生命週期只允許自動導向授權一次。 */
@@ -59,13 +61,20 @@ export function createApp({ root, client, storage, navigatorLanguage, partialCol
     return semanticAuth;
   }
 
-  /** 向後端查詢今日 token 用量；失敗時視為未知、不阻擋畫面。 */
+  /** 向後端查詢今日 token 用量與本人案件配額；失敗時視為未知、不阻擋畫面。 */
   async function refreshUsage() {
     if (typeof client?.usage === 'function') {
       try {
         usage = await client.usage();
       } catch {
         usage = null;
+      }
+    }
+    if (typeof client?.quota === 'function') {
+      try {
+        quota = await client.quota();
+      } catch {
+        quota = null;
       }
     }
     return usage;
@@ -101,7 +110,7 @@ export function createApp({ root, client, storage, navigatorLanguage, partialCol
     root.querySelectorAll('[data-i18n]').forEach((n) => { n.textContent = t(n.dataset.i18n, locale); });
     switch (state.view) {
       case States.INPUT:
-        mountHtml(el, renderInput({ samples, semanticAuth, usage }, locale));
+        mountHtml(el, renderInput({ samples, semanticAuth, usage, quota }, locale));
         bindInput(el, { onSubmit: start, onSample: startSample }, locale);
         break;
       case States.RUNNING:
@@ -150,6 +159,7 @@ export function createApp({ root, client, storage, navigatorLanguage, partialCol
     return `<section class="failed card" role="alert"><h2>${ICONS.alert}${esc(t('failed.title', loc))}</h2>
       <p class="code">${esc(error?.code || '')} @ ${esc(error?.step || '')}</p><p>${esc(error?.message || '')}</p>
       ${error?.code === 'DAILY_TOKEN_LIMIT' ? `<p class="alt">${esc(t('usage.exhausted.tip', loc))} <a href="${LAW_POWERS_URL}" target="_blank" rel="noopener">${esc(t('usage.exhausted.action', loc))} ↗</a></p>` : ''}
+      ${error?.code === 'DAILY_CASE_LIMIT' ? `<p class="alt">${esc(t('quota.reason', loc))} <a href="${LAW_POWERS_URL}" target="_blank" rel="noopener">${esc(t('usage.exhausted.action', loc))} ↗</a></p>` : ''}
       <div class="actions"><button id="retry" type="button" class="primary">${ICONS.refresh}${esc(t('failed.retry', loc))}</button></div></section>`;
   }
 
@@ -169,7 +179,7 @@ export function createApp({ root, client, storage, navigatorLanguage, partialCol
   }
 
   /** 啟動新案件；回傳 CaseStatus（空白文字回 null）。 */
-  async function start(text, outputs, files = []) {
+  async function start(text, outputs, files = [], motionRequest = '') {
     if ((!text || !text.trim()) && (!Array.isArray(files) || !files.length)) return null;
 
     selectedOutputs = normalizeOutputs(outputs);
@@ -181,7 +191,8 @@ export function createApp({ root, client, storage, navigatorLanguage, partialCol
 
     let s;
     try {
-      s = await client.start((text || '').trim(), locale, selectedOutputs.filter((o) => o !== 'graph'), files);
+      s = await client.start((text || '').trim(), locale, selectedOutputs.filter((o) => o !== 'graph'), files, motionRequest);
+      refreshUsage().catch(() => {});
     } catch (error) {
       // 已取消或已被另一個請求取代時，不讓過期錯誤覆蓋目前畫面。
       if (requestId === startRequestId) {
@@ -475,9 +486,9 @@ export function createApp({ root, client, storage, navigatorLanguage, partialCol
 
   /** 掛載：語系選單、載示範案例、續接進行中的 case。 */
   async function mount() {
+    // 語系選單已自頁首移除（語系改由瀏覽器語言決定）；保留相容：若頁面仍有選單就綁定。
     const sel = root.querySelector('#lang-select');
-    sel.value = locale;
-    sel.addEventListener('change', () => setLocale(sel.value));
+    if (sel) { sel.value = locale; sel.addEventListener('change', () => setLocale(sel.value)); }
     await refreshAuthStatus();
     samples = await client.samples(locale).catch(() => []);
     const saved = storage.getItem('caseId');
@@ -496,6 +507,8 @@ export function createApp({ root, client, storage, navigatorLanguage, partialCol
   return {
     mount, dispatch, getState: () => state, getLocale: () => locale, getSamples: () => samples,
     getAuthStatus: () => semanticAuth, refreshAuthStatus, getUsage: () => usage, refreshUsage,
+    /** 呼叫端今日配額（含 loggedIn／memberLimit）與 REST client，供右上角登入區使用。 */
+    getQuota: () => quota, client,
     setLocale, start, startSample, answer, fillQuestions, getQuestionProgress,
     setOutputs, getOutputOptions, getInputForm, getResultTabs, reset,
     verify: (ref) => client.verify(ref),

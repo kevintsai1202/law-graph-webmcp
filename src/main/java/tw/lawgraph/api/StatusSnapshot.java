@@ -12,8 +12,8 @@ import tw.lawgraph.domain.UserAnswers;
 
 import java.util.List;
 
-/** 從 AgentProcess blackboard 擷取的純資料快照。 */
+/** 從 AgentProcess blackboard 擷取的純資料快照；failureCode 由應用層指定（例如看門狗的 STEP_TIMEOUT），null 時沿用 Embabel 狀態碼。 */
 public record StatusSnapshot(String caseId, Locale locale, AgentProcessStatusCode code,
                              BrainstormResult brainstorm, List<Question> pendingQuestions, UserAnswers answers,
                              ResearchResult research, AnalysisResult analysis, DraftedDocuments documents,
-                             GraphOutcome outcome, String failure) {}
+                             GraphOutcome outcome, String failure, String failureCode) {}

@@ -26,24 +26,50 @@ import java.util.List;
 @RequestMapping("/api/cases")
 public class CaseController {
     /** 啟動案件請求；documents 為勾選的書狀代碼（可省略）。 */
-    public record StartRequest(String caseText, String locale, List<String> documents) {}
+    public record StartRequest(String caseText, String locale, List<String> documents, String motionRequest) {}
     /** 提交人工答案請求。 */
     public record AnswersRequest(List<Answer> answers) {}
 
     private final CaseService service;
     private final RateLimiter limiter;
+    /** 每人每日案件配額（免費開放、為了讓更多人用得到）。 */
+    private final DailyCaseQuota quota;
+    /** 決定配額計數身分：Google 登入者以帳號、匿名者以 IP。 */
+    private final QuotaIdentityResolver identities;
+    /** 使用授權：經兆國際法律事務所的登入者一律拒絕。 */
+    private final tw.lawgraph.auth.AccessPolicy accessPolicy;
     private final CaseFileExtractor fileExtractor;
     /** 每日 token 預算；用盡或手動暫停時拒絕任何會呼叫 LLM 的請求。 */
     private final tw.lawgraph.usage.DailyTokenBudget budget;
+    /** 測試專用便宜模型名稱（唯一允許透過 header 指定的模型）；空白代表關閉覆寫。 */
+    private final String testModel;
 
-    /** 注入案件服務、IP 限流器、附件解析與每日 token 預算。 */
-    public CaseController(CaseService service, RateLimiter limiter, CaseFileExtractor fileExtractor,
-                          tw.lawgraph.usage.DailyTokenBudget budget) {
-        this.service = service; this.limiter = limiter; this.fileExtractor = fileExtractor; this.budget = budget;
+    /** 允許呼叫端指定測試模型的 header。 */
+    static final String MODEL_HEADER = "X-LawGraph-Model";
+
+    /** 注入案件服務、IP 限流器、附件解析、每日 token 預算與測試模型名稱。 */
+    public CaseController(CaseService service, RateLimiter limiter, DailyCaseQuota quota, QuotaIdentityResolver identities,
+                          tw.lawgraph.auth.AccessPolicy accessPolicy,
+                          CaseFileExtractor fileExtractor, tw.lawgraph.usage.DailyTokenBudget budget,
+                          @org.springframework.beans.factory.annotation.Value("${lawgraph.test-model:gpt-5.4-nano}") String testModel) {
+        this.service = service; this.limiter = limiter; this.quota = quota; this.identities = identities; this.accessPolicy = accessPolicy;
+        this.fileExtractor = fileExtractor; this.budget = budget;
+        this.testModel = testModel == null ? "" : testModel.trim();
     }
 
-    /** 預算用盡時回 503 與可讀訊息；否則回 null 讓呼叫端繼續。 */
+    /** 只有 header 值與允許的測試模型完全相同才生效，其他值一律忽略（避免被拿來挑更貴的模型）。 */
+    private String modelOverride(HttpServletRequest http) {
+        String requested = http.getHeader(MODEL_HEADER);
+        return requested != null && !testModel.isBlank() && testModel.equals(requested.trim()) ? testModel : "";
+    }
+
+    /** 預算用盡時回 503 與可讀訊息；使用授權排除方（登入 email 命中名單）回 403；否則回 null 讓呼叫端繼續。 */
     private ResponseEntity<?> budgetGate(String locale) {
+        if (accessPolicy.currentUserBlocked()) {
+            boolean zhLocale = "zh-TW".equalsIgnoreCase(locale == null ? "" : locale.trim());
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(ApiExceptionHandler.error(tw.lawgraph.auth.AccessPolicy.ERROR_CODE, tw.lawgraph.auth.AccessPolicy.message(zhLocale)));
+        }
         if (!budget.exhausted()) return null;
         var snapshot = budget.snapshot();
         boolean zh = "zh-TW".equalsIgnoreCase(locale == null ? "" : locale.trim());
@@ -59,6 +85,28 @@ public class CaseController {
                 .body(ApiExceptionHandler.error("DAILY_TOKEN_LIMIT", message));
     }
 
+    /**
+     * 每人每日配額用盡時回 429 DAILY_CASE_LIMIT，訊息說明原因（免費開放、為了讓更多人用得到才設上限）；
+     * 否則扣一次配額並回 null 讓呼叫端繼續。
+     */
+    private ResponseEntity<?> quotaGate(HttpServletRequest http, String locale) {
+        var identity = identities.resolve(http);
+        if (quota.tryAcquire(identity.key(), identity.limit())) return null;
+        var snapshot = quota.snapshot(identity.key(), identity.limit());
+        boolean zh = "zh-TW".equalsIgnoreCase(locale == null ? "" : locale.trim());
+        // 匿名者提醒：登入 Google 每天可多分析幾次
+        String loginTip = identity.member() ? ""
+                : zh ? " 用 Google 登入後每天可分析 " + identities.memberLimit() + " 次。"
+                     : " Sign in with Google to get " + identities.memberLimit() + " analyses per day.";
+        String message = zh
+                ? "今日 " + snapshot.limit() + " 次分析已用完（" + snapshot.used() + " / " + snapshot.limit() + "）。本站免費開放，為了讓更多人都能使用，每人每天最多分析 "
+                  + snapshot.limit() + " 次，明天（台北時間）會重新計算。" + loginTip + "想不受限制，可安裝 Law Powers 技能（https://kevintsai1202.github.io/law-powers/）用自己的 AI Agent 分析。"
+                : "You have used today's " + snapshot.limit() + " analyses (" + snapshot.used() + " / " + snapshot.limit() + "). This site is free, so each person gets at most "
+                  + snapshot.limit() + " analyses per day to keep it available for more people; the count resets at midnight Taipei time." + loginTip + " For unlimited use, install the Law Powers skills (https://kevintsai1202.github.io/law-powers/) and run the analysis with your own AI agent.";
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                .body(ApiExceptionHandler.error("DAILY_CASE_LIMIT", message));
+    }
+
     /** 啟動新案件，成功回 201。 */
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> start(@RequestBody StartRequest request, HttpServletRequest http) {
@@ -71,9 +119,12 @@ public class CaseController {
             return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
                     .body(ApiExceptionHandler.error("RATE_LIMITED", "max cases per hour reached"));
         }
+        ResponseEntity<?> quotaGate = quotaGate(http, request.locale());
+        if (quotaGate != null) return quotaGate;
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(service.start(request.caseText().trim(), Locale.fromCode(request.locale()),
-                        request.documents() == null ? List.of() : request.documents()));
+                        request.documents() == null ? List.of() : request.documents(),
+                        request.motionRequest() == null ? "" : request.motionRequest(), modelOverride(http)));
     }
 
     /** 由文字與 PDF、MD、DOCX 附件啟動案件；附件只在記憶體解析，不保存原檔。 */
@@ -81,6 +132,7 @@ public class CaseController {
     public ResponseEntity<?> startWithFiles(@RequestParam(defaultValue = "") String caseText,
                                             @RequestParam(defaultValue = "en") String locale,
                                             @RequestParam(required = false) List<String> documents,
+                                            @RequestParam(defaultValue = "") String motionRequest,
                                             @RequestParam List<MultipartFile> files,
                                             HttpServletRequest http) {
         if ((caseText == null || caseText.isBlank()) && (files == null || files.stream().allMatch(MultipartFile::isEmpty))) {
@@ -92,9 +144,12 @@ public class CaseController {
             return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
                     .body(ApiExceptionHandler.error("RATE_LIMITED", "max cases per hour reached"));
         }
+        ResponseEntity<?> quotaGate = quotaGate(http, locale);
+        if (quotaGate != null) return quotaGate;
         String composed = fileExtractor.composeCaseText(caseText, fileExtractor.extract(files));
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(service.start(composed, Locale.fromCode(locale), documents == null ? List.of() : documents));
+                .body(service.start(composed, Locale.fromCode(locale), documents == null ? List.of() : documents, motionRequest,
+                        modelOverride(http)));
     }
 
     /** 取得指定案件狀態。 */
@@ -110,8 +165,8 @@ public class CaseController {
         return ResponseEntity.ok(service.answer(id, request.answers() == null ? List.of() : request.answers()));
     }
 
-    /** Cloudflare 後優先採用 CF-Connecting-IP。 */
-    private static String clientIp(HttpServletRequest http) {
+    /** Cloudflare 後優先採用 CF-Connecting-IP；其餘代理靠 server.forward-headers-strategy 還原 X-Forwarded-For。 */
+    static String clientIp(HttpServletRequest http) {
         String cloudflareIp = http.getHeader("CF-Connecting-IP");
         return cloudflareIp != null ? cloudflareIp : http.getRemoteAddr();
     }
@@ -122,6 +177,11 @@ public class CaseController {
         /** 依設定建立每小時限流器。 */
         @Bean RateLimiter rateLimiter(@Value("${lawgraph.rate-limit-per-hour:10}") int perHour) {
             return new RateLimiter(perHour, Clock.systemUTC());
+        }
+
+        /** 每人每日案件配額計數器；上限依身分由 QuotaIdentityResolver 決定。 */
+        @Bean DailyCaseQuota dailyCaseQuota() {
+            return new DailyCaseQuota(Clock.systemUTC());
         }
     }
 }

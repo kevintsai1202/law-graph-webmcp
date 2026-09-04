@@ -347,6 +347,162 @@ class TwLegalRagOAuthClientTest {
         }
     }
 
+    /**
+     * TLR 的 authorize 端點對已註冊 client 自動同意並 302 回 callback：
+     * 程式應能不經瀏覽器自行走完 start → authorize → callback，達到零互動授權。
+     */
+    @Test
+    void autoAuthorizesWithoutBrowserWhenProviderAutoConsents() throws Exception {
+        AtomicReference<String> tokenForm = new AtomicReference<>();
+        server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        String base = "http://127.0.0.1:" + server.getAddress().getPort();
+        oauthMetadata(base);
+        server.createContext("/oauth/register", exchange -> respond(exchange, 201, "{\"client_id\":\"test-client\"}"));
+        server.createContext("/oauth/authorize", exchange -> {
+            // 模擬自動同意：把 state 原封帶回 redirect_uri，並附上一次性 code
+            Map<String, String> query = query(exchange.getRequestURI());
+            exchange.getResponseHeaders().set("Location", query.get("redirect_uri")
+                    + "?code=auto-code&state=" + query.get("state") + "&iss=" + java.net.URLEncoder.encode(base, StandardCharsets.UTF_8));
+            exchange.sendResponseHeaders(302, -1);
+            exchange.close();
+        });
+        server.createContext("/oauth/token", exchange -> {
+            tokenForm.set(new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8));
+            respond(exchange, 200, "{\"access_token\":\"auto-access\",\"refresh_token\":\"auto-refresh\",\"expires_in\":600}");
+        });
+        mcpServer();
+        server.start();
+
+        var store = new InMemorySessionStore();
+        var properties = properties(base, tempDir.resolve("unused.json"));
+        try (var client = new TwLegalRagOAuthClient(properties, java.net.http.HttpClient.newHttpClient(), store)) {
+            assertTrue(client.tryAutoAuthorize(), "authorize 302 回 callback 時應自動完成授權");
+            assertTrue(client.status().authorized());
+            assertTrue(tokenForm.get().contains("code=auto-code"));
+            assertEquals("auto-refresh", store.saved.get().refreshToken(), "refresh token 應寫入注入的 store");
+
+            var plan = new tw.lawgraph.research.ResearchPlan(java.util.List.of(), java.util.List.of(), "請找測試判決");
+            assertEquals(1, client.retrieve(plan).semanticCandidates().size());
+        }
+    }
+
+    /** 尚未授權就直接 retrieve：應先自動授權再檢索，而不是丟 AUTH 要使用者按按鈕。 */
+    @Test
+    void retrieveAutoAuthorizesWhenSessionMissing() throws Exception {
+        server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        String base = "http://127.0.0.1:" + server.getAddress().getPort();
+        oauthMetadata(base);
+        server.createContext("/oauth/register", exchange -> respond(exchange, 201, "{\"client_id\":\"test-client\"}"));
+        server.createContext("/oauth/authorize", exchange -> {
+            Map<String, String> query = query(exchange.getRequestURI());
+            exchange.getResponseHeaders().set("Location", query.get("redirect_uri") + "?code=auto-code&state=" + query.get("state"));
+            exchange.sendResponseHeaders(302, -1);
+            exchange.close();
+        });
+        server.createContext("/oauth/token", exchange -> respond(exchange, 200,
+                "{\"access_token\":\"auto-access\",\"refresh_token\":\"auto-refresh\",\"expires_in\":600}"));
+        mcpServer();
+        server.start();
+
+        var properties = properties(base, tempDir.resolve("retrieve-auto.json"));
+        try (var client = new TwLegalRagOAuthClient(properties, java.net.http.HttpClient.newHttpClient(), new InMemorySessionStore())) {
+            assertFalse(client.status().authorized());
+            var plan = new tw.lawgraph.research.ResearchPlan(java.util.List.of(), java.util.List.of(), "請找測試判決");
+            assertEquals(1, client.retrieve(plan).semanticCandidates().size());
+            assertTrue(client.status().authorized());
+        }
+    }
+
+    /** provider 回同意頁（200）而非 302 時，自動授權應放棄並保留人工授權路徑，不得誤判成功。 */
+    @Test
+    void autoAuthorizeGivesUpWhenProviderNeedsHumanConsent() throws Exception {
+        server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        String base = "http://127.0.0.1:" + server.getAddress().getPort();
+        oauthMetadata(base);
+        server.createContext("/oauth/register", exchange -> respond(exchange, 201, "{\"client_id\":\"test-client\"}"));
+        server.createContext("/oauth/authorize", exchange -> respond(exchange, 200, "<html>consent</html>"));
+        server.start();
+
+        var properties = properties(base, tempDir.resolve("consent.json"));
+        try (var client = new TwLegalRagOAuthClient(properties, java.net.http.HttpClient.newHttpClient(), new InMemorySessionStore())) {
+            assertFalse(client.tryAutoAuthorize());
+            assertFalse(client.status().authorized());
+            assertTrue(client.authorizationRequired(), "仍應引導使用者走瀏覽器授權");
+        }
+    }
+
+    /** 注入 store 時，tryRestoreSession 應從 store 讀 refresh token，而不是本機檔案。 */
+    @Test
+    void restoresSessionFromInjectedStore() throws Exception {
+        AtomicReference<String> tokenForm = new AtomicReference<>();
+        server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        String base = "http://127.0.0.1:" + server.getAddress().getPort();
+        oauthMetadata(base);
+        server.createContext("/oauth/token", exchange -> {
+            tokenForm.set(new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8));
+            respond(exchange, 200, "{\"access_token\":\"restored\",\"refresh_token\":\"next-refresh\",\"expires_in\":600}");
+        });
+        mcpServer();
+        server.start();
+
+        var store = new InMemorySessionStore();
+        store.save(new OAuthSessionStore.SavedSession("db-client", "db-refresh"));
+        var properties = properties(base, tempDir.resolve("ignored.json"));
+        try (var client = new TwLegalRagOAuthClient(properties, java.net.http.HttpClient.newHttpClient(), store)) {
+            assertTrue(client.tryRestoreSession());
+            assertTrue(tokenForm.get().contains("refresh_token=db-refresh"));
+            assertTrue(tokenForm.get().contains("client_id=db-client"));
+            assertEquals("next-refresh", store.saved.get().refreshToken(), "輪替後的 refresh token 應回寫 store");
+        }
+    }
+
+    /** 測試用記憶體 store：驗證 client 透過介面而非檔案讀寫 session。 */
+    static final class InMemorySessionStore implements OAuthSessionStore {
+        final AtomicReference<SavedSession> saved = new AtomicReference<>();
+        @Override public java.util.Optional<SavedSession> load() { return java.util.Optional.ofNullable(saved.get()); }
+        @Override public void save(SavedSession session) { saved.set(session); }
+        @Override public void clear() { saved.set(null); }
+        @Override public String name() { return "memory"; }
+    }
+
+    /** 建立標準 OAuth metadata 兩個端點（含 S256）。 */
+    private void oauthMetadata(String base) {
+        json(server, "/.well-known/oauth-protected-resource",
+                "{\"resource\":\"" + base + "/mcp\",\"authorization_servers\":[\"" + base
+                        + "\"],\"scopes_supported\":[\"judgments:read\"]}");
+        json(server, "/.well-known/oauth-authorization-server",
+                "{\"issuer\":\"" + base + "\",\"authorization_endpoint\":\"" + base
+                        + "/oauth/authorize\",\"token_endpoint\":\"" + base
+                        + "/oauth/token\",\"registration_endpoint\":\"" + base
+                        + "/oauth/register\",\"code_challenge_methods_supported\":[\"S256\"]}");
+    }
+
+    /** 建立最小 MCP 伺服器：initialize、tools/list（含 search_bundle）、tools/call 回一筆候選。 */
+    private void mcpServer() {
+        server.createContext("/mcp", exchange -> {
+            String request = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
+            String id = jsonRpcId(request);
+            if (request.contains("\"method\":\"initialize\"")) {
+                exchange.getResponseHeaders().set("Mcp-Session-Id", "s-" + System.nanoTime());
+                respond(exchange, 200, """
+                        {"jsonrpc":"2.0","id":%s,"result":{"protocolVersion":"2025-06-18",
+                        "capabilities":{"tools":{}},"serverInfo":{"name":"test","version":"1.0"}}}
+                        """.formatted(id));
+            } else if (request.contains("\"method\":\"tools/list\"")) {
+                respond(exchange, 200, """
+                        {"jsonrpc":"2.0","id":%s,"result":{"tools":[{"name":"search_bundle",
+                        "description":"test","inputSchema":{"type":"object","properties":{"query":{"type":"string"}}}}]}}
+                        """.formatted(id));
+            } else if (request.contains("\"method\":\"tools/call\"")) {
+                respond(exchange, 200, """
+                        {"jsonrpc":"2.0","id":%s,"result":{"content":[{"type":"text","text":"{\\\"allowed_citations\\\":[\\\"RAG-1\\\"],\\\"candidates\\\":[{\\\"doc_id\\\":\\\"RAG-1\\\",\\\"citation\\\":\\\"測試判決\\\"}]}"}]}}
+                        """.formatted(id));
+            } else {
+                respond(exchange, 202, "");
+            }
+        });
+    }
+
     /** 建立 JSON metadata endpoint。 */
     private static void json(HttpServer server, String path, String body) {
         server.createContext(path, exchange -> respond(exchange, 200, body));

@@ -51,7 +51,7 @@ Spring Boot 4.1 / Embabel 1.5.1 (Java 21)
                 └─ Java orchestration: parallel retrieval → JID dedupe → citation allowlist → merged evidence
 ```
 
-Only six sidecar tools are whitelisted for the Agent: `search_regulations`, `query_regulation`, `get_pcode`, `search_judgments`, `get_judgment`, `get_citations`. The LLM is selected by the `MODEL` value in `.env` (`embabel.models.default-llm`) and defaults to `gpt-5.4-nano`; Embabel 1.5.1 ships the model definitions in `models/openai-models.yml`.
+Only six sidecar tools are whitelisted for the Agent: `search_regulations`, `query_regulation`, `get_pcode`, `search_judgments`, `get_judgment`, `get_citations`. The LLM is selected by the `MODEL` value in `.env` (`embabel.models.default-llm`) and defaults to `gpt-5.4-nano`. The model catalogue is the project-owned `src/main/resources/models/openai-models.yml`, which shadows the copy bundled with Embabel 1.5.1 so that OpenAI-compatible providers can be used: set `OPENAI_BASE_URL` (including `/v1`, e.g. `https://api.meta.ai/v1` for Meta Muse) and pick a `MODEL` that exists in that file (`muse-spark-1.3-contributor`, `muse-spark-1.3`, `gpt-5.4-mini`, `gpt-5.4-nano`). Leave `OPENAI_BASE_URL` unset to talk to api.openai.com.
 
 ## WebMCP implementation
 
@@ -92,7 +92,7 @@ The front end follows the **Trust & Authority** pattern from `ui-ux-pro-max` (`d
 Requires Java 21, Node 20+, Docker and an OpenAI key.
 
 ```powershell
-Copy-Item .env.example .env          # fill OPENAI_API_KEY and MODEL; CF_TUNNEL_TOKEN only for the tunnel
+Copy-Item .env.example .env          # fill OPENAI_API_KEY, OPENAI_BASE_URL (OpenAI-compatible endpoint) and MODEL; CF_TUNNEL_TOKEN only for the tunnel
 docker compose up -d --build         # app + legal-mcp (+ cloudflared if the token is set)
 ```
 
@@ -100,12 +100,12 @@ Open `http://localhost:8080`. For Java-only development run the sidecar in Docke
 
 ```powershell
 docker compose up -d --build legal-mcp
-# Spring Boot 會從專案根目錄的 .env 載入 MODEL 與 OPENAI_API_KEY
+# Spring Boot 會從專案根目錄的 .env 載入 MODEL、OPENAI_API_KEY 與 OPENAI_BASE_URL
 $env:LEGAL_MCP_URL = 'http://localhost:8000'
 mvn spring-boot:run
 ```
 
-語意軌預設關閉，以避免尚未完成 OAuth 的 remote MCP 影響網站。完成互動式 OAuth、確認 `tools/list`（預期 `search_bundle`）與服務條款後，才在受控環境設定。OAuth 會由網站的 `/api/auth/tw-legal-rag/start` 導向 provider；callback 成功後，程式會以新 token 初始化 MCP client。access token 只留在 runtime memory；`client_id` 與 refresh token 會以原子替換寫入 `LAWGRAPH_OAUTH_SESSION_PATH`，並限制成檔案擁有者可存取。
+語意軌預設關閉，以避免尚未完成 OAuth 的 remote MCP 影響網站。完成 OAuth、確認 `tools/list`（預期 `search_bundle`）與服務條款後，才在受控環境設定。TLR 的 authorize 端點對已註冊 client 自動同意（302 直接回 callback），因此程式會在啟動時自行走完 start → authorize → callback，一般情況下使用者不需按任何按鈕；只有 provider 改成需人工同意時，前端才會顯示授權按鈕導向 `/api/auth/tw-legal-rag/start`。access token 只留在 runtime memory；`client_id` 與 refresh token 依 `LAWGRAPH_OAUTH_SESSION_STORE` 持久化：`db` 寫入 PostgreSQL 的 `oauth_session` 資料表（與每日用量共用 `LAWGRAPH_DB_URL`，重佈不必重新授權），`file`（本機預設）以原子替換寫入 `LAWGRAPH_OAUTH_SESSION_PATH` 並限制成檔案擁有者可存取。
 
 ```powershell
 $env:SPRING_PROFILES_ACTIVE = 'semantic-mcp'
@@ -118,7 +118,9 @@ mvn spring-boot:run
 
 session 恢復會在應用啟動完成後於背景執行，不會阻塞健康檢查或 keyword 軌道。refresh token 被 token endpoint 以 4xx 明確拒絕時才清除 session 檔；timeout、5xx 或暫時性 metadata 錯誤會保留檔案供下次重試。所有錯誤仍會保留 keyword 結果，並在 `research.coverage`／`notes` 標示降級。不會關閉 TLS 驗證，也不會把 token 放入環境輸出、REST 結果或 log。
 
-Zeabur 啟用語意軌時，必須把 `LAWGRAPH_OAUTH_SESSION_PATH` 指向僅此服務可存取的持久化 volume（例如 `/data/tw-legal-rag-session.json`）；若未掛載持久化 volume，容器重建後仍需重新授權。多副本正式環境應改用共享且具加密與輪替能力的 security component，不可共用一般檔案目錄。
+Zeabur 啟用語意軌時設定 `LAWGRAPH_OAUTH_SESSION_STORE=db`，refresh token 存同專案 PostgreSQL；即使資料庫沒有憑證，啟動時也會自動重新授權。多副本正式環境應改用共享且具加密與輪替能力的 security component。
+
+測試時可在啟動案件的請求加上 header `X-LawGraph-Model: gpt-5.4-nano`，該案件改用便宜的測試模型跑（後端只接受 `LAWGRAPH_TEST_MODEL` 這一個值，其他值一律忽略）；`scripts/verify-semantic-live.mjs` 預設就帶這個 header，環境變數 `TEST_MODEL=` 設空字串可改用線上預設模型。
 
 The sidecar binds `0.0.0.0:8000` explicitly (`mcp.settings.host`), because `mcp-taiwan-legal-db` 1.0.0 ignores `FASTMCP_HOST` and would otherwise listen on `127.0.0.1` inside the container.
 
@@ -154,6 +156,9 @@ $env:E2E_LIVE='1'; npx playwright test -c e2e/playwright.config.mjs e2e/tutorial
 - **No limit with your own agent**: the analysis logic lives in the open-source [Law Powers](https://kevintsai1202.github.io/law-powers/) skill pack. Install it into your own AI agent (Claude Code, Codex, Cursor, etc.) to run the same brainstorming, research, analysis and graph workflow without the shared budget.
 - Uploads accept at most 5 PDF, UTF-8 Markdown, or DOCX files, 10 MB each and 60,000 extracted characters in total. Files are processed in memory and not persisted. PDF pages without a text layer are sent to the configured vision-capable model (up to 20 pages), labeled with their page number and review requirement; encrypted PDFs are rejected.
 - Semantic `tw-legal-rag` uses a lazy runtime OAuth client and feature flag; production enablement remains gated on authenticated `tools/list` schema and service-term confirmation.
+- Google sign-in (optional): set `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` (the local `.env` may use `CLIENT_ID` / `SECRET`) and register the callback `https://<host>/login/oauth2/code/google` in Google Cloud Console. Signed-in users are counted per Google account with `LAWGRAPH_DAILY_CASES_PER_MEMBER` (default 5); anonymous users keep `LAWGRAPH_DAILY_CASES_PER_USER` (default 1). Without the client id the sign-in button is hidden and everything stays anonymous.
+- Per-person daily quota: `LAWGRAPH_DAILY_CASES_PER_USER` (default 3, `0` = unlimited) caps how many cases one client IP may start per Taipei calendar day. The 4th request returns `429 DAILY_CASE_LIMIT` with an explanation (the site is free; the cap keeps it available for more people). `GET /api/quota` reports `used / limit / remaining` for the caller and the input page shows the counter. `server.forward-headers-strategy=framework` restores the real client IP behind Zeabur.
+- Step watchdog: `LAWGRAPH_STEP_TIMEOUT` (default 300s) aborts a case whose current step outlives the limit; the API then returns `FAILED` with error code `STEP_TIMEOUT` and a localized message instead of retrying the LLM call indefinitely. `LAWGRAPH_LLM_TIMEOUT` (default 240s) is the per-call Embabel timeout and `LAWGRAPH_LLM_MAX_ATTEMPTS` (default 2) bounds structured-output retries.
 - Live E2E / eval / tunnel steps require a real `OPENAI_API_KEY` and `CF_TUNNEL_TOKEN`; they are not run in CI.
 
 ## Legal notice

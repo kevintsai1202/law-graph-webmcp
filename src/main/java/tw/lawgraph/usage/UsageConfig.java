@@ -5,7 +5,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.jdbc.datasource.DriverManagerDataSource;
+import tw.lawgraph.config.LawGraphDatabase;
 
 import java.time.Clock;
 
@@ -16,7 +16,7 @@ public class UsageConfig {
 
     /**
      * 讀取每日上限、手動暫停旗標與儲存設定。
-     * store=db 時連 PostgreSQL（Zeabur 同專案的 postgresql 服務），重佈不歸零；
+     * store=db 時用全站共用的 PostgreSQL（lawgraph.db.*，Zeabur 同專案的 postgresql 服務），重佈不歸零；
      * store=file 時寫本機 JSON 檔（只撐過同容器重啟）。
      */
     @Bean
@@ -25,17 +25,10 @@ public class UsageConfig {
             @Value("${lawgraph.usage.paused:false}") boolean paused,
             @Value("${lawgraph.usage.store:file}") String store,
             @Value("${lawgraph.usage.path:.data/token-usage.json}") String path,
-            @Value("${lawgraph.usage.db.url:}") String dbUrl,
-            @Value("${lawgraph.usage.db.username:}") String dbUsername,
-            @Value("${lawgraph.usage.db.password:}") String dbPassword) {
+            LawGraphDatabase database) {
         UsageStore usageStore;
         if ("db".equalsIgnoreCase(store)) {
-            if (dbUrl == null || dbUrl.isBlank()) {
-                throw new IllegalStateException("lawgraph.usage.store=db 但未提供 lawgraph.usage.db.url（LAWGRAPH_DB_URL）");
-            }
-            // 低頻寫入，DriverManagerDataSource 每次開連線即可，不需連線池
-            DriverManagerDataSource dataSource = new DriverManagerDataSource(dbUrl, dbUsername, dbPassword);
-            usageStore = new JdbcUsageStore(dataSource);
+            usageStore = new JdbcUsageStore(database.require("lawgraph.usage.store"));
             LOGGER.info("每日 token 用量改由資料庫保存（store=db）");
         } else {
             usageStore = new FileUsageStore(path);

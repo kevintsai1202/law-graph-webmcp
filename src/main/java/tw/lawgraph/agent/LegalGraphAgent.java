@@ -4,6 +4,7 @@ import com.embabel.agent.api.annotation.AchievesGoal;
 import com.embabel.agent.api.annotation.Action;
 import com.embabel.agent.api.annotation.Agent;
 import com.embabel.agent.api.common.OperationContext;
+import com.embabel.agent.api.common.PromptRunner;
 import com.embabel.agent.core.hitl.WaitFor;
 import com.embabel.agent.skills.Skills;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +20,7 @@ import tw.lawgraph.domain.GraphRules;
 import tw.lawgraph.domain.ResearchResult;
 import tw.lawgraph.domain.SecondRoundAnswers;
 import tw.lawgraph.domain.SecondRoundQuestions;
+import tw.lawgraph.domain.TaiwanTerminology;
 import tw.lawgraph.domain.ThirdRoundAnswers;
 import tw.lawgraph.domain.ThirdRoundQuestions;
 import tw.lawgraph.domain.UserAnswers;
@@ -57,10 +59,19 @@ public class LegalGraphAgent {
         this.researchService = researchService;
     }
 
+    /**
+     * 依案件輸入選擇模型：CaseInput.model 有值（API 層已限制只能是測試用便宜模型）就用它，否則用 Embabel 預設模型。
+     * 從 blackboard 取 CaseInput，讓沒有 CaseInput 參數的 Action（如 prepareSemanticQuery）也能一致套用。
+     */
+    private static PromptRunner llm(OperationContext context) {
+        CaseInput input = context.last(CaseInput.class);
+        return input != null && input.hasModelOverride() ? context.ai().withLlm(input.model()) : context.ai().withDefaultLlm();
+    }
+
     /** 步驟一：產生事實、法律關係、爭點、證據需求與待問問題。 */
     @Action
     public BrainstormResult brainstorm(CaseInput input, OperationContext context) {
-        return context.ai().withDefaultLlm()
+        return llm(context)
                 .withReference(skills)
                 .withSystemPrompt(LegalPrompts.system(input.locale()))
                 .createObject(LegalPrompts.brainstorm(input), BrainstormResult.class);
@@ -80,7 +91,7 @@ public class LegalGraphAgent {
     public SecondRoundQuestions assessSecondRound(CaseInput input, BrainstormResult brainstorm,
                                                   UserAnswers firstAnswers, OperationContext context) {
         if (brainstorm.questions().isEmpty()) return new SecondRoundQuestions(List.of(), List.of());
-        ClarificationAssessment assessment = context.ai().withDefaultLlm().withReference(skills)
+        ClarificationAssessment assessment = llm(context).withReference(skills)
                 .withSystemPrompt(LegalPrompts.system(input.locale()))
                 .createObject(LegalPrompts.clarify(input, brainstorm, firstAnswers.answers(),
                         brainstorm.questions(), 2), ClarificationAssessment.class);
@@ -104,7 +115,7 @@ public class LegalGraphAgent {
         }
         List<Object> priorAnswers = List.of(firstAnswers.answers(), secondAnswers.answers());
         List<Object> priorQuestions = List.of(brainstorm.questions(), secondQuestions.questions());
-        ClarificationAssessment assessment = context.ai().withDefaultLlm().withReference(skills)
+        ClarificationAssessment assessment = llm(context).withReference(skills)
                 .withSystemPrompt(LegalPrompts.system(input.locale()))
                 .createObject(LegalPrompts.clarify(input, brainstorm, priorAnswers, priorQuestions, 3),
                         ClarificationAssessment.class);
@@ -141,7 +152,7 @@ public class LegalGraphAgent {
     @Action
     public ResearchPlan planResearch(CaseInput input, BrainstormResult brainstorm, ClarifiedAnswers answers,
                                      OperationContext context) {
-        return context.ai().withDefaultLlm()
+        return llm(context)
                 .withReference(skills)
                 .withSystemPrompt(LegalPrompts.system(input.locale()))
                 .createObject(LegalPrompts.research(input, brainstorm, answers), ResearchPlan.class);
@@ -185,7 +196,7 @@ public class LegalGraphAgent {
     @Action(description = "Prepare the semantic query: pass through short case text, or condense it once when it exceeds the provider limit")
     public SemanticQuery prepareSemanticQuery(ResearchPlan plan, OperationContext context) {
         if (!semanticQueryTooLong(plan)) return new SemanticQuery(plan.semanticCaseText());
-        SemanticQuery condensed = context.ai().withDefaultLlm()
+        SemanticQuery condensed = llm(context)
                 .createObject(LegalPrompts.condenseSemanticQuery(plan, SEMANTIC_QUERY_MAX_CHARS), SemanticQuery.class);
         String text = condensed == null || condensed.text().isBlank() ? plan.semanticCaseText() : condensed.text();
         return new SemanticQuery(McpTwLegalRagAdapter.truncateQuery(text));
@@ -202,10 +213,12 @@ public class LegalGraphAgent {
     @Action
     public AnalysisResult analyze(ResearchResult research, BrainstormResult brainstorm, CaseInput input,
                                   OperationContext context) {
-        return context.ai().withDefaultLlm()
+        AnalysisResult analysis = llm(context)
                 .withReference(skills)
                 .withSystemPrompt(LegalPrompts.system(input.locale()))
                 .createObject(LegalPrompts.analyze(research, brainstorm, input.locale()), AnalysisResult.class);
+        // 台灣用語守門：黑名單詞自動替換並記 WARN
+        return TaiwanTerminology.sanitize(analysis);
     }
 
     /** 步驟五：起草使用者勾選的書狀；未勾選任何書狀時直接回空清單，不呼叫 LLM。 */
@@ -215,11 +228,13 @@ public class LegalGraphAgent {
         if (input.documents().isEmpty()) {
             return new DraftedDocuments(List.of());
         }
-        return context.ai().withDefaultLlm()
+        DraftedDocuments drafted = llm(context)
                 .withReference(skills)
                 .withSystemPrompt(LegalPrompts.system(input.locale()))
                 .createObject(LegalPrompts.draftDocuments(input, brainstorm, research, analysis),
                         DraftedDocuments.class);
+        // 台灣用語守門：黑名單詞自動替換並記 WARN
+        return TaiwanTerminology.sanitize(drafted);
     }
 
     /** 步驟六：產生 3D 圖資料並套用四條硬規則（documents 參數確保書狀先行起草）。 */
@@ -227,7 +242,7 @@ public class LegalGraphAgent {
     @Action
     public GraphOutcome buildGraph(CaseInput input, BrainstormResult brainstorm, ResearchResult research,
                                    AnalysisResult analysis, DraftedDocuments documents, OperationContext context) {
-        GraphData raw = context.ai().withDefaultLlm()
+        GraphData raw = llm(context)
                 .withReference(skills)
                 .withSystemPrompt(LegalPrompts.system(input.locale()))
                 .createObject(LegalPrompts.buildGraph(input, brainstorm, research, analysis), GraphData.class);

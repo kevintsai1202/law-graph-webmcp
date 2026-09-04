@@ -36,7 +36,7 @@ class StatusMapperTest {
     private StatusSnapshot snapshot(AgentProcessStatusCode code, BrainstormResult b, List<Question> questions,
                                     UserAnswers answers, ResearchResult r, AnalysisResult a, DraftedDocuments d,
                                     GraphOutcome g) {
-        return new StatusSnapshot("c1", Locale.EN, code, b, questions, answers, r, a, d, g, null);
+        return new StatusSnapshot("c1", Locale.EN, code, b, questions, answers, r, a, d, g, null, null);
     }
 
     /** 尚無產物時為頭腦風暴。 */
@@ -117,9 +117,20 @@ class StatusMapperTest {
     /** 失敗狀態保留當前推導步驟。 */
     @Test void failedCarriesStep() {
         var snapshot = new StatusSnapshot("c1", Locale.EN, AgentProcessStatusCode.FAILED, brainstorm, null,
-                new UserAnswers(List.of()), research, null, null, null, "boom");
+                new UserAnswers(List.of()), research, null, null, null, "boom", null);
         var status = StatusMapper.map(snapshot);
         assertEquals("FAILED", status.status()); assertEquals("ANALYSIS", status.error().step());
         assertEquals("boom", status.error().message());
+    }
+
+    /** 看門狗中止的案件以 STEP_TIMEOUT 代碼與看門狗訊息回報，而非 Embabel 的 KILLED。 */
+    @Test void killedByWatchdogReportsStepTimeout() {
+        var snapshot = new StatusSnapshot("c1", Locale.ZH_TW, AgentProcessStatusCode.KILLED, brainstorm, null,
+                new UserAnswers(List.of()), research, null, null, null, "逾時訊息", "STEP_TIMEOUT");
+        var status = StatusMapper.map(snapshot);
+        assertEquals("FAILED", status.status());
+        assertEquals("STEP_TIMEOUT", status.error().code());
+        assertEquals("ANALYSIS", status.error().step());
+        assertEquals("逾時訊息", status.error().message());
     }
 }

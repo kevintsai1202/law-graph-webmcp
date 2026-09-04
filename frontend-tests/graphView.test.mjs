@@ -52,3 +52,7 @@ test('summarize 統計群組、爭點與未該當要件', () => {
   assert.equal(s.nodeCounts.law, 1); assert.equal(s.edgeCounts, 3);
   assert.deepEqual(s.topIssues, ['Negligence']); assert.deepEqual(s.unmetElements, ['Causation']);
 });
+test('LAYOUT 含 warmupTicks，開圖前先預跑 tick 避免節點疊在原點', async () => {
+  const { LAYOUT } = await import('../src/main/resources/static/js/graphView.js');
+  assert.ok(LAYOUT.warmupTicks >= 30);
+});

@@ -114,7 +114,11 @@ test('createApp 啟動案件時完整轉交輸出選擇與附件', async () => {
 
   await app.start('', ['complaint'], [file]);
 
-  assert.deepEqual(calls[0], ['', 'zh-TW', ['complaint'], [file]]);
+  assert.deepEqual(calls[0], ['', 'zh-TW', ['complaint'], [file], '']);
+  // 另建一個 app 實例驗證聲請事項參數（fakeRoot 沒有輸入頁節點，不走 reset 重繪）
+  const app2 = createApp({ root: fakeRoot(), client, storage: fakeStorage(), navigatorLanguage: 'zh-TW' });
+  await app2.start('甲乙就契約效力有爭執，請求判決確認契約無效並返還價金。', ['motion'], [], '聲請假扣押');
+  assert.deepEqual(calls[1], ['甲乙就契約效力有爭執，請求判決確認契約無效並返還價金。', 'zh-TW', ['motion'], [], '聲請假扣押']);
   assert.equal(storage.getItem('caseId'), 'case-1');
   assert.equal(storage.getItem('outputs'), '["complaint"]');
   assert.equal(typeof app.setOutputs, 'function');

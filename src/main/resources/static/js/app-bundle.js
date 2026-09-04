@@ -52,13 +52,26 @@
       "doc.disclaimer": "Draft for analysis support only \u2014 review with a licensed attorney before filing.",
       "doc.issue.no": "No.",
       "doc.issue.issue": "Issue",
-      "doc.issue.plaintiff": "Plaintiff's position",
-      "doc.issue.defendant": "Defendant's position",
+      "doc.issue.plaintiff": "Plaintiff's claim",
+      "doc.issue.plaintiffEvidence": "Plaintiff's evidence",
+      "doc.issue.defendant": "Defendant's defence",
+      "doc.issue.defendantEvidence": "Defendant's evidence",
       "doc.issue.basis": "Legal basis",
-      "doc.issue.evidence": "Evidence",
-      "doc.issue.court": "Matters for the court",
+      "doc.issue.title": "Issues table",
       "doc.issue.export": "Export CSV",
       "doc.issue.file": "issues.csv",
+      "doc.claims.title": "Claims and legal bases",
+      "doc.claims.no": "No.",
+      "doc.claims.basis": "Legal basis",
+      "doc.claims.claim": "Plaintiff's claim",
+      "doc.claims.file": "claims.csv",
+      "doc.undisputed.title": "Undisputed facts",
+      "doc.undisputed.no": "No.",
+      "doc.undisputed.fact": "Undisputed fact",
+      "doc.undisputed.evidence": "Evidence",
+      "doc.undisputed.file": "undisputed.csv",
+      "input.motionRequest": "Motion request (what you ask the court to do)",
+      "input.motionRequestPlaceholder": "e.g. request the court to order production of the dashcam footage",
       "questions.title": "A few facts only you know",
       "questions.why": "Why we ask",
       "questions.submit": "Continue",
@@ -134,6 +147,17 @@
       "usage.exhausted.title": "Daily AI budget used up",
       "usage.exhausted.tip": "This site pauses new analyses once the shared daily token budget is spent. Install the Law Powers skills and run the same analysis with your own AI agent, with no limit.",
       "usage.exhausted.action": "Get Law Powers",
+      "quota.count": "Analyses used today:",
+      "quota.loginTip": "Sign in with Google to get {limit} analyses per day.",
+      "nav.login": "Sign in with Google",
+      "nav.logout": "Sign out",
+      "nav.loginBenefit": "Signed-in users get {limit} analyses per day",
+      "license.banner.title": "License",
+      "license.banner.prefix": ": this site is free for everyone to use, except ",
+      "license.banner.suffix": " (Meridian International Law Firm). We owe this service to them.",
+      "license.excluded": "Under this project's license, this service is not available to \u7D93\u5146\u570B\u969B\u6CD5\u5F8B\u4E8B\u52D9\u6240.",
+      "quota.reason": "This site is free to use. To keep it available for more people, each person can run at most {limit} analyses per day (resets at midnight, Taipei time).",
+      "quota.exhausted.title": "Today's {limit} analyses are used up",
       "input.lawPowers": "This hosted site shares a daily AI budget. Prefer no limit? Install the open-source Law Powers skills and run the same analysis with your own AI agent.",
       "input.lawPowersAction": "Law Powers skills"
     },
@@ -180,15 +204,28 @@
       "doc.to": "\u6B64\u81F4",
       "doc.missing": "\u672C\u6848\u672A\u7522\u751F\u6B64\u66F8\u72C0\uFF1B\u91CD\u65B0\u5206\u6790\u4E26\u52FE\u9078\u5F8C\u5373\u53EF\u8D77\u8349\u3002",
       "doc.disclaimer": "\u672C\u66F8\u72C0\u70BA\u5206\u6790\u8F14\u52A9\u8349\u7A3F\uFF0C\u63D0\u51FA\u524D\u8ACB\u5148\u7D93\u57F7\u696D\u5F8B\u5E2B\u5BE9\u95B1\u3002",
-      "doc.issue.no": "\u7DE8\u865F",
+      "doc.issue.no": "\u5E8F\u6B21",
       "doc.issue.issue": "\u722D\u9EDE",
       "doc.issue.plaintiff": "\u539F\u544A\u4E3B\u5F35",
-      "doc.issue.defendant": "\u88AB\u544A\u4E3B\u5F35",
+      "doc.issue.plaintiffEvidence": "\u539F\u544A\u8B49\u64DA",
+      "doc.issue.defendant": "\u88AB\u544A\u6297\u8FAF",
+      "doc.issue.defendantEvidence": "\u88AB\u544A\u8B49\u64DA",
       "doc.issue.basis": "\u6CD5\u5F8B\u4F9D\u64DA",
-      "doc.issue.evidence": "\u8B49\u64DA\u65B9\u6CD5",
-      "doc.issue.court": "\u6CD5\u9662\u61C9\u5BE9\u914C\u4E8B\u9805",
+      "doc.issue.title": "\u722D\u9EDE\u6574\u7406\u8868",
       "doc.issue.export": "\u532F\u51FA CSV",
-      "doc.issue.file": "\u722D\u9EDE\u6574\u7406.csv",
+      "doc.issue.file": "\u722D\u9EDE\u6574\u7406\u8868.csv",
+      "doc.claims.title": "\u8072\u660E\u8207\u8ACB\u6C42\u6B0A\u57FA\u790E\u6E05\u55AE",
+      "doc.claims.no": "\u5E8F\u6B21",
+      "doc.claims.basis": "\u8ACB\u6C42\u6B0A\u57FA\u790E",
+      "doc.claims.claim": "\u539F\u544A\u4E4B\u8072\u660E",
+      "doc.claims.file": "\u8072\u660E\u8207\u8ACB\u6C42\u6B0A\u57FA\u790E\u6E05\u55AE.csv",
+      "doc.undisputed.title": "\u4E0D\u722D\u57F7\u4E8B\u9805\u6E05\u55AE",
+      "doc.undisputed.no": "\u5E8F\u6B21",
+      "doc.undisputed.fact": "\u5169\u9020\u4E0D\u722D\u57F7\u4E8B\u5BE6",
+      "doc.undisputed.evidence": "\u8B49\u64DA",
+      "doc.undisputed.file": "\u4E0D\u722D\u57F7\u4E8B\u9805\u6E05\u55AE.csv",
+      "input.motionRequest": "\u8072\u8ACB\u4E8B\u9805\uFF08\u8981\u8ACB\u6CD5\u9662\u51C6\u8A31\u4EC0\u9EBC\uFF09",
+      "input.motionRequestPlaceholder": "\u4F8B\u5982\uFF1A\u8072\u8ACB\u8ABF\u67E5\u8B49\u64DA\uFF0C\u547D\u88AB\u544A\u63D0\u51FA\u884C\u8ECA\u7D00\u9304\u5668\u5F71\u50CF",
       "questions.title": "\u5E7E\u500B\u53EA\u6709\u4F60\u77E5\u9053\u7684\u4E8B\u5BE6",
       "questions.why": "\u70BA\u4F55\u8981\u554F",
       "questions.submit": "\u7E7C\u7E8C",
@@ -264,6 +301,17 @@
       "usage.exhausted.title": "\u4ECA\u65E5 AI \u984D\u5EA6\u5DF2\u7528\u5B8C",
       "usage.exhausted.tip": "\u672C\u7AD9\u6BCF\u65E5\u5171\u4EAB token \u984D\u5EA6\u7528\u5B8C\u5F8C\u6703\u66AB\u505C\u65B0\u7684\u5206\u6790\u3002\u4F60\u4E5F\u53EF\u4EE5\u5B89\u88DD Law Powers \u6280\u80FD\uFF0C\u7528\u81EA\u5DF1\u7684 AI Agent \u505A\u540C\u6A23\u7684\u5206\u6790\uFF0C\u4E0D\u53D7\u984D\u5EA6\u9650\u5236\u3002",
       "usage.exhausted.action": "\u53D6\u5F97 Law Powers",
+      "quota.count": "\u4ECA\u65E5\u5DF2\u5206\u6790",
+      "quota.loginTip": "\u7528 Google \u767B\u5165\u5F8C\u6BCF\u5929\u53EF\u5206\u6790 {limit} \u6B21\u3002",
+      "nav.login": "Google \u767B\u5165",
+      "nav.logout": "\u767B\u51FA",
+      "nav.loginBenefit": "\u767B\u5165\u5F8C\u6BCF\u5929\u53EF\u5206\u6790 {limit} \u6B21",
+      "license.banner.title": "\u4F7F\u7528\u6388\u6B0A",
+      "license.banner.prefix": "\uFF1A\u672C\u7AD9\u7121\u511F\u6388\u6B0A\u6240\u6709\u4EBA\u81EA\u7531\u4F7F\u7528 \u2014\u2014 \u552F ",
+      "license.banner.suffix": " \u9664\u5916\u3002\u62DC\u4ED6\u5011\u6240\u8CDC\uFF0C\u624D\u6709\u9019\u500B\u670D\u52D9\u7684\u8A95\u751F\u3002",
+      "license.excluded": "\u4F9D\u672C\u5C08\u6848\u4F7F\u7528\u6388\u6B0A\uFF0C\u672C\u670D\u52D9\u4E0D\u63D0\u4F9B\u7D93\u5146\u570B\u969B\u6CD5\u5F8B\u4E8B\u52D9\u6240\u4F7F\u7528\u3002",
+      "quota.reason": "\u672C\u7AD9\u514D\u8CBB\u958B\u653E\uFF0C\u70BA\u4E86\u8B93\u66F4\u591A\u4EBA\u90FD\u80FD\u4F7F\u7528\uFF0C\u6BCF\u4EBA\u6BCF\u5929\u6700\u591A\u5206\u6790 {limit} \u6B21\uFF08\u53F0\u5317\u6642\u9593\u5348\u591C\u91CD\u65B0\u8A08\u7B97\uFF09\u3002",
+      "quota.exhausted.title": "\u4ECA\u65E5 {limit} \u6B21\u5206\u6790\u5DF2\u7528\u5B8C",
       "input.lawPowers": "\u672C\u7AD9\u6709\u6BCF\u65E5\u5171\u4EAB AI \u984D\u5EA6\u3002\u60F3\u4E0D\u53D7\u9650\u5236\uFF0C\u53EF\u5B89\u88DD\u958B\u6E90\u7684 Law Powers \u6280\u80FD\uFF0C\u7528\u81EA\u5DF1\u7684 AI Agent \u505A\u540C\u6A23\u7684\u5206\u6790\u3002",
       "input.lawPowersAction": "Law Powers \u6280\u80FD"
     }
@@ -380,13 +428,31 @@
     <a href="${LAW_POWERS_URL}" class="auth-link" target="_blank" rel="noopener">${esc(t("usage.exhausted.action", locale2))} \u2197</a>
   </div>`;
   }
-  function renderInput({ samples = [], semanticAuth = null, usage = null }, locale2) {
+  function renderQuota(quota, locale2) {
+    if (!quota || !(quota.limit > 0)) return "";
+    const count = `${quota.used} / ${quota.limit}`;
+    const loginTip = !quota.loggedIn && quota.memberLimit > quota.limit ? ` <a class="quota-login" href="${esc(quota.loginPath || "/oauth2/authorization/google")}">${esc(t("quota.loginTip", locale2).replace("{limit}", quota.memberLimit))}</a>` : "";
+    if (quota.exhausted) {
+      return `<div class="semantic-auth-banner quota-banner" role="alert">
+    <span class="auth-icon" aria-hidden="true">${ICONS.alert}</span>
+    <div class="auth-message">
+      <strong>${esc(t("quota.exhausted.title", locale2).replace("{limit}", quota.limit))}</strong>
+      <span>${esc(t("quota.reason", locale2).replace("{limit}", quota.limit))}${loginTip}</span>
+    </div>
+    <a href="${LAW_POWERS_URL}" class="auth-link" target="_blank" rel="noopener">${esc(t("usage.exhausted.action", locale2))} \u2197</a>
+  </div>`;
+    }
+    return `<p class="field-hint quota-note" aria-live="polite"><strong>${esc(t("quota.count", locale2))} ${esc(count)}</strong> <span>${esc(t("quota.reason", locale2).replace("{limit}", quota.limit))}${loginTip}</span></p>`;
+  }
+  function renderInput({ samples = [], semanticAuth = null, usage = null, quota = null }, locale2) {
     const cards = samples.map((s) => `<button type="button" class="sample" data-sample-id="${esc(s.id)}"><b>${esc(s.title)}</b><span>${esc(s.summary)}</span>${ICONS.arrowRight}</button>`).join("");
     const authNotice = renderSemanticAuthNotice(semanticAuth, locale2);
     const usageNotice = renderUsageNotice(usage, locale2);
+    const quotaNotice = renderQuota(quota, locale2);
     return `<section class="input">
     <div class="input-main card">
       ${usageNotice}
+      ${quotaNotice}
       ${authNotice}
       <label class="field-label" for="case-text">${esc(t("input.label", locale2))}</label>
       <textarea id="case-text" rows="10" aria-describedby="case-hint" placeholder="${esc(t("input.placeholder", locale2))}"></textarea>
@@ -404,6 +470,10 @@
         <p class="file-status" id="file-status" aria-live="polite">${esc(t("input.filesEmpty", locale2))}</p>
       </div>
       ${renderOutputs(locale2)}
+      <div class="motion-field" id="motion-field" hidden>
+        <label class="field-label" for="motion-request">${esc(t("input.motionRequest", locale2))}</label>
+        <input id="motion-request" type="text" maxlength="200" placeholder="${esc(t("input.motionRequestPlaceholder", locale2))}">
+      </div>
       <div class="input-actions"><button id="case-submit" class="primary" type="button" disabled>${esc(t("input.submit", locale2))}</button></div>
     </div>
     <aside class="input-side">
@@ -462,6 +532,10 @@
     let selectedFiles = [...files.files];
     let dragDepth = 0;
     const checked = () => [...root.querySelectorAll('input[name="outputs"]:checked')].map((c) => c.value);
+    const motionField = root.querySelector("#motion-field"), motionInput = root.querySelector("#motion-request");
+    const syncMotion = () => {
+      if (motionField) motionField.hidden = !checked().includes("motion");
+    };
     const syncFiles = () => {
       renderFileList(fileList, selectedFiles, locale2);
       fileStatus.textContent = selectedFiles.length ? t(selectedFiles.length > MAX_FILES ? "input.filesTooMany" : "input.filesSelected", locale2).replace("{count}", selectedFiles.length) : t("input.filesEmpty", locale2);
@@ -513,10 +587,19 @@
       syncFiles();
       sync();
     });
-    root.querySelectorAll('input[name="outputs"]').forEach((c) => c.addEventListener("change", sync));
+    root.querySelectorAll('input[name="outputs"]').forEach((c) => c.addEventListener("change", () => {
+      syncMotion();
+      sync();
+    }));
     syncFiles();
+    syncMotion();
     sync();
-    btn.addEventListener("click", () => onSubmit(ta.value, checked(), [...selectedFiles]));
+    btn.addEventListener("click", () => onSubmit(
+      ta.value,
+      checked(),
+      [...selectedFiles],
+      checked().includes("motion") && motionInput ? (motionInput.value || "").trim() : ""
+    ));
     root.querySelectorAll(".sample").forEach((b) => b.addEventListener("click", () => onSample(b.dataset.sampleId, checked())));
   }
 
@@ -596,22 +679,31 @@
       <p class="disclaimer">${ICONS.info}<span>${esc(a.disclaimer)}</span></p>`;
     }
   };
-  var ISSUE_COLUMNS = ["no", "issue", "plaintiff", "defendant", "basis", "evidence", "court"];
+  var ISSUE_COLUMNS = ["no", "issue", "plaintiff", "plaintiffEvidence", "defendant", "defendantEvidence", "basis"];
+  var CLAIM_COLUMNS = ["no", "basis", "claim"];
+  var UNDISPUTED_COLUMNS = ["no", "fact", "evidence"];
   function csvCell(value) {
     const text = String(value ?? "");
     return /[",\n\r]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
   }
-  function renderIssueTable(rows, locale2) {
-    const head = ISSUE_COLUMNS.map((c) => `<th scope="col">${esc(t("doc.issue." + c, locale2))}</th>`).join("");
-    const body = rows.map((row) => `<tr>${ISSUE_COLUMNS.map((c) => `<td>${esc(row[c] || "")}</td>`).join("")}</tr>`).join("");
-    const csv = [ISSUE_COLUMNS.map((c) => t("doc.issue." + c, locale2)), ...rows.map((row) => ISSUE_COLUMNS.map((c) => row[c] || ""))].map((line) => line.map(csvCell).join(",")).join("\r\n");
+  function renderOfficialTable(rows, columns, prefix, locale2) {
+    const head = columns.map((c) => `<th scope="col">${esc(t(prefix + "." + c, locale2))}</th>`).join("");
+    const body = rows.map((row) => `<tr>${columns.map((c) => `<td>${esc(row[c] || "")}</td>`).join("")}</tr>`).join("");
+    const csv = [columns.map((c) => t(prefix + "." + c, locale2)), ...rows.map((row) => columns.map((c) => row[c] || ""))].map((line) => line.map(csvCell).join(",")).join("\r\n");
     const href = "data:text/csv;charset=utf-8," + encodeURIComponent("\uFEFF" + csv);
-    return `<div class="issue-toolbar"><a class="doc-export" href="${href}" download="${esc(t("doc.issue.file", locale2))}">${ICONS.download || ""}${esc(t("doc.issue.export", locale2))}</a></div>
-    <div class="issue-table-wrap"><table class="issue-table"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>`;
+    return `<div class="issue-toolbar"><h4 class="doc-section">${esc(t(prefix + ".title", locale2))}</h4><a class="doc-export" href="${href}" download="${esc(t(prefix + ".file", locale2))}">${ICONS.download || ""}${esc(t("doc.issue.export", locale2))}</a></div>
+    <div class="issue-table-wrap"><table class="issue-table ${prefix.replace("doc.", "")}-table"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>`;
+  }
+  function renderDocumentTables(doc, locale2) {
+    const parts = [];
+    if (Array.isArray(doc.undisputed) && doc.undisputed.length) parts.push(renderOfficialTable(doc.undisputed, UNDISPUTED_COLUMNS, "doc.undisputed", locale2));
+    if (Array.isArray(doc.claimsBasis) && doc.claimsBasis.length) parts.push(renderOfficialTable(doc.claimsBasis, CLAIM_COLUMNS, "doc.claims", locale2));
+    if (Array.isArray(doc.issues) && doc.issues.length) parts.push(renderOfficialTable(doc.issues, ISSUE_COLUMNS, "doc.issue", locale2));
+    return parts.join("");
   }
   function renderDocument(doc, locale2) {
     if (!doc) return `<p class="doc-missing">${ICONS.info}<span>${esc(t("doc.missing", locale2))}</span></p>`;
-    const issueTable = doc.type === "issues" && Array.isArray(doc.issues) && doc.issues.length ? renderIssueTable(doc.issues, locale2) : "";
+    const issueTable = renderDocumentTables(doc, locale2);
     const parties = (doc.parties || []).map((p) => `<tr><th scope="row">${esc(p.role)}</th><td>${esc(p.name)}</td></tr>`).join("");
     const paragraphs = (doc.paragraphs || []).map((p) => `<p>${esc(p)}</p>`).join("");
     const attachments = (doc.attachments || []).length ? `<h4 class="doc-section">${esc(t("doc.attachments", locale2))}</h4><ol class="doc-attachments">${doc.attachments.map((a) => `<li>${esc(a)}</li>`).join("")}</ol>` : "";
@@ -698,6 +790,7 @@
     let questionFillNotice = null;
     let semanticAuth = null;
     let usage = null;
+    let quota = null;
     const hadAuthCallback = consumeAuthCallbackQuery();
     let authRedirected = hadAuthCallback;
     async function refreshAuthStatus() {
@@ -717,6 +810,13 @@
           usage = await client.usage();
         } catch {
           usage = null;
+        }
+      }
+      if (typeof client?.quota === "function") {
+        try {
+          quota = await client.quota();
+        } catch {
+          quota = null;
         }
       }
       return usage;
@@ -750,7 +850,7 @@
       });
       switch (state.view) {
         case States.INPUT:
-          mount(el, renderInput({ samples, semanticAuth, usage }, locale2));
+          mount(el, renderInput({ samples, semanticAuth, usage, quota }, locale2));
           bindInput(el, { onSubmit: start, onSample: startSample }, locale2);
           break;
         case States.RUNNING:
@@ -793,6 +893,7 @@
       return `<section class="failed card" role="alert"><h2>${ICONS.alert}${esc(t("failed.title", loc))}</h2>
       <p class="code">${esc(error?.code || "")} @ ${esc(error?.step || "")}</p><p>${esc(error?.message || "")}</p>
       ${error?.code === "DAILY_TOKEN_LIMIT" ? `<p class="alt">${esc(t("usage.exhausted.tip", loc))} <a href="${LAW_POWERS_URL}" target="_blank" rel="noopener">${esc(t("usage.exhausted.action", loc))} \u2197</a></p>` : ""}
+      ${error?.code === "DAILY_CASE_LIMIT" ? `<p class="alt">${esc(t("quota.reason", loc))} <a href="${LAW_POWERS_URL}" target="_blank" rel="noopener">${esc(t("usage.exhausted.action", loc))} \u2197</a></p>` : ""}
       <div class="actions"><button id="retry" type="button" class="primary">${ICONS.refresh}${esc(t("failed.retry", loc))}</button></div></section>`;
     }
     function beginPolling(caseId, { resumed = false } = {}) {
@@ -807,7 +908,7 @@
         dispatch({ type: "STATUS", status: s });
       });
     }
-    async function start(text, outputs, files = []) {
+    async function start(text, outputs, files = [], motionRequest = "") {
       if ((!text || !text.trim()) && (!Array.isArray(files) || !files.length)) return null;
       selectedOutputs = normalizeOutputs(outputs);
       activeTab = selectedOutputs.includes("graph") ? "graph" : "doc-" + selectedOutputs[0];
@@ -815,7 +916,9 @@
       dispatch({ type: "START", caseId: null });
       let s;
       try {
-        s = await client.start((text || "").trim(), locale2, selectedOutputs.filter((o) => o !== "graph"), files);
+        s = await client.start((text || "").trim(), locale2, selectedOutputs.filter((o) => o !== "graph"), files, motionRequest);
+        refreshUsage().catch(() => {
+        });
       } catch (error) {
         if (requestId === startRequestId) {
           dispatch({
@@ -1068,8 +1171,10 @@
     }
     async function mount2() {
       const sel = root.querySelector("#lang-select");
-      sel.value = locale2;
-      sel.addEventListener("change", () => setLocale2(sel.value));
+      if (sel) {
+        sel.value = locale2;
+        sel.addEventListener("change", () => setLocale2(sel.value));
+      }
       await refreshAuthStatus();
       samples = await client.samples(locale2).catch(() => []);
       const saved = storage.getItem("caseId");
@@ -1094,6 +1199,9 @@
       refreshAuthStatus,
       getUsage: () => usage,
       refreshUsage,
+      /** 呼叫端今日配額（含 loggedIn／memberLimit）與 REST client，供右上角登入區使用。 */
+      getQuota: () => quota,
+      client,
       setLocale: setLocale2,
       start,
       startSample,
@@ -1138,18 +1246,24 @@
     }
     return {
       /** 有附件時改用 multipart；無附件維持既有 JSON 契約與 WebMCP 相容性。 */
-      start: (caseText, locale2, documents, files = []) => {
+      start: (caseText, locale2, documents, files = [], motionRequest = "") => {
         if (Array.isArray(files) && files.length) {
           const form = new FormData();
           form.append("caseText", caseText || "");
           form.append("locale", locale2);
+          if (motionRequest) form.append("motionRequest", motionRequest);
           (Array.isArray(documents) ? documents : []).forEach((document2) => form.append("documents", document2));
           files.forEach((file) => form.append("files", file, file.name));
           return call("/api/cases", { method: "POST", body: form });
         }
         return call("/api/cases", {
           method: "POST",
-          body: JSON.stringify(Array.isArray(documents) && documents.length ? { caseText, locale: locale2, documents } : { caseText, locale: locale2 })
+          body: JSON.stringify({
+            caseText,
+            locale: locale2,
+            ...Array.isArray(documents) && documents.length ? { documents } : {},
+            ...motionRequest ? { motionRequest } : {}
+          })
         });
       },
       status: (id) => call(`/api/cases/${encodeURIComponent(id)}`),
@@ -1159,20 +1273,37 @@
       authStatus: () => call("/api/auth/tw-legal-rag/status"),
       /** 今日 token 用量與是否停用。 */
       usage: () => call("/api/usage"),
-      /** 每 intervalMs 輪詢一次；COMPLETED／FAILED／WAITING 自動停（WAITING 由人工回答後以 answer 續接）；回傳 stop()。 */
-      poll(id, onStatus, intervalMs = 2e3) {
+      /** 呼叫端今日案件配額（已用／上限／剩餘）。 */
+      quota: () => call("/api/quota"),
+      /** 目前登入者（Google）；未登入 loggedIn=false。 */
+      me: () => call("/api/me"),
+      /** 登出：Spring Security 的 POST /logout 會 302 回首頁，這裡只需送出請求。 */
+      logout: () => fetchImpl(base + "/logout", { method: "POST", redirect: "manual" }),
+      /**
+       * 每 intervalMs 輪詢一次；COMPLETED／FAILED／WAITING 自動停（WAITING 由人工回答後以 answer 續接）；回傳 stop()。
+       * 短暫的 5xx／網路錯誤（例如部署換容器的一分鐘）不立刻判失敗：改以 failureIntervalMs 重試，
+       * 連續失敗達 maxFailures 才回 FAILED／NETWORK；404（案件不存在）則立即失敗。
+       */
+      poll(id, onStatus, intervalMs = 2e3, { maxFailures = 3, failureIntervalMs = 1e4 } = {}) {
         let stopped = false;
         let timer = null;
+        let failures = 0;
         const tick = async () => {
           if (stopped) return;
           try {
             const s = await call(`/api/cases/${encodeURIComponent(id)}`);
+            failures = 0;
             onStatus(s);
             if (s.status === "COMPLETED" || s.status === "FAILED" || s.status === "WAITING") {
               stopped = true;
               return;
             }
           } catch (e) {
+            failures += 1;
+            if (e.status !== 404 && failures < maxFailures) {
+              timer = setTimeout(tick, failureIntervalMs);
+              return;
+            }
             onStatus({ status: "FAILED", error: { code: e.code || "NETWORK", message: e.message } });
             stopped = true;
             return;
@@ -1447,7 +1578,7 @@
   var CANVAS_BG = "#f6f3ec";
   var LABEL_SUB = "#475569";
   var LINK_DISTANCE = { "\u8B49\u64DA": 26, "\u7576\u4E8B\u4EBA": 60, "\u5305\u542B": 45, "\u8AB2\u4E88": 40, "\u8CA0\u64D4": 55, "\u5F97\u8ACB\u6C42": 55, "\u8981\u4EF6": 40, "\u8A72\u7576": 55 };
-  var LAYOUT = { chargeStrength: -55, chargeDistanceMax: 150, isolatedGravity: 0.06 };
+  var LAYOUT = { chargeStrength: -55, chargeDistanceMax: 150, isolatedGravity: 0.06, warmupTicks: 60 };
   function isolatedGravity(strength = LAYOUT.isolatedGravity) {
     let nodes = [];
     let linked = /* @__PURE__ */ new Set();
@@ -1725,7 +1856,7 @@
     }
     initialFitDone = false;
     activeFamily = null;
-    Graph = ForceGraph3D()(el).backgroundColor(CANVAS_BG).graphData(toGraphData(data)).nodeThreeObject(nodeObject).nodeThreeObjectExtend(false).linkColor(linkColorFn).linkWidth((l) => linkStyle(l).width).linkCurvature((l) => linkStyle(l).curve).linkDirectionalArrowLength((l) => linkStyle(l).arrow).linkDirectionalArrowRelPos(1).linkOpacity(0.6).onEngineStop(() => {
+    Graph = ForceGraph3D()(el).backgroundColor(CANVAS_BG).graphData(toGraphData(data)).nodeThreeObject(nodeObject).nodeThreeObjectExtend(false).linkColor(linkColorFn).linkWidth((l) => linkStyle(l).width).linkCurvature((l) => linkStyle(l).curve).linkDirectionalArrowLength((l) => linkStyle(l).arrow).linkDirectionalArrowRelPos(1).linkOpacity(0.6).warmupTicks(LAYOUT.warmupTicks).onEngineStop(() => {
       if (!initialFitDone) {
         initialFitDone = true;
         Graph.zoomToFit(600, 60);
@@ -1736,6 +1867,12 @@
     const gathered = Graph.graphData();
     Graph.d3Force("isolatedGravity", isolatedGravity());
     Graph.d3Force("isolatedGravity").links(gathered.links);
+    setTimeout(() => {
+      try {
+        Graph?.d3ReheatSimulation();
+      } catch {
+      }
+    }, 0);
     const syncSize = () => Graph.width(el.clientWidth).height(el.clientHeight);
     syncSize();
     resizeObserver = new ResizeObserver(syncSize);
@@ -1811,6 +1948,7 @@
       inputSchema: S({
         caseText: { type: "string", minLength: 20 },
         sampleId: { type: "string", description: "Exact id or title returned by listSampleCases, e.g. car-accident." },
+        motionRequest: { type: "string", description: "Only with documents containing motion: what the court is asked to grant, e.g. \u8072\u8ACB\u8ABF\u67E5\u8B49\u64DA." },
         locale: LOCALE,
         documents: { type: "array", description: "Litigation documents to draft besides the graph, e.g. complaint (\u8D77\u8A34\u72C0), defense (\u7B54\u8FAF\u72C0).", items: { type: "string", enum: [...DOC_TYPES] } }
       })
@@ -2023,7 +2161,7 @@
         if (locale2 && locale2 !== app2.getLocale()) await app2.setLocale(locale2);
         return app2.getSamples().map(({ id, title, summary: summary2 }) => ({ id, title, summary: summary2 }));
       },
-      startCase: async ({ caseText, sampleId, locale: locale2, documents }) => {
+      startCase: async ({ caseText, sampleId, locale: locale2, documents, motionRequest }) => {
         if (app2.getState().view !== "INPUT") {
           const current2 = pageStatus();
           return {
@@ -2036,7 +2174,7 @@
         }
         if (locale2 && locale2 !== app2.getLocale()) await app2.setLocale(locale2);
         const outputs = ["graph", ...Array.isArray(documents) ? documents : []];
-        const s = sampleId ? await app2.startSample(sampleId, outputs) : await app2.start(caseText, outputs);
+        const s = sampleId ? await app2.startSample(sampleId, outputs) : await app2.start(caseText, outputs, [], motionRequest || "");
         if (!s) return { ok: false, error: "Unknown sampleId or empty caseText." };
         return {
           ok: true,
@@ -2237,6 +2375,42 @@
     return { refresh: draw };
   }
 
+  // src/main/resources/static/js/login.js
+  function renderLogin(me2, quota, locale2) {
+    if (!me2 || !me2.enabled) return "";
+    const memberLimit = quota?.memberLimit ?? 5;
+    if (me2.loggedIn && me2.blocked) {
+      return `<div class="auth-user auth-blocked" role="alert">
+      <span class="auth-name">${esc(me2.blockedMessage || t("license.excluded", locale2))}</span>
+      <button type="button" id="logout-btn" class="auth-logout">${esc(t("nav.logout", locale2))}</button>
+    </div>`;
+    }
+    if (me2.loggedIn) {
+      const name = me2.name || me2.email || "";
+      const avatar = me2.picture ? `<img class="avatar" src="${esc(me2.picture)}" alt="" referrerpolicy="no-referrer" width="28" height="28">` : `<span class="avatar avatar-fallback" aria-hidden="true">${esc((name || "?").slice(0, 1))}</span>`;
+      return `<div class="auth-user" title="${esc(me2.email || "")}">
+      ${avatar}<span class="auth-name">${esc(name)}</span>
+      <button type="button" id="logout-btn" class="auth-logout">${esc(t("nav.logout", locale2))}</button>
+    </div>`;
+    }
+    const benefit = t("nav.loginBenefit", locale2).replace("{limit}", memberLimit);
+    return `<a id="login-link" class="login-link" href="${esc(me2.loginPath || "/oauth2/authorization/google")}" title="${esc(benefit)}">
+    <svg class="g-mark" viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M21.6 12.2c0-.7-.1-1.4-.2-2H12v3.9h5.4a4.6 4.6 0 0 1-2 3v2.5h3.2c1.9-1.7 3-4.3 3-7.4z"/><path fill="#34A853" d="M12 22c2.7 0 5-.9 6.6-2.4l-3.2-2.5c-.9.6-2 1-3.4 1a6 6 0 0 1-5.6-4.1H3.1v2.6A10 10 0 0 0 12 22z"/><path fill="#FBBC05" d="M6.4 13.9A6 6 0 0 1 6.4 10V7.5H3.1a10 10 0 0 0 0 9z"/><path fill="#EA4335" d="M12 6c1.5 0 2.8.5 3.8 1.5l2.9-2.9A10 10 0 0 0 3.1 7.5L6.4 10A6 6 0 0 1 12 6z"/></svg>
+    <span>${esc(t("nav.login", locale2))}</span><small>${esc(benefit)}</small>
+  </a>`;
+  }
+  function bindLogin(root, { logout } = {}) {
+    const btn = root.querySelector("#logout-btn");
+    if (btn) btn.addEventListener("click", async () => {
+      btn.disabled = true;
+      try {
+        await logout?.();
+      } finally {
+        globalThis.location?.reload?.();
+      }
+    });
+  }
+
   // src/main/resources/static/js/main.js
   var app = createApp({
     root: document,
@@ -2252,6 +2426,22 @@
   var webmcp = boot.bind(app, graphView_exports);
   window.__webmcp = webmcp;
   var badge = document.getElementById("agent-badge");
+  var authSlot = document.getElementById("auth-slot");
+  var me = null;
+  var updateLoginSlot = () => {
+    if (!authSlot) return;
+    authSlot.replaceChildren();
+    authSlot.insertAdjacentHTML("afterbegin", renderLogin(me, app.getQuota?.(), app.getLocale()));
+    bindLogin(authSlot, { logout: () => app.client?.logout?.() });
+  };
+  var refreshMe = async () => {
+    try {
+      me = await app.client?.me?.();
+    } catch {
+      me = null;
+    }
+    updateLoginSlot();
+  };
   var semanticBadge = document.getElementById("semantic-badge");
   var updateSemanticBadge = () => {
     if (!semanticBadge) return;
@@ -2295,6 +2485,7 @@
     if (kind === "LOCALE") {
       setLocale(app.getLocale());
       updateSemanticBadge();
+      updateLoginSlot();
       inspector?.refresh();
     }
     if (kind === "STATE") {
@@ -2309,6 +2500,7 @@
   (async () => {
     await app.mount();
     updateSemanticBadge();
+    await refreshMe();
     await syncTools(app.getState().view);
     boot.markReady();
     inspector = mountInspector(document, webmcp, t, () => app.getLocale());

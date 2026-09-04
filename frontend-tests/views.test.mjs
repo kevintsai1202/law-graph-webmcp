@@ -86,6 +86,13 @@ test('input 綁定時使用目前語系，初始化完成後分析按鈕可送�
   submit.listeners.get('click')();
   assert.equal(submittedText, textarea.value);
 });
+test('input 有聲請事項欄位，預設隱藏；標題與 placeholder 依語系', () => {
+  const html = renderInput({ samples: [] }, 'zh-TW');
+  assert.match(html, /<div class="motion-field" id="motion-field" hidden>/);
+  assert.match(html, /id="motion-request"/);
+  assert.match(html, /聲請事項（要請法院准許什麼）/);
+  assert.match(renderInput({ samples: [] }, 'en'), /Motion request/);
+});
 test('input 今日額度用完時顯示提示與 Law Powers 連結；未用完不顯示', () => {
   const exhausted = renderInput({ samples: [], usage: { exhausted: true, paused: true } }, 'zh-TW');
   assert.match(exhausted, /今日 AI 額度已用完/);
@@ -151,6 +158,30 @@ test('input 已附參考文件時不強制 20 字：短描述可送出，提示�
   assert.equal(submit.disabled, true);
   assert.equal(count.textContent, '1 / 20');
   assert.equal(hintText.textContent, '至少 20 字。事實越具體，分析越精準。');
+});
+test('bindInput 勾選聲請狀時顯示聲請事項欄位，送出時把內容作為第四個參數傳出', () => {
+  const node = (extra = {}) => ({ listeners: new Map(), classList: { toggle() {}, add() {}, remove() {} }, addEventListener(type, l) { this.listeners.set(type, l); }, ...extra });
+  const textarea = node({ value: '這是一段已達最低字數且可以送出的案件內容。' });
+  const files = node({ files: [], value: '', click() {} });
+  const submit = node({ disabled: true });
+  const count = node({ textContent: '' });
+  const motionField = node({ hidden: true });
+  const motionInput = node({ value: '  聲請調查證據  ' });
+  const graph = node({ checked: true, value: 'graph' });
+  const motion = node({ checked: false, value: 'motion' });
+  const bySelector = { '#case-text': textarea, '#case-files': files, '#case-submit': submit, '#case-count': count,
+    '#file-status': node({ textContent: '' }), '#file-dropzone': node(), '#file-list': node({ replaceChildren() {} }),
+    '#motion-field': motionField, '#motion-request': motionInput };
+  const root = { querySelector: (s) => bySelector[s] ?? null,
+    querySelectorAll: (s) => s.includes(':checked') ? [graph, motion].filter((c) => c.checked) : s.includes('outputs') ? [graph, motion] : [] };
+  let submitted = null;
+  bindInput(root, { onSubmit: (...args) => { submitted = args; }, onSample() {} }, 'zh-TW');
+  assert.equal(motionField.hidden, true, '未勾選聲請狀時隱藏');
+  motion.checked = true;
+  motion.listeners.get('change')();
+  assert.equal(motionField.hidden, false, '勾選聲請狀後顯示');
+  submit.listeners.get('click')();
+  assert.deepEqual(submitted.slice(1), [['graph', 'motion'], [], '聲請調查證據']);
 });
 test('progress 高亮當前步驤且之前步驤標 done', () => {
   const html = renderProgress({ step: 'RESEARCH' }, 'zh-TW');
@@ -221,31 +252,47 @@ test('result 依 outputs 產生書狀分頁並以公文書狀版面呈現，未�
   assert.match(html, /證一：行車紀錄器/);
   assert.match(html, /中華民國115年9月1日/);
 });
-test('爭點整理以實務爭點整理表呈現：欄位表頭、逐列兩造主張、內容轉義，並附 CSV 匯出連結', () => {
+test('爭點整理依司法院官方三表呈現：不爭執事項、聲明與請求權基礎、爭點整理表（八欄），內容轉義並各附 CSV', () => {
   const status = { locale: 'zh-TW', result: {
     documents: [{ type: 'issues', title: '爭點整理', court: '臺灣臺北地方法院',
       parties: [{ role: '原告', name: '甲' }], paragraphs: ['本件爭點整理如下：'],
+      undisputed: [{ no: '1', fact: '兩造於○年簽約', evidence: '甲證1–契約書' }],
+      claimsBasis: [{ no: '1', basis: '民法第184條第1項前段', claim: '被告應給付原告○萬元' }],
       issues: [
-        { no: '一', issue: '被告有無過失', plaintiff: '被告未保持安全距離', defendant: '<原告>突然變換車道',
-          basis: '民法第184條第1項', evidence: '證一：行車紀錄器', court: '審酌行車紀錄器影像' },
-        { no: '二', issue: '損害額', plaintiff: '修車費 5 萬', defendant: '應扣折舊', basis: '民法第196條', evidence: '證二：估價單', court: '' }
+        { no: '1', issue: '被告是否有過失？', plaintiff: '被告未保持安全距離', plaintiffEvidence: '甲證3–行車紀錄器',
+          defendant: '<原告>突然變換車道', defendantEvidence: '乙證1–證人證述', basis: '民法第184條第1項前段' },
+        { no: '2', issue: '損害額若干？', plaintiff: '修車費 5 萬', plaintiffEvidence: '甲證4–估價單', defendant: '應扣折舊', defendantEvidence: '', basis: '民法第196條' }
       ], attachments: [], date: '' }],
     graph: { nodes: [], edges: [] } } };
   const html = renderResult({ status, outputs: ['issues'] }, 'zh-TW');
-  assert.match(html, /<table class="issue-table"/);
-  assert.match(html, /<th[^>]*>爭點<\/th>/);
-  assert.match(html, /<th[^>]*>原告主張<\/th>/);
-  assert.match(html, /<th[^>]*>被告主張<\/th>/);
-  assert.match(html, /<th[^>]*>法律依據<\/th>/);
-  assert.match(html, /<th[^>]*>證據方法<\/th>/);
+  assert.match(html, /<table class="issue-table issue-table"/);
+  for (const head of ['序次', '爭點', '原告主張', '原告證據', '被告抗辯', '被告證據', '法律依據']) {
+    assert.match(html, new RegExp(`<th[^>]*>${head}</th>`), head);
+  }
+  assert.match(html, /不爭執事項清單/);
+  assert.match(html, /<th[^>]*>兩造不爭執事實<\/th>/);
+  assert.match(html, /聲明與請求權基礎清單/);
+  assert.match(html, /<th[^>]*>請求權基礎<\/th>/);
   assert.match(html, /被告未保持安全距離/);
   assert.match(html, /&lt;原告&gt;突然變換車道/);
-  assert.match(html, /損害額/);
-  assert.match(html, /href="data:text\/csv;charset=utf-8,/);
-  assert.match(html, /download="爭點整理\.csv"/);
-  // CSV 內容需含表頭與兩列資料（URL 編碼後仍可找到欄位名）
-  assert.match(html, new RegExp(encodeURIComponent('爭點')));
+  assert.match(html, /download="爭點整理表\.csv"/);
+  assert.match(html, /download="不爭執事項清單\.csv"/);
+  assert.match(html, /download="聲明與請求權基礎清單\.csv"/);
   assert.match(html, new RegExp(encodeURIComponent('民法第196條')));
+  // 表格順序：不爭執 → 聲明與請求權基礎 → 爭點整理表
+  assert.ok(html.indexOf('不爭執事項清單') < html.indexOf('聲明與請求權基礎清單') && html.indexOf('聲明與請求權基礎清單') < html.indexOf('爭點整理表'));
+});
+test('準備書狀附聲明與請求權基礎清單與爭點整理表，一般書狀無表格', () => {
+  const doc = (type, extra = {}) => ({ type, title: 't', court: '', parties: [], paragraphs: ['一、'], attachments: [], date: '', ...extra });
+  const prep = renderResult({ status: { locale: 'zh-TW', result: { documents: [doc('preparatory', {
+    claimsBasis: [{ no: '1', basis: '民法第184條第1項前段', claim: '被告應給付' }],
+    issues: [{ no: '1', issue: '是否有過失？', plaintiff: 'p', plaintiffEvidence: '', defendant: 'd', defendantEvidence: '', basis: '' }] })],
+    graph: { nodes: [], edges: [] } } }, outputs: ['preparatory'] }, 'zh-TW');
+  assert.match(prep, /聲明與請求權基礎清單/);
+  assert.match(prep, /爭點整理表/);
+  assert.doesNotMatch(prep, /不爭執事項清單/);
+  const complaint = renderResult({ status: { locale: 'zh-TW', result: { documents: [doc('complaint')], graph: { nodes: [], edges: [] } } }, outputs: ['complaint'] }, 'zh-TW');
+  assert.doesNotMatch(complaint, /issue-table/);
 });
 test('爭點整理沒有表格列時退回段落版面，不拋錯', () => {
   const status = { locale: 'zh-TW', result: {
@@ -317,4 +364,28 @@ test('research 顯示雙軌 coverage 與來源，且仍相容只有舊 judgments
   assert.match(html, /檢索涵蓋狀態/);
   assert.match(html, /semantic=UNAVAILABLE/);
   assert.match(html, /最高法院判決 \[KEYWORD\]/);
+});
+test('input 顯示今日案件配額次數與限制原因；用完時顯示用完提示', () => {
+  const fine = renderInput({ samples: [], quota: { used: 1, limit: 3, remaining: 2, exhausted: false } }, 'zh-TW');
+  assert.match(fine, /quota-note/);
+  assert.match(fine, /1 \/ 3/);
+  assert.match(fine, /免費/);
+  assert.doesNotMatch(fine, /quota-banner/);
+  const gone = renderInput({ samples: [], quota: { used: 3, limit: 3, remaining: 0, exhausted: true } }, 'zh-TW');
+  assert.match(gone, /quota-banner/);
+  assert.match(gone, /今日 3 次分析已用完/);
+  const en = renderInput({ samples: [], quota: { used: 0, limit: 3, remaining: 3, exhausted: false } }, 'en');
+  assert.match(en, /0 \/ 3/);
+  assert.match(en, /free/);
+  // 沒有配額資料（例如後端不限制）時不顯示
+  assert.doesNotMatch(renderInput({ samples: [] }, 'zh-TW'), /quota-note/);
+});
+
+test('input 匿名且登入可提高上限時，配額說明附 Google 登入提示；已登入不顯示', () => {
+  const anon = renderInput({ samples: [], quota: { used: 0, limit: 1, remaining: 1, exhausted: false, loggedIn: false, memberLimit: 5, loginPath: '/oauth2/authorization/google' } }, 'zh-TW');
+  assert.match(anon, /quota-login[^>]*href="\/oauth2\/authorization\/google"/);
+  assert.match(anon, /每天可分析 5 次/);
+  const member = renderInput({ samples: [], quota: { used: 2, limit: 5, remaining: 3, exhausted: false, loggedIn: true, memberLimit: 5 } }, 'zh-TW');
+  assert.doesNotMatch(member, /quota-login/);
+  assert.match(member, /2 \/ 5/);
 });

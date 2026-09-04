@@ -4,6 +4,7 @@ import { t } from './i18n.js';
 import * as graphView from './graphView.js';
 import { createWebMcpBoot } from './webmcpBoot.js';
 import { mountInspector } from './inspector.js';
+import { renderLogin, bindLogin } from './login.js';
 
 /** 瀏覽器入口：注入真實依賴並掛載；暴露到 window 供 E2E 與 console 除錯使用。 */
 const app = createApp({
@@ -27,6 +28,23 @@ window.__webmcpBoot = boot;
 const webmcp = boot.bind(app, graphView);
 window.__webmcp = webmcp;
 const badge = document.getElementById('agent-badge');
+const authSlot = document.getElementById('auth-slot');
+/** 最近一次 /api/me 結果；null 代表尚未取得或失敗（視為未啟用）。 */
+let me = null;
+
+/** 更新右上角登入區：登入好處的次數來自 /api/quota 的 memberLimit。所有動態文字都已在 renderLogin 內 esc。 */
+const updateLoginSlot = () => {
+  if (!authSlot) return;
+  authSlot.replaceChildren();
+  authSlot.insertAdjacentHTML('afterbegin', renderLogin(me, app.getQuota?.(), app.getLocale()));
+  bindLogin(authSlot, { logout: () => app.client?.logout?.() });
+};
+
+/** 讀取登入身分後重繪登入區；失敗不影響其他功能。 */
+const refreshMe = async () => {
+  try { me = await app.client?.me?.(); } catch { me = null; }
+  updateLoginSlot();
+};
 const semanticBadge = document.getElementById('semantic-badge');
 
 /** 更新右上角語意檢索 MCP 授權徽章。 */
@@ -76,6 +94,7 @@ app.onChange(async (state, kind) => {
   if (kind === 'LOCALE') {
     graphView.setLocale(app.getLocale());
     updateSemanticBadge();
+    updateLoginSlot();
     inspector?.refresh();
   }
   if (kind === 'STATE') {
@@ -93,6 +112,7 @@ app.onChange(async (state, kind) => {
 (async () => {
   await app.mount();
   updateSemanticBadge();
+  await refreshMe();
   await syncTools(app.getState().view);
   // 示範案例與既有案件都就緒後才放行早期註冊的工具，避免 Agent 讀到尚未渲染的頁面
   boot.markReady();

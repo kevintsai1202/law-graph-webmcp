@@ -13,18 +13,23 @@ export function createCaseClient(fetchImpl = globalThis.fetch, base = '') {
   }
   return {
     /** 有附件時改用 multipart；無附件維持既有 JSON 契約與 WebMCP 相容性。 */
-    start: (caseText, locale, documents, files = []) => {
+    start: (caseText, locale, documents, files = [], motionRequest = '') => {
       if (Array.isArray(files) && files.length) {
         const form = new FormData();
         form.append('caseText', caseText || '');
         form.append('locale', locale);
+        if (motionRequest) form.append('motionRequest', motionRequest);
         (Array.isArray(documents) ? documents : []).forEach((document) => form.append('documents', document));
         files.forEach((file) => form.append('files', file, file.name));
         return call('/api/cases', { method: 'POST', body: form });
       }
       return call('/api/cases', {
         method: 'POST',
-        body: JSON.stringify(Array.isArray(documents) && documents.length ? { caseText, locale, documents } : { caseText, locale })
+        body: JSON.stringify({
+          caseText, locale,
+          ...(Array.isArray(documents) && documents.length ? { documents } : {}),
+          ...(motionRequest ? { motionRequest } : {})
+        })
       });
     },
     status: (id) => call(`/api/cases/${encodeURIComponent(id)}`),
@@ -34,16 +39,29 @@ export function createCaseClient(fetchImpl = globalThis.fetch, base = '') {
     authStatus: () => call('/api/auth/tw-legal-rag/status'),
     /** 今日 token 用量與是否停用。 */
     usage: () => call('/api/usage'),
-    /** 每 intervalMs 輪詢一次；COMPLETED／FAILED／WAITING 自動停（WAITING 由人工回答後以 answer 續接）；回傳 stop()。 */
-    poll(id, onStatus, intervalMs = 2000) {
-      let stopped = false; let timer = null;
+    /** 呼叫端今日案件配額（已用／上限／剩餘）。 */
+    quota: () => call('/api/quota'),
+    /** 目前登入者（Google）；未登入 loggedIn=false。 */
+    me: () => call('/api/me'),
+    /** 登出：Spring Security 的 POST /logout 會 302 回首頁，這裡只需送出請求。 */
+    logout: () => fetchImpl(base + '/logout', { method: 'POST', redirect: 'manual' }),
+    /**
+     * 每 intervalMs 輪詢一次；COMPLETED／FAILED／WAITING 自動停（WAITING 由人工回答後以 answer 續接）；回傳 stop()。
+     * 短暫的 5xx／網路錯誤（例如部署換容器的一分鐘）不立刻判失敗：改以 failureIntervalMs 重試，
+     * 連續失敗達 maxFailures 才回 FAILED／NETWORK；404（案件不存在）則立即失敗。
+     */
+    poll(id, onStatus, intervalMs = 2000, { maxFailures = 3, failureIntervalMs = 10000 } = {}) {
+      let stopped = false; let timer = null; let failures = 0;
       const tick = async () => {
         if (stopped) return;
         try {
           const s = await call(`/api/cases/${encodeURIComponent(id)}`);
+          failures = 0;
           onStatus(s);
           if (s.status === 'COMPLETED' || s.status === 'FAILED' || s.status === 'WAITING') { stopped = true; return; }
         } catch (e) {
+          failures += 1;
+          if (e.status !== 404 && failures < maxFailures) { timer = setTimeout(tick, failureIntervalMs); return; }
           onStatus({ status: 'FAILED', error: { code: e.code || 'NETWORK', message: e.message } });
           stopped = true; return;
         }

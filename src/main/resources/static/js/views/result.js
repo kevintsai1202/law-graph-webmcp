@@ -66,8 +66,10 @@ const SECTION_HTML = {
   }
 };
 
-/** 爭點整理表欄位順序（i18n 鍵尾碼＝IssueRow 欄名）。 */
-const ISSUE_COLUMNS = ['no', 'issue', 'plaintiff', 'defendant', 'basis', 'evidence', 'court'];
+/** 司法院官方三張表的欄位順序（i18n 鍵尾碼＝後端 record 欄名）。 */
+const ISSUE_COLUMNS = ['no', 'issue', 'plaintiff', 'plaintiffEvidence', 'defendant', 'defendantEvidence', 'basis'];
+const CLAIM_COLUMNS = ['no', 'basis', 'claim'];
+const UNDISPUTED_COLUMNS = ['no', 'fact', 'evidence'];
 
 /** CSV 欄位轉義：含逗號、引號、換行者以雙引號包住並將引號加倍。 */
 function csvCell(value) {
@@ -76,25 +78,33 @@ function csvCell(value) {
 }
 
 /**
- * 實務爭點整理表：每個爭點一列，兩造主張並列，附法律依據、證據方法與法院應審酌事項；
- * 另提供 CSV 匯出（含 UTF-8 BOM，Excel 直接開啟不會亂碼）。
+ * 司法院官方表格（爭點整理表／聲明與請求權基礎清單／不爭執事項清單）通用渲染：
+ * 表頭與欄位依 i18n 前綴取字，附 CSV 匯出（含 UTF-8 BOM，Excel 直接開啟不會亂碼）。
  */
-function renderIssueTable(rows, locale) {
-  const head = ISSUE_COLUMNS.map((c) => `<th scope="col">${esc(t('doc.issue.' + c, locale))}</th>`).join('');
+function renderOfficialTable(rows, columns, prefix, locale) {
+  const head = columns.map((c) => `<th scope="col">${esc(t(prefix + '.' + c, locale))}</th>`).join('');
   const body = rows.map((row) =>
-    `<tr>${ISSUE_COLUMNS.map((c) => `<td>${esc(row[c] || '')}</td>`).join('')}</tr>`).join('');
-  const csv = [ISSUE_COLUMNS.map((c) => t('doc.issue.' + c, locale)), ...rows.map((row) => ISSUE_COLUMNS.map((c) => row[c] || ''))]
+    `<tr>${columns.map((c) => `<td>${esc(row[c] || '')}</td>`).join('')}</tr>`).join('');
+  const csv = [columns.map((c) => t(prefix + '.' + c, locale)), ...rows.map((row) => columns.map((c) => row[c] || ''))]
     .map((line) => line.map(csvCell).join(',')).join('\r\n');
   const href = 'data:text/csv;charset=utf-8,' + encodeURIComponent('\uFEFF' + csv);
-  return `<div class="issue-toolbar"><a class="doc-export" href="${href}" download="${esc(t('doc.issue.file', locale))}">${ICONS.download || ''}${esc(t('doc.issue.export', locale))}</a></div>
-    <div class="issue-table-wrap"><table class="issue-table"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>`;
+  return `<div class="issue-toolbar"><h4 class="doc-section">${esc(t(prefix + '.title', locale))}</h4><a class="doc-export" href="${href}" download="${esc(t(prefix + '.file', locale))}">${ICONS.download || ''}${esc(t('doc.issue.export', locale))}</a></div>
+    <div class="issue-table-wrap"><table class="issue-table ${prefix.replace('doc.', '')}-table"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>`;
+}
+
+/** 依書狀內容輸出官方表格：不爭執事項 → 聲明與請求權基礎 → 爭點整理表（與準備書狀範本附表順序一致）。 */
+function renderDocumentTables(doc, locale) {
+  const parts = [];
+  if (Array.isArray(doc.undisputed) && doc.undisputed.length) parts.push(renderOfficialTable(doc.undisputed, UNDISPUTED_COLUMNS, 'doc.undisputed', locale));
+  if (Array.isArray(doc.claimsBasis) && doc.claimsBasis.length) parts.push(renderOfficialTable(doc.claimsBasis, CLAIM_COLUMNS, 'doc.claims', locale));
+  if (Array.isArray(doc.issues) && doc.issues.length) parts.push(renderOfficialTable(doc.issues, ISSUE_COLUMNS, 'doc.issue', locale));
+  return parts.join('');
 }
 
 /** 台灣公文書狀版面：狀別標題、當事人欄、本文段落、證物清單、此致法院與日期；全文經 esc。爭點整理另插入爭點整理表。 */
 function renderDocument(doc, locale) {
   if (!doc) return `<p class="doc-missing">${ICONS.info}<span>${esc(t('doc.missing', locale))}</span></p>`;
-  const issueTable = doc.type === 'issues' && Array.isArray(doc.issues) && doc.issues.length
-    ? renderIssueTable(doc.issues, locale) : '';
+  const issueTable = renderDocumentTables(doc, locale);
   const parties = (doc.parties || []).map((p) =>
     `<tr><th scope="row">${esc(p.role)}</th><td>${esc(p.name)}</td></tr>`).join('');
   const paragraphs = (doc.paragraphs || []).map((p) => `<p>${esc(p)}</p>`).join('');

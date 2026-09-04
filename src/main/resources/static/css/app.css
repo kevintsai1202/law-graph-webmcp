@@ -168,6 +168,33 @@ label { display: block; }
 .field-hint { display: flex; justify-content: space-between; gap: var(--space-3); font-size: 0.82rem; color: var(--color-text-sub); }
 .field-hint .count { font-variant-numeric: tabular-nums; }
 .field-hint .count.ok { color: var(--color-ok); font-weight: 600; }
+/* 每日配額：次數不可折行，說明文字接在後面自然換行 */
+.field-hint.quota-note { justify-content: flex-start; flex-wrap: wrap; row-gap: 2px; margin-bottom: var(--space-3); }
+.field-hint.quota-note strong { white-space: nowrap; flex: 0 0 auto; color: var(--color-text); }
+
+/* 右上角 Google 登入區 */
+.auth-slot { display: flex; align-items: center; }
+.login-link {
+  display: inline-flex; align-items: center; gap: 8px; min-height: 32px; padding: 4px 12px;
+  border-radius: var(--radius-pill); border: 1px solid var(--color-border, #cbd5e1); background: var(--color-surface, #fff);
+  color: var(--color-text); font-size: 0.85rem; font-weight: 600; text-decoration: none; white-space: nowrap; box-shadow: var(--shadow-sm);
+}
+.login-link:hover { text-decoration: none; filter: brightness(0.98); }
+.login-link .g-mark { width: 18px; height: 18px; flex: 0 0 auto; }
+.login-link small { font-weight: 400; color: var(--color-text-sub); }
+.auth-user { display: inline-flex; align-items: center; gap: 8px; min-height: 32px; padding: 2px 6px 2px 2px; border-radius: var(--radius-pill); background: var(--color-surface, #fff); box-shadow: var(--shadow-sm); }
+.avatar { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; }
+.avatar-fallback { display: inline-flex; align-items: center; justify-content: center; background: var(--color-primary); color: #fff; font-weight: 700; font-size: 0.85rem; }
+.auth-name { font-size: 0.85rem; font-weight: 600; max-width: 10em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.auth-logout { border: 0; background: transparent; color: var(--color-text-sub); font-size: 0.8rem; cursor: pointer; padding: 4px 6px; min-height: 28px; }
+.auth-logout:hover { color: var(--color-text); text-decoration: underline; }
+@media (max-width: 640px) { .login-link small, .auth-name { display: none; } }
+.auth-blocked { background: var(--color-bad-soft, #fee2e2); }
+.auth-blocked .auth-name { max-width: 24em; color: var(--color-bad, #b91c1c); }
+/* 頁面最上方的使用授權橫幅：沿用 law-powers 技能頁的漸層綠帶與白字 */
+.license-banner { background: linear-gradient(90deg, var(--color-primary) 0%, #0f9d6e 100%); color: #fff; text-align: center; padding: 10px 16px; font-size: 14px; line-height: 1.6; letter-spacing: 0.02em; }
+.license-banner strong { font-weight: 700; }
+.license-banner .banner-except { background: rgba(255, 255, 255, 0.18); border-radius: 6px; padding: 1px 7px; font-weight: 700; white-space: nowrap; }
 .upload-field { display: flex; flex-direction: column; gap: var(--space-2); }
 .upload-input { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 .upload-dropzone {
@@ -445,6 +472,11 @@ button svg { width: 18px; height: 18px; flex: 0 0 auto; }
 .legal-doc .issue-table th { background: var(--color-warn-soft, #f6efe2); color: var(--color-heading); font-weight: 600; white-space: nowrap; }
 .legal-doc .issue-table td:first-child { white-space: nowrap; text-align: center; }
 .legal-doc .issue-table tbody tr:nth-child(even) td { background: rgba(0, 0, 0, 0.02); }
+.legal-doc .issue-toolbar { justify-content: space-between; align-items: center; }
+.legal-doc .issue-toolbar .doc-section { margin: 0; }
+/* 聲請事項：只在勾選聲請狀時顯示 */
+.motion-field { margin: var(--space-3) 0 0; }
+.motion-field input { width: 100%; padding: 10px 12px; border: 1px solid var(--color-border); border-radius: var(--radius-md); font: inherit; background: var(--color-surface); }
 .legal-doc .doc-attachments { margin: 0 0 var(--space-4); padding-left: 1.5em; }
 .legal-doc .doc-attachments li { margin-bottom: var(--space-1); }
 .legal-doc .doc-footer { margin-top: var(--space-6); padding-top: var(--space-4); border-top: 1px solid var(--color-border); display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--space-3); }

@@ -175,9 +175,10 @@ const LINK_DISTANCE = { '證據': 26, '當事人': 60, '包含': 45, '課予': 4
 
 /**
  * 力導向版面參數。chargeStrength 越接近 0 節點越緊；chargeDistanceMax 讓排斥力只在近距離作用，
- * 沒有邊相連的節點才不會被一路推到畫面邊緣；isolatedGravity 再把孤立節點拉回中心附近。
+ * 沒有邊相連的節點才不會被一路推到畫面邊緣；isolatedGravity 再把孤立節點拉回中心附近；
+ * warmupTicks 讓第一幀前先跑過幾十個 tick，開圖就是展開的版面。
  */
-export const LAYOUT = { chargeStrength: -55, chargeDistanceMax: 150, isolatedGravity: 0.06 };
+export const LAYOUT = { chargeStrength: -55, chargeDistanceMax: 150, isolatedGravity: 0.06, warmupTicks: 60 };
 
 /**
  * 自訂 d3 force：只對沒有任何邊的孤立節點施加向原點的拉力。
@@ -430,6 +431,8 @@ export function render(data) {
     .linkDirectionalArrowLength((l) => linkStyle(l).arrow)
     .linkDirectionalArrowRelPos(1)
     .linkOpacity(0.6)
+    // 先在背景跑一段 tick 再畫第一幀，避免初始畫面所有節點疊在原點
+    .warmupTicks(LAYOUT.warmupTicks)
     .onEngineStop(() => { if (!initialFitDone) { initialFitDone = true; Graph.zoomToFit(600, 60); } });
   // force 設定須在 graphData 之後、且不可同步 d3ReheatSimulation（layout 尚未建立會拋 'tick'）
   Graph.d3Force('charge').strength(LAYOUT.chargeStrength).distanceMax(LAYOUT.chargeDistanceMax);
@@ -438,6 +441,9 @@ export function render(data) {
   const gathered = Graph.graphData();
   Graph.d3Force('isolatedGravity', isolatedGravity());
   Graph.d3Force('isolatedGravity').links(gathered.links);
+  // 模擬是用預設力啟動的，改完力參數後 alpha 可能已冷卻，節點會糾在一起直到使用者拖曳才彈開；
+  // 延到下一輪事件迴圈（layout 已建立）再重新加熱，讓新的斥力與連線距離立刻生效。
+  setTimeout(() => { try { Graph?.d3ReheatSimulation(); } catch { /* 已被重新 render 或銷毀 */ } }, 0);
   const syncSize = () => Graph.width(el.clientWidth).height(el.clientHeight);
   syncSize();
   resizeObserver = new ResizeObserver(syncSize); resizeObserver.observe(el);

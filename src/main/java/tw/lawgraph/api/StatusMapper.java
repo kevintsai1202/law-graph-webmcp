@@ -34,7 +34,8 @@ public final class StatusMapper {
                 String message = snapshot.failure() == null
                         ? "agent process " + snapshot.code().name().toLowerCase()
                         : snapshot.failure();
-                return failed(snapshot, snapshot.code().name(), message, step);
+                String code = snapshot.failureCode() == null ? snapshot.code().name() : snapshot.failureCode();
+                return failed(snapshot, code, message, step);
             }
             default -> {
                 return new CaseStatus(snapshot.caseId(), "RUNNING", step, snapshot.locale().code(), null,

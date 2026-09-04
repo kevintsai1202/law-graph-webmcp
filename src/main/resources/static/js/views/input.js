@@ -50,15 +50,38 @@ function renderUsageNotice(usage, locale) {
   </div>`;
 }
 
+/** 每日案件配額：常駐顯示「今日已用 n / N 次」與限制原因；用完時改成醒目橫幅。沒有配額資料（後端不限制）就不顯示。 */
+function renderQuota(quota, locale) {
+  if (!quota || !(quota.limit > 0)) return '';
+  const count = `${quota.used} / ${quota.limit}`;
+  // 匿名者且登入可拿到更高上限時，附上登入提示（連到後端提供的登入路徑）
+  const loginTip = !quota.loggedIn && quota.memberLimit > quota.limit
+    ? ` <a class="quota-login" href="${esc(quota.loginPath || '/oauth2/authorization/google')}">${esc(t('quota.loginTip', locale).replace('{limit}', quota.memberLimit))}</a>`
+    : '';
+  if (quota.exhausted) {
+    return `<div class="semantic-auth-banner quota-banner" role="alert">
+    <span class="auth-icon" aria-hidden="true">${ICONS.alert}</span>
+    <div class="auth-message">
+      <strong>${esc(t('quota.exhausted.title', locale).replace('{limit}', quota.limit))}</strong>
+      <span>${esc(t('quota.reason', locale).replace('{limit}', quota.limit))}${loginTip}</span>
+    </div>
+    <a href="${LAW_POWERS_URL}" class="auth-link" target="_blank" rel="noopener">${esc(t('usage.exhausted.action', locale))} ↗</a>
+  </div>`;
+  }
+  return `<p class="field-hint quota-note" aria-live="polite"><strong>${esc(t('quota.count', locale))} ${esc(count)}</strong> <span>${esc(t('quota.reason', locale).replace('{limit}', quota.limit))}${loginTip}</span></p>`;
+}
+
 /** 案情輸入頁：可見標籤＋文字框＋字數提示＋輸出勾選＋送出；右側示範案例卡與免責聲明。 */
-export function renderInput({ samples = [], semanticAuth = null, usage = null }, locale) {
+export function renderInput({ samples = [], semanticAuth = null, usage = null, quota = null }, locale) {
   const cards = samples.map((s) =>
     `<button type="button" class="sample" data-sample-id="${esc(s.id)}"><b>${esc(s.title)}</b><span>${esc(s.summary)}</span>${ICONS.arrowRight}</button>`).join('');
   const authNotice = renderSemanticAuthNotice(semanticAuth, locale);
   const usageNotice = renderUsageNotice(usage, locale);
+  const quotaNotice = renderQuota(quota, locale);
   return `<section class="input">
     <div class="input-main card">
       ${usageNotice}
+      ${quotaNotice}
       ${authNotice}
       <label class="field-label" for="case-text">${esc(t('input.label', locale))}</label>
       <textarea id="case-text" rows="10" aria-describedby="case-hint" placeholder="${esc(t('input.placeholder', locale))}"></textarea>
@@ -76,6 +99,10 @@ export function renderInput({ samples = [], semanticAuth = null, usage = null },
         <p class="file-status" id="file-status" aria-live="polite">${esc(t('input.filesEmpty', locale))}</p>
       </div>
       ${renderOutputs(locale)}
+      <div class="motion-field" id="motion-field" hidden>
+        <label class="field-label" for="motion-request">${esc(t('input.motionRequest', locale))}</label>
+        <input id="motion-request" type="text" maxlength="200" placeholder="${esc(t('input.motionRequestPlaceholder', locale))}">
+      </div>
       <div class="input-actions"><button id="case-submit" class="primary" type="button" disabled>${esc(t('input.submit', locale))}</button></div>
     </div>
     <aside class="input-side">
@@ -149,6 +176,9 @@ export function bindInput(root, { onSubmit, onSample }, locale = 'en') {
   let dragDepth = 0;
   /** 目前勾選的輸出值清單。 */
   const checked = () => [...root.querySelectorAll('input[name="outputs"]:checked')].map((c) => c.value);
+  /** 聲請事項欄位：只在勾選「聲請狀」時顯示。 */
+  const motionField = root.querySelector('#motion-field'), motionInput = root.querySelector('#motion-request');
+  const syncMotion = () => { if (motionField) motionField.hidden = !checked().includes('motion'); };
   /** 更新檔案清單、數量與錯誤狀態。 */
   const syncFiles = () => {
     renderFileList(fileList, selectedFiles, locale);
@@ -204,9 +234,11 @@ export function bindInput(root, { onSubmit, onSample }, locale = 'en') {
     syncFiles();
     sync();
   });
-  root.querySelectorAll('input[name="outputs"]').forEach((c) => c.addEventListener('change', sync));
+  root.querySelectorAll('input[name="outputs"]').forEach((c) => c.addEventListener('change', () => { syncMotion(); sync(); }));
   syncFiles();
+  syncMotion();
   sync();
-  btn.addEventListener('click', () => onSubmit(ta.value, checked(), [...selectedFiles]));
+  btn.addEventListener('click', () => onSubmit(ta.value, checked(), [...selectedFiles],
+    checked().includes('motion') && motionInput ? (motionInput.value || '').trim() : ''));
   root.querySelectorAll('.sample').forEach((b) => b.addEventListener('click', () => onSample(b.dataset.sampleId, checked())));
 }

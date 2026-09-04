@@ -5,6 +5,7 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import tw.lawgraph.config.LawGraphDatabase;
 import tw.lawgraph.research.DualMcpResearchService;
 import tw.lawgraph.research.JudgmentMergeService;
 import tw.lawgraph.research.ResearchProperties;
@@ -76,19 +77,40 @@ public class ResearchMcpConfig {
                 publicBaseUrl, clientName, httpTimeout, tokenSkew, sessionPath);
     }
 
-    /** 建立 lazy semantic OAuth client；bean 建立階段不連線遠端服務。 */
-    @Bean(destroyMethod = "close")
-    public TwLegalRagOAuthClient twLegalRagOAuthClient(TwLegalRagOAuthProperties properties) {
-        return new TwLegalRagOAuthClient(properties);
+    /**
+     * OAuth refresh token 的持久化方式：db（共用 PostgreSQL，重佈不必重新授權）或 file（本機 JSON，只撐過同容器重啟）。
+     * 語意功能關閉時仍建立 file store（不會被讀寫），避免 bean 缺失。
+     */
+    @Bean
+    public OAuthSessionStore twLegalRagSessionStore(
+            TwLegalRagOAuthProperties properties,
+            LawGraphDatabase database,
+            @Value("${lawgraph.research.oauth-session-store:file}") String store) {
+        if ("db".equalsIgnoreCase(store) && properties.enabled()) {
+            return new JdbcOAuthSessionStore(database.require("lawgraph.research.oauth-session-store"), "tw-legal-rag");
+        }
+        return new FileOAuthSessionStore(properties.sessionPath());
     }
 
-    /** 應用啟動完成後以背景工作恢復 OAuth session，遠端異常不阻塞健康檢查與 keyword 軌道。 */
+    /** 建立 lazy semantic OAuth client；bean 建立階段不連線遠端服務。 */
+    @Bean(destroyMethod = "close")
+    public TwLegalRagOAuthClient twLegalRagOAuthClient(TwLegalRagOAuthProperties properties,
+                                                       OAuthSessionStore sessionStore) {
+        return new TwLegalRagOAuthClient(properties, sessionStore);
+    }
+
+    /**
+     * 應用啟動完成後以背景工作恢復 OAuth session：先用持久化的 refresh token，沒有或已失效則直接零互動自動授權。
+     * 遠端異常不阻塞健康檢查與 keyword 軌道；兩者都失敗時前端仍會顯示授權按鈕。
+     */
     @Bean
     public ApplicationRunner twLegalRagSessionRestorer(TwLegalRagOAuthClient client,
                                                         TwLegalRagOAuthProperties properties,
                                                         ExecutorService executor) {
         return arguments -> {
-            if (properties.enabled()) executor.execute(client::tryRestoreSession);
+            if (properties.enabled()) executor.execute(() -> {
+                if (!client.tryRestoreSession()) client.tryAutoAuthorize();
+            });
         };
     }
 

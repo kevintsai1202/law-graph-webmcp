@@ -17,35 +17,26 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.HttpTimeoutException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.AtomicMoveNotSupportedException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
-import java.nio.file.StandardOpenOption;
-import java.nio.file.attribute.AclEntry;
-import java.nio.file.attribute.AclEntryPermission;
-import java.nio.file.attribute.AclEntryType;
-import java.nio.file.attribute.AclFileAttributeView;
-import java.nio.file.attribute.PosixFileAttributeView;
-import java.nio.file.attribute.PosixFilePermission;
 import java.security.SecureRandom;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collection;
-import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
-/** tw-legal-rag 的 runtime OAuth client：DCR、PKCE、token refresh 集中於此；每次檢索都重新 initialize MCP session。 */
+/**
+ * tw-legal-rag 的 runtime OAuth client：DCR、PKCE、token refresh 集中於此；每次檢索都重新 initialize MCP session。
+ * TLR 的 authorize 端點對已註冊 client 自動同意（302 直接回 callback），因此可由程式自行走完授權（tryAutoAuthorize），
+ * 一般情況下使用者不需按任何按鈕；只有 provider 改成需人工同意時才退回瀏覽器授權流程。
+ */
 public final class TwLegalRagOAuthClient implements TwLegalRagPort, AutoCloseable {
     private static final Logger LOGGER = LoggerFactory.getLogger(TwLegalRagOAuthClient.class);
     private static final JsonMapper JSON = JsonMapper.builder().build();
@@ -57,18 +48,33 @@ public final class TwLegalRagOAuthClient implements TwLegalRagPort, AutoCloseabl
     private final Map<String, PendingAuthorization> pending = new ConcurrentHashMap<>();
     private final AtomicReference<AuthorizedSession> session = new AtomicReference<>();
     private final Object clientLock = new Object();
+    /** refresh token 持久化（file 或 jdbc）；access token 永不落地。 */
+    private final OAuthSessionStore store;
+    /** 自動授權序列化與退避：連續失敗時 60 秒內不重試，避免每次檢索都打 provider。 */
+    private final Object autoAuthorizeLock = new Object();
+    private static final Duration AUTO_AUTHORIZE_COOLDOWN = Duration.ofSeconds(60);
+    private Instant lastAutoAuthorizeFailure;
 
-    /** 建立使用 JDK HttpClient 的 OAuth client；不會在建構階段連線遠端 MCP。 */
+    /** 建立使用 JDK HttpClient 的 OAuth client，憑證存本機檔案；不會在建構階段連線遠端 MCP。 */
     public TwLegalRagOAuthClient(TwLegalRagOAuthProperties properties) {
-        this(safeProperties(properties), httpClient(properties));
+        this(safeProperties(properties), httpClient(properties), null);
+    }
+
+    /** 建立使用 JDK HttpClient 的 OAuth client，憑證存指定 store（正式環境為 PostgreSQL）。 */
+    public TwLegalRagOAuthClient(TwLegalRagOAuthProperties properties, OAuthSessionStore store) {
+        this(safeProperties(properties), httpClient(properties), store);
     }
 
     /** 提供可替換 HTTP client，供不連外的 controller／OAuth 單元測試使用。 */
     TwLegalRagOAuthClient(TwLegalRagOAuthProperties properties, HttpClient httpClient) {
-        this.properties = properties == null
-                ? new TwLegalRagOAuthProperties(false, null, null, null, null, null, null, null, null)
-                : properties;
+        this(properties, httpClient, null);
+    }
+
+    /** 完整注入；store 為 null 時退回設定路徑的檔案儲存。 */
+    TwLegalRagOAuthClient(TwLegalRagOAuthProperties properties, HttpClient httpClient, OAuthSessionStore store) {
+        this.properties = safeProperties(properties);
         this.httpClient = httpClient == null ? HttpClient.newHttpClient() : httpClient;
+        this.store = store == null ? new FileOAuthSessionStore(this.properties.sessionPath()) : store;
     }
 
     /** 以關閉語意功能的設定取代 null，避免建構階段發生 NPE。 */
@@ -161,7 +167,8 @@ public final class TwLegalRagOAuthClient implements TwLegalRagPort, AutoCloseabl
      */
     @Override
     public SemanticResearch retrieve(ResearchPlan plan) {
-        if (session.get() == null) throw new McpResearchException(
+        // 尚未授權（首次啟動、token 被撤銷）先嘗試零互動授權；provider 需人工同意時才回 AUTH 讓前端引導
+        if (session.get() == null && !tryAutoAuthorize()) throw new McpResearchException(
                 McpResearchException.Kind.AUTH, AUTH_REQUIRED_OPERATION);
         McpSyncClient client = buildClient();
         try {
@@ -179,7 +186,7 @@ public final class TwLegalRagOAuthClient implements TwLegalRagPort, AutoCloseabl
         }
     }
 
-    /** 清除記憶體內授權；MCP session 皆為一次性，無長連線需關閉（不清除持久化檔案）。 */
+    /** 清除記憶體內授權；MCP session 皆為一次性，無長連線需關閉（不清除持久化憑證）。 */
     @Override
     public void close() {
         synchronized (clientLock) {
@@ -329,29 +336,80 @@ public final class TwLegalRagOAuthClient implements TwLegalRagPort, AutoCloseabl
         }
     }
 
-    /** 嘗試從本機持久化檔案恢復 OAuth session，並自動刷新 access token 與初始化 MCP client。 */
-    public boolean tryRestoreSession() {
-        if (!properties.enabled() || properties.sessionPath() == null || properties.sessionPath().isBlank()) {
-            return false;
+    /**
+     * 不經瀏覽器自行走完 OAuth：start → provider authorize → 解析 302 回 callback 的 code/state → 交換 token。
+     * 只跟隨 3xx 轉址；provider 回 200（同意頁）或錯誤即放棄並回 false，保留人工授權路徑。
+     * 失敗後 60 秒內不再重試，避免每次檢索都打 provider。
+     */
+    public boolean tryAutoAuthorize() {
+        if (!properties.enabled()) return false;
+        synchronized (autoAuthorizeLock) {
+            if (session.get() != null) return true;
+            Instant now = Instant.now();
+            if (lastAutoAuthorizeFailure != null && now.isBefore(lastAutoAuthorizeFailure.plus(AUTO_AUTHORIZE_COOLDOWN))) {
+                return false;
+            }
+            try {
+                URI location = startAuthorization("/").authorizationUri();
+                String callbackPrefix = properties.callbackUri().toString();
+                for (int hop = 0; hop < 5; hop++) {
+                    HttpRequest request = HttpRequest.newBuilder(location).timeout(properties.httpTimeout()).GET().build();
+                    HttpResponse<Void> response = httpClient.send(request, HttpResponse.BodyHandlers.discarding());
+                    Optional<String> next = response.headers().firstValue("Location");
+                    if (response.statusCode() < 300 || response.statusCode() >= 400 || next.isEmpty()) {
+                        LOGGER.info("tw-legal-rag 自動授權未完成：provider 回 {}（可能需人工同意），改由使用者按鈕授權",
+                                response.statusCode());
+                        lastAutoAuthorizeFailure = now;
+                        return false;
+                    }
+                    URI target = location.resolve(next.get());
+                    if (target.toString().startsWith(callbackPrefix)) {
+                        Map<String, String> params = queryParams(target);
+                        boolean authorized = completeAuthorization(params.get("code"), params.get("state"),
+                                params.get("error"), params.get("iss")).authorized();
+                        if (authorized) {
+                            LOGGER.info("tw-legal-rag 自動授權完成（store={}）", store.name());
+                            lastAutoAuthorizeFailure = null;
+                        } else {
+                            LOGGER.warn("tw-legal-rag 自動授權 callback 未通過（state／token／tools/list 驗證失敗）");
+                            lastAutoAuthorizeFailure = now;
+                        }
+                        return authorized;
+                    }
+                    location = target;
+                }
+                LOGGER.info("tw-legal-rag 自動授權轉址超過 5 跳，放棄");
+                lastAutoAuthorizeFailure = now;
+                return false;
+            } catch (InterruptedException exception) {
+                Thread.currentThread().interrupt();
+                lastAutoAuthorizeFailure = now;
+                return false;
+            } catch (Exception exception) {
+                // 不輸出 URL／response，避免 code 或 token 進 log
+                LOGGER.warn("tw-legal-rag 自動授權失敗 type={}", exception.getClass().getSimpleName());
+                lastAutoAuthorizeFailure = now;
+                return false;
+            }
         }
-        Path path = sessionPath();
-        if (!Files.isRegularFile(path)) return false;
-        Map<String, Object> map;
-        try {
-            String content = Files.readString(path, StandardCharsets.UTF_8);
-            map = object(content, "restore session file");
-        } catch (McpResearchException exception) {
-            if (exception.kind() == McpResearchException.Kind.PARSE) clearSessionFile();
-            return false;
-        } catch (Exception exception) {
-            // 暫時性檔案系統錯誤不刪除仍可能有效的 refresh token。
-            return false;
-        }
+    }
 
-        String clientId = text(map, "client_id", null);
-        String refreshToken = text(map, "refresh_token", null);
-        if (clientId == null || refreshToken == null || refreshToken.isBlank()) {
-            clearSessionFile();
+    /** 嘗試從持久化 store 恢復 OAuth session：以 refresh token 換新 access token 並驗證 tools/list。 */
+    public boolean tryRestoreSession() {
+        if (!properties.enabled()) return false;
+        Optional<OAuthSessionStore.SavedSession> saved;
+        try {
+            saved = store.load();
+        } catch (RuntimeException exception) {
+            // 資料庫暫時不可用：不清除、不視為失效，稍後由 tryAutoAuthorize 或下次啟動再試
+            LOGGER.warn("讀取 OAuth session store 失敗 type={}", exception.getClass().getSimpleName());
+            return false;
+        }
+        if (saved.isEmpty()) return false;
+        String clientId = saved.get().clientId();
+        String refreshToken = saved.get().refreshToken();
+        if (clientId == null || clientId.isBlank() || refreshToken == null || refreshToken.isBlank()) {
+            clearStoredSession();
             return false;
         }
         try {
@@ -366,93 +424,55 @@ public final class TwLegalRagOAuthClient implements TwLegalRagPort, AutoCloseabl
             AuthorizedSession authorized = tokenSession(payload, registration);
             verifyConnection(authorized);
             saveSession(authorized);
+            LOGGER.info("tw-legal-rag OAuth session 已從 {} 恢復", store.name());
             return true;
         } catch (McpResearchException exception) {
             // 只有 token endpoint 明確拒絕憑證才刪除；timeout、5xx 與 metadata 異常保留供下次重試。
-            if (exception.kind() == McpResearchException.Kind.AUTH) clearSessionFile();
+            if (exception.kind() == McpResearchException.Kind.AUTH) clearStoredSession();
             return false;
         } catch (RuntimeException exception) {
             return false;
         }
     }
 
-    /** 保存授權資訊至僅檔案擁有者可讀寫的暫存檔，再以原子替換避免半寫入內容。 */
+    /** 把 refresh token 與 client_id 回寫 store；沒有 refresh token 時不寫（避免覆蓋仍有效的舊憑證）。 */
     private void saveSession(AuthorizedSession session) {
-        if (session == null || properties.sessionPath() == null || properties.sessionPath().isBlank()) return;
-        Path temporary = null;
+        if (session == null || session.refreshToken().isBlank()) return;
         try {
-            Path path = sessionPath();
-            Path parent = path.getParent();
-            if (parent != null) Files.createDirectories(parent);
-            Map<String, Object> data = new LinkedHashMap<>();
-            data.put("client_id", session.registration().clientId());
-            data.put("refresh_token", session.refreshToken());
-            data.put("saved_at", Instant.now().toString());
-            temporary = Files.createTempFile(parent, path.getFileName().toString() + ".", ".tmp");
-            restrictToOwner(temporary);
-            Files.writeString(temporary, JSON.writeValueAsString(data), StandardCharsets.UTF_8,
-                    StandardOpenOption.TRUNCATE_EXISTING);
-            try {
-                Files.move(temporary, path, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
-            } catch (AtomicMoveNotSupportedException exception) {
-                Files.move(temporary, path, StandardCopyOption.REPLACE_EXISTING);
-            }
-            temporary = null;
-            restrictToOwner(path);
-        } catch (Exception exception) {
-            LOGGER.warn("無法保存 OAuth session；目前授權仍可在此程序內使用。錯誤類型={}",
-                    exception.getClass().getSimpleName());
-        } finally {
-            if (temporary != null) {
-                try {
-                    Files.deleteIfExists(temporary);
-                } catch (Exception ignored) {
-                    // 暫存檔已套用 owner-only 權限；清理失敗不覆蓋原始錯誤。
-                }
-            }
+            store.save(new OAuthSessionStore.SavedSession(session.registration().clientId(), session.refreshToken()));
+        } catch (RuntimeException exception) {
+            LOGGER.warn("無法保存 OAuth session（store={}）；目前授權仍可在此程序內使用。錯誤類型={}",
+                    store.name(), exception.getClass().getSimpleName());
         }
     }
 
-    /** 將 session 檔案限制為目前擁有者可存取；支援 POSIX 權限與 Windows ACL。 */
-    private static void restrictToOwner(Path path) throws java.io.IOException {
-        PosixFileAttributeView posix = Files.getFileAttributeView(path, PosixFileAttributeView.class);
-        if (posix != null) {
-            Set<PosixFilePermission> permissions = EnumSet.of(
-                    PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE);
-            Files.setPosixFilePermissions(path, permissions);
-            return;
-        }
-        AclFileAttributeView acl = Files.getFileAttributeView(path, AclFileAttributeView.class);
-        if (acl == null) throw new java.io.IOException("filesystem does not support owner-only permissions");
-        AclEntry ownerEntry = AclEntry.newBuilder()
-                .setType(AclEntryType.ALLOW)
-                .setPrincipal(Files.getOwner(path))
-                .setPermissions(EnumSet.allOf(AclEntryPermission.class))
-                .build();
-        acl.setAcl(List.of(ownerEntry));
-    }
-
-    /** 將設定路徑正規化為絕對路徑，讓讀、寫、刪除指向同一個檔案。 */
-    private Path sessionPath() {
-        return Paths.get(properties.sessionPath()).toAbsolutePath().normalize();
-    }
-
-    /** 清除本地過期或失效的 session 檔案。 */
-    private void clearSessionFile() {
-        if (properties.sessionPath() == null || properties.sessionPath().isBlank()) return;
+    /** 清除已失效的持久化憑證。 */
+    private void clearStoredSession() {
         try {
-            Path path = sessionPath();
-            Files.deleteIfExists(path);
-        } catch (Exception ignored) {
+            store.clear();
+        } catch (RuntimeException ignored) {
         }
     }
 
-    /** 清除失效授權，下一次 semantic research 會要求重新授權。 */
+    /** 清除失效授權，下一次 semantic research 會先嘗試自動授權，失敗才要求使用者授權。 */
     private void invalidateAuthorization() {
         synchronized (clientLock) {
             session.set(null);
-            clearSessionFile();
+            clearStoredSession();
         }
+    }
+
+    /** 解析 callback URL 的 query 參數（code、state、error、iss）。 */
+    private static Map<String, String> queryParams(URI uri) {
+        Map<String, String> values = new HashMap<>();
+        String raw = uri.getRawQuery();
+        if (raw == null || raw.isBlank()) return values;
+        for (String item : raw.split("&")) {
+            String[] pair = item.split("=", 2);
+            values.put(java.net.URLDecoder.decode(pair[0], StandardCharsets.UTF_8),
+                    java.net.URLDecoder.decode(pair.length == 1 ? "" : pair[1], StandardCharsets.UTF_8));
+        }
+        return values;
     }
 
     /** 執行 OAuth metadata／registration 的 JSON GET。 */

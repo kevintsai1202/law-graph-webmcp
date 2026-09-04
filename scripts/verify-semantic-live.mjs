@@ -4,12 +4,19 @@
 //       ③ 檢查 result.research.coverage.semanticStatus 是否為 SUCCESS，並列出 notes
 // 需要目標站台已設定 LAWGRAPH_SEMANTIC_ENABLED=true 與真 OPENAI_API_KEY。
 // 執行：node scripts/verify-semantic-live.mjs [baseUrl]   （預設 https://law-graph-webmcp.zeabur.app）
+//       環境變數 TEST_MODEL 指定測試模型（預設 gpt-5.4-nano，省額度；設成空字串則用線上預設模型）
 // 結束碼：0 = semantic SUCCESS；1 = 其他狀態或流程失敗。
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 
 const base = (process.argv[2] || 'https://law-graph-webmcp.zeabur.app').replace(/\/$/, '');
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-const json = (init) => ({ method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(init) });
+// 驗證一律用便宜的測試模型（後端只接受 LAWGRAPH_TEST_MODEL 這一個值，預設 gpt-5.4-nano）；TEST_MODEL= 空字串可改用線上預設模型
+const TEST_MODEL = process.env.TEST_MODEL === undefined ? 'gpt-5.4-nano' : process.env.TEST_MODEL;
+const json = (init) => ({
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json', ...(TEST_MODEL ? { 'X-LawGraph-Model': TEST_MODEL } : {}) },
+  body: JSON.stringify(init)
+});
 /** WAITING 時的固定回答：刻意保守，讓流程不停在人工提問。 */
 const canned = '不確定／無資料，請以對我方最不利的情況假設。';
 mkdirSync('logs', { recursive: true });
@@ -36,9 +43,14 @@ async function authorize() {
   return url;
 }
 
+// 可用 DOCS 指定要起草的書狀（逗號分隔，如 issues,preparatory,motion），MOTION 指定聲請事項
+const DOCS = (process.env.DOCS || '').split(',').map((s) => s.trim()).filter(Boolean);
+const MOTION = process.env.MOTION || '';
+
 /** 跑一個完整案件並回傳最終 CaseStatus。 */
 async function runCase(caseText) {
-  let st = await (await fetch(`${base}/api/cases`, json({ caseText, locale: 'zh-TW' }))).json();
+  const startBody = { caseText, locale: 'zh-TW', ...(DOCS.length ? { documents: DOCS } : {}), ...(MOTION ? { motionRequest: MOTION } : {}) };
+  let st = await (await fetch(`${base}/api/cases`, json(startBody))).json();
   if (!st.caseId) throw new Error(`start failed: ${JSON.stringify(st)}`);
   console.log(`  caseId=${st.caseId}`);
   const started = Date.now();
@@ -91,6 +103,15 @@ console.log('    notes    =', JSON.stringify(notes.filter((n) => /track|semantic
 const graph = finalStatus.result?.graph;
 const graphNotes = finalStatus.result?.graph ? (finalStatus.result?.research?.notes || []).filter((n) => n.startsWith('removed')) : [];
 console.log(`    laws=${finalStatus.result?.research?.laws?.length ?? 0} judgments=${finalStatus.result?.research?.judgments?.length ?? 0} graphNodes=${graph?.nodes?.length ?? 0} graphEdges=${graph?.edges?.length ?? 0} removed=${graphNotes.length}`);
+// 書狀摘要：段落開頭、表格列數、是否殘留非台灣用語（與後端黑名單同步的抽樣）
+const BANNED = ['合同', '訴訟請求', '人民法院', '證據材料', '雙方當事人', '損失賠償', '信息', '數據', '視頻'];
+for (const doc of finalStatus.result?.documents || []) {
+  const text = [doc.title, ...(doc.paragraphs || []), ...(doc.attachments || [])].join('\n');
+  const banned = BANNED.filter((w) => text.includes(w));
+  console.log(`[doc] ${doc.type} 《${doc.title}》 court=${doc.court} paragraphs=${(doc.paragraphs || []).length} issues=${(doc.issues || []).length} claims=${(doc.claimsBasis || []).length} undisputed=${(doc.undisputed || []).length} banned=${JSON.stringify(banned)}`);
+  for (const p of (doc.paragraphs || []).slice(0, 4)) console.log('      ¶', p.slice(0, 90));
+  for (const row of (doc.issues || []).slice(0, 2)) console.log('      爭點', row.no, row.issue, '|', (row.plaintiff || '').slice(0, 40), '|', (row.defendant || '').slice(0, 40), '|', row.basis);
+}
 if (finalStatus.status !== 'COMPLETED') {
   console.error('FAIL: 案件未完成', JSON.stringify(finalStatus.error));
   process.exit(1);

@@ -5,7 +5,7 @@ test.skip(!process.env.E2E_LIVE, '需要 E2E_LIVE=1 與真 LLM');
 
 test('car-accident sample completes with a graph and tools respond', async ({ page }) => {
   await page.goto('/');
-  await page.selectOption('#lang-select', 'en');
+  await page.evaluate((l) => window.__lawGraphApp.setLocale(l), 'en'); // 頁首已無語系選單，改由 app API 切換
   await page.click('[data-sample-id="car-accident"]');
   await expect(page.locator('.progress .step.active')).toBeVisible();
   // 等到 WAITING（示範案例刻意留白，必問）

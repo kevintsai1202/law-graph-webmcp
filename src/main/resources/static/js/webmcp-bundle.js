@@ -31,6 +31,7 @@
       inputSchema: S({
         caseText: { type: "string", minLength: 20 },
         sampleId: { type: "string", description: "Exact id or title returned by listSampleCases, e.g. car-accident." },
+        motionRequest: { type: "string", description: "Only with documents containing motion: what the court is asked to grant, e.g. \u8072\u8ACB\u8ABF\u67E5\u8B49\u64DA." },
         locale: LOCALE,
         documents: { type: "array", description: "Litigation documents to draft besides the graph, e.g. complaint (\u8D77\u8A34\u72C0), defense (\u7B54\u8FAF\u72C0).", items: { type: "string", enum: [...DOC_TYPES] } }
       })
@@ -243,7 +244,7 @@
         if (locale && locale !== app.getLocale()) await app.setLocale(locale);
         return app.getSamples().map(({ id, title, summary }) => ({ id, title, summary }));
       },
-      startCase: async ({ caseText, sampleId, locale, documents }) => {
+      startCase: async ({ caseText, sampleId, locale, documents, motionRequest }) => {
         if (app.getState().view !== "INPUT") {
           const current = pageStatus();
           return {
@@ -256,7 +257,7 @@
         }
         if (locale && locale !== app.getLocale()) await app.setLocale(locale);
         const outputs = ["graph", ...Array.isArray(documents) ? documents : []];
-        const s = sampleId ? await app.startSample(sampleId, outputs) : await app.start(caseText, outputs);
+        const s = sampleId ? await app.startSample(sampleId, outputs) : await app.start(caseText, outputs, [], motionRequest || "");
         if (!s) return { ok: false, error: "Unknown sampleId or empty caseText." };
         return {
           ok: true,

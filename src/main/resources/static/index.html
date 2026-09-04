@@ -18,6 +18,10 @@
 </head>
 <body>
   <a class="skip-link" href="#stage" data-i18n="a11y.skip">Skip to main content</a>
+  <!-- 使用授權公告（與 law-powers 技能介紹頁相同）：無償授權所有人使用，唯經兆國際法律事務所除外 -->
+  <div class="license-banner" role="note" aria-label="使用授權聲明">
+    📜 <strong data-i18n="license.banner.title">使用授權</strong><span data-i18n="license.banner.prefix">：本站無償授權所有人自由使用 —— 唯 </span><span class="banner-except">經兆國際法律事務所</span><span data-i18n="license.banner.suffix"> 除外。拜他們所賜，才有這個服務的誕生。</span>
+  </div>
   <header class="topbar">
     <div class="brand">
       <span class="brand-mark" aria-hidden="true">
@@ -33,7 +37,8 @@
       <a id="lawpowers-link" class="nav-link" href="https://kevintsai1202.github.io/law-powers/" target="_blank" rel="noopener" data-i18n="nav.lawPowers">Law Powers skills</a>
       <span id="semantic-badge" class="badge" role="status" style="display:none"></span>
       <span id="agent-badge" class="badge" role="status" data-i18n="agent.unavailable"></span>
-      <select id="lang-select" aria-label="Language"><option value="en">English</option><option value="zh-TW">繁體中文</option></select>
+      <!-- Google 登入區放最右側：未登入顯示登入與好處，登入後顯示頭像；後端未設定時保持空白。語系由瀏覽器語言決定，不再提供切換 -->
+      <div id="auth-slot" class="auth-slot"></div>
     </div>
   </header>
   <main id="stage" tabindex="-1"></main>

@@ -19,13 +19,57 @@ spring:
             legal-mcp:
               url: ${LEGAL_MCP_URL:http://localhost:8000}
 
+server:
+  # 讓 Zeabur／反向代理後的 getRemoteAddr 還原成 X-Forwarded-For 的真實來源 IP（限流與每日配額都以此為 key）。
+  forward-headers-strategy: framework
+
 embabel:
   models:
     # 模型由 .env 的 MODEL 設定，未設定時沿用成本優先的預設模型。
     default-llm: ${MODEL:gpt-5.4-nano}
+  agent:
+    platform:
+      llm-operations:
+        prompts:
+          # 單次 LLM 呼叫逾時（Embabel 預設 60s）。Muse 等 reasoning 模型在 analyze／buildGraph 的 tool loop 常超過 60s，
+          # 逾時會整段重跑、時間翻倍；放寬到 240s，可用環境變數調整。
+          default-timeout: ${LAWGRAPH_LLM_TIMEOUT:240s}
+        data-binding:
+          # 結構化輸出解析失敗／逾時的重試上限（Embabel 預設 10）。保留一次補救畸形 JSON 的機會，其餘交給步驤看門狗中止。
+          max-attempts: ${LAWGRAPH_LLM_MAX_ATTEMPTS:2}
 lawgraph:
   skills-dir: ${LAWGRAPH_SKILLS_DIR:skills/law-powers/skills}
   rate-limit-per-hour: 10
+  # 匿名使用者（以 IP 計）每日最多可分析的案件數，台北時間跨日歸零；0 代表不限制。本站免費開放，為了讓更多人用得到才設上限。
+  daily-cases-per-user: ${LAWGRAPH_DAILY_CASES_PER_USER:1}
+  # 以 Google 登入者的每日上限（以 Google 帳號計數，不受 IP 影響）。
+  daily-cases-per-member: ${LAWGRAPH_DAILY_CASES_PER_MEMBER:5}
+  auth:
+    google:
+      # Google OAuth 用戶端；留空即不啟用登入。callback 為 {公開網址}/login/oauth2/code/google。
+      client-id: ${GOOGLE_CLIENT_ID:${CLIENT_ID:}}
+      client-secret: ${GOOGLE_CLIENT_SECRET:${SECRET:}}
+    # 使用授權排除名單（與 law-powers 技能包相同：無償授權所有人，唯經兆國際法律事務所除外）。
+    # 以登入者 Google email 判定：逗號分隔的網域（含子網域）或個別信箱；命中者案件 API 回 403 LICENSE_EXCLUDED。
+    blocked-email-domains: ${LAWGRAPH_BLOCKED_EMAIL_DOMAINS:}
+    blocked-emails: ${LAWGRAPH_BLOCKED_EMAILS:}
+  # 步驤看門狗：同一步驤（BRAINSTORM／RESEARCH／ANALYSIS／DOCUMENTS／GRAPH）超過此時間仍未完成就 kill 流程，
+  # 案件狀態回 FAILED／STEP_TIMEOUT 並顯示逾時訊息，不再執行後續步驤。WAITING（等待回答）不計時。
+  step-timeout: ${LAWGRAPH_STEP_TIMEOUT:300s}
+  step-timeout-sweep: ${LAWGRAPH_STEP_TIMEOUT_SWEEP:10s}
+  llm:
+    # 內建 LLM 轉送端點（/internal/llm/v1/chat/completions）的設定。要用它時把 OPENAI_BASE_URL 指到
+    # http://127.0.0.1:<port>/internal/llm/v1，這裡填真正的上游；reasoning-effort 空字串代表不注入。
+    upstream-base-url: ${LAWGRAPH_LLM_UPSTREAM_BASE_URL:https://api.meta.ai/v1}
+    reasoning-effort: ${LAWGRAPH_REASONING_EFFORT:}
+    proxy-timeout: ${LAWGRAPH_LLM_PROXY_TIMEOUT:300s}
+  # 測試專用便宜模型：請求帶 X-LawGraph-Model 且值等於此模型時，該案件改用它跑（只允許這一個值，避免被拿來挑貴模型）。
+  test-model: ${LAWGRAPH_TEST_MODEL:gpt-5.4-nano}
+  # 全站共用的選配 PostgreSQL（Zeabur 同專案 postgresql 服務）；每日用量與 OAuth 憑證都存這裡。未設定時各功能退回檔案。
+  db:
+    url: ${LAWGRAPH_DB_URL:}
+    username: ${LAWGRAPH_DB_USER:}
+    password: ${LAWGRAPH_DB_PASSWORD:}
   usage:
     # 每日 LLM token 上限（input＋output，台北時區日曆日）；達標後案件 API 回 503 DAILY_TOKEN_LIMIT。0 代表不限制。
     daily-token-limit: ${LAWGRAPH_DAILY_TOKEN_LIMIT:2000000}
@@ -34,10 +78,6 @@ lawgraph:
     # 儲存方式：db（Zeabur 同專案 PostgreSQL，重佈不歸零）或 file（本機 JSON，只撐過同容器重啟）。
     store: ${LAWGRAPH_USAGE_STORE:file}
     path: ${LAWGRAPH_USAGE_PATH:.data/token-usage.json}
-    db:
-      url: ${LAWGRAPH_DB_URL:}
-      username: ${LAWGRAPH_DB_USER:}
-      password: ${LAWGRAPH_DB_PASSWORD:}
   uploads:
     max-files: ${LAWGRAPH_UPLOAD_MAX_FILES:5}
     max-file-bytes: ${LAWGRAPH_UPLOAD_MAX_FILE_BYTES:10485760}
@@ -61,6 +101,8 @@ lawgraph:
     oauth-client-name: ${LAWGRAPH_OAUTH_CLIENT_NAME:law-graph-webmcp}
     oauth-http-timeout: ${LAWGRAPH_OAUTH_HTTP_TIMEOUT:10s}
     oauth-token-skew: ${LAWGRAPH_OAUTH_TOKEN_SKEW:30s}
+    # OAuth refresh token 儲存：db（共用 PostgreSQL，重佈不必重新授權）或 file（本機 JSON）。啟動時會先用它恢復，沒有就自動授權。
+    oauth-session-store: ${LAWGRAPH_OAUTH_SESSION_STORE:file}
     oauth-session-path: ${LAWGRAPH_OAUTH_SESSION_PATH:.data/tw-legal-rag-session.json}
 
 ---

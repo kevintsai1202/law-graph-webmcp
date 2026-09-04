@@ -69,3 +69,32 @@ test('poll 於 COMPLETED 自動停止', async () => {
   assert.deepEqual(seen, ['RUNNING', 'COMPLETED']);
   assert.equal(fetch.calls.length, 2, 'COMPLETED 後不得再輪詢');
 });
+test('poll 遇到短暫 502／網路錯誤會重試，恢復後繼續，不會誤判失敗', async () => {
+  const fetch = fakeFetch([
+    { ok: false, status: 502, body: {} }, { ok: false, status: 502, body: {} },
+    { body: { status: 'RUNNING' } }, { body: { status: 'COMPLETED' } }
+  ]);
+  const c = createCaseClient(fetch); const seen = [];
+  await new Promise((res) => { c.poll('p1', (s) => { seen.push(s.status); if (s.status === 'COMPLETED') res(); }, 5, { maxFailures: 3, failureIntervalMs: 5 }); });
+  assert.deepEqual(seen, ['RUNNING', 'COMPLETED']);
+});
+test('poll 連續失敗達上限才回 FAILED／NETWORK 並停止', async () => {
+  const fetch = fakeFetch([
+    { ok: false, status: 502, body: {} }, { ok: false, status: 502, body: {} }, { ok: false, status: 502, body: {} },
+    { body: { status: 'RUNNING' } }
+  ]);
+  const c = createCaseClient(fetch); const seen = [];
+  await new Promise((res) => { c.poll('p1', (s) => { seen.push(s); if (s.status === 'FAILED') res(); }, 5, { maxFailures: 3, failureIntervalMs: 5 }); });
+  await new Promise((r) => setTimeout(r, 30));
+  assert.equal(seen.length, 1);
+  assert.equal(seen[0].error.code, 'NETWORK');
+  assert.match(seen[0].error.message, /502/);
+  assert.equal(fetch.calls.length, 3);
+});
+test('poll 遇到 404 CASE_NOT_FOUND 立即失敗，不重試', async () => {
+  const fetch = fakeFetch([{ ok: false, status: 404, body: { error: 'CASE_NOT_FOUND', message: 'gone' } }, { body: { status: 'RUNNING' } }]);
+  const c = createCaseClient(fetch); const seen = [];
+  await new Promise((res) => { c.poll('p1', (s) => { seen.push(s); res(); }, 5, { maxFailures: 3, failureIntervalMs: 5 }); });
+  assert.equal(seen[0].error.code, 'CASE_NOT_FOUND');
+  assert.equal(fetch.calls.length, 1);
+});

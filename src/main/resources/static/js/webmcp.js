@@ -13,7 +13,7 @@ export const TOOL_DEFS = [
     inputSchema: S({ locale: LOCALE }) },
   { name: 'startCase', phase: 'base', annotations: {},
     description: 'Start one Taiwan legal dispute from caseText or a sampleId. Only use when the page is in INPUT; never replace an active case.',
-    inputSchema: S({ caseText: { type: 'string', minLength: 20 }, sampleId: { type: 'string', description: 'Exact id or title returned by listSampleCases, e.g. car-accident.' }, locale: LOCALE,
+    inputSchema: S({ caseText: { type: 'string', minLength: 20 }, sampleId: { type: 'string', description: 'Exact id or title returned by listSampleCases, e.g. car-accident.' }, motionRequest: { type: 'string', description: 'Only with documents containing motion: what the court is asked to grant, e.g. 聲請調查證據.' }, locale: LOCALE,
       documents: { type: 'array', description: 'Litigation documents to draft besides the graph, e.g. complaint (起訴狀), defense (答辯狀).', items: { type: 'string', enum: [...DOC_TYPES] } } }) },
   { name: 'setOutputSelection', phase: 'base', annotations: {},
     description: 'Tick the "outputs to generate" checkboxes on the input form (graph and Taiwan pleading types). Does not start the case.',
@@ -209,7 +209,7 @@ export function createWebMcp({ app, graphView, modelContext, ready = Promise.res
       if (locale && locale !== app.getLocale()) await app.setLocale(locale);
       return app.getSamples().map(({ id, title, summary }) => ({ id, title, summary }));
     },
-    startCase: async ({ caseText, sampleId, locale, documents }) => {
+    startCase: async ({ caseText, sampleId, locale, documents, motionRequest }) => {
       if (app.getState().view !== 'INPUT') {
         const current = pageStatus();
         return {
@@ -223,7 +223,7 @@ export function createWebMcp({ app, graphView, modelContext, ready = Promise.res
       if (locale && locale !== app.getLocale()) await app.setLocale(locale);
       // 關聯圖為 Agent 啟動時的預設輸出；documents 另外加上勾選書狀
       const outputs = ['graph', ...(Array.isArray(documents) ? documents : [])];
-      const s = sampleId ? await app.startSample(sampleId, outputs) : await app.start(caseText, outputs);
+      const s = sampleId ? await app.startSample(sampleId, outputs) : await app.start(caseText, outputs, [], motionRequest || '');
       if (!s) return { ok: false, error: 'Unknown sampleId or empty caseText.' };
       return {
         ok: true,
