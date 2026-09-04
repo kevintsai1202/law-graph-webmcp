@@ -4,11 +4,12 @@ import org.springframework.stereotype.Component;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
-import java.util.concurrent.atomic.AtomicLong;
-
 /**
  * 累計經轉送端點的 LLM 呼叫 usage：prompt／cached／completion／reasoning tokens。
  * 目的：量測供應商端 prompt cache 命中率與 reasoning 佔比，決定要不要調整提示詞前綴。記憶體累計，重啟歸零。
+ * 五個欄位改用一般 long 並以 synchronized 保護累計與讀取：若各欄位各自用獨立的 AtomicLong，
+ * 併發呼叫時 snapshot() 可能讀到「累計到一半」的組合（例如 cached 已加but prompt 還沒加），
+ * 導致 cacheHitRatio 短暫失真；用同一把鎖讓每次累計與每次讀取都是原子操作可避免此問題。
  */
 @Component
 public class LlmUsageStats {
@@ -18,11 +19,11 @@ public class LlmUsageStats {
     public record Snapshot(long calls, long promptTokens, long cachedTokens, long completionTokens,
                            long reasoningTokens, double cacheHitRatio) {}
 
-    private final AtomicLong calls = new AtomicLong();
-    private final AtomicLong prompt = new AtomicLong();
-    private final AtomicLong cached = new AtomicLong();
-    private final AtomicLong completion = new AtomicLong();
-    private final AtomicLong reasoning = new AtomicLong();
+    private long calls;
+    private long prompt;
+    private long cached;
+    private long completion;
+    private long reasoning;
 
     /** 解析一筆回應 body 的 usage 並累計；回傳這一筆的快照（無 usage 或不是 JSON 時回 null）。 */
     public Snapshot record(String responseBody) {
@@ -38,17 +39,18 @@ public class LlmUsageStats {
         long c = usage.path("completion_tokens").asLong(0);
         long cachedTokens = usage.path("prompt_tokens_details").path("cached_tokens").asLong(0);
         long reasoningTokens = usage.path("completion_tokens_details").path("reasoning_tokens").asLong(0);
-        calls.incrementAndGet();
-        prompt.addAndGet(p);
-        completion.addAndGet(c);
-        cached.addAndGet(cachedTokens);
-        reasoning.addAndGet(reasoningTokens);
+        synchronized (this) {
+            calls++;
+            prompt += p;
+            completion += c;
+            cached += cachedTokens;
+            reasoning += reasoningTokens;
+        }
         return new Snapshot(1, p, cachedTokens, c, reasoningTokens, p == 0 ? 0.0 : (double) cachedTokens / p);
     }
 
     /** 目前累計值。 */
-    public Snapshot snapshot() {
-        long p = prompt.get();
-        return new Snapshot(calls.get(), p, cached.get(), completion.get(), reasoning.get(), p == 0 ? 0.0 : (double) cached.get() / p);
+    public synchronized Snapshot snapshot() {
+        return new Snapshot(calls, prompt, cached, completion, reasoning, prompt == 0 ? 0.0 : (double) cached / prompt);
     }
 }
