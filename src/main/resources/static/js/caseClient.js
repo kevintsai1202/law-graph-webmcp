@@ -32,6 +32,8 @@ export function createCaseClient(fetchImpl = globalThis.fetch, base = '') {
     samples: (locale) => call(`/api/samples?locale=${encodeURIComponent(locale)}`),
     verify: (ref) => call(`/api/laws/verify?ref=${encodeURIComponent(ref)}`),
     authStatus: () => call('/api/auth/tw-legal-rag/status'),
+    /** 今日 token 用量與是否停用。 */
+    usage: () => call('/api/usage'),
     /** 每 intervalMs 輪詢一次；COMPLETED／FAILED／WAITING 自動停（WAITING 由人工回答後以 answer 續接）；回傳 stop()。 */
     poll(id, onStatus, intervalMs = 2000) {
       let stopped = false; let timer = null;

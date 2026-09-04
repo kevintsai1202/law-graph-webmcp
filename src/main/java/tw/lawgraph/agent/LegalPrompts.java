@@ -57,7 +57,7 @@ public final class LegalPrompts {
                 <case>%s</case>
                 <brainstorm>%s</brainstorm>
                 <user_answers>%s</user_answers>
-                Build `regulationQueries` from the statutes and concrete thresholds that need verification. Build `judgmentKeywordQueries` with keyword plus optional caseType, court, fromDate, toDate and maxResults. Write a dense summary of the case meaning, issues, facts and user answers into `semanticCaseText` for semantic retrieval; keep it within 400 characters because the semantic provider rejects queries longer than 500 characters. Do not put MCP response fields such as laws, judgments, citations or notes into the plan.
+                Build `regulationQueries` from the statutes and concrete thresholds that need verification; every entry must name one specific article such as 民法第184條第1項 or 土地法第34條之1第2項 (never a bare law name, which would return the whole code), at most 15 entries. Build `judgmentKeywordQueries` with keyword plus optional caseType, court, fromDate, toDate and maxResults. Write a dense summary of the case meaning, issues, facts and user answers into `semanticCaseText` for semantic retrieval; keep it within 400 characters because the semantic provider rejects queries longer than 500 characters. Do not put MCP response fields such as laws, judgments, citations or notes into the plan.
                 """.formatted(input.text(), toJson(brainstorm), toJson(answers));
     }
 
@@ -89,7 +89,7 @@ public final class LegalPrompts {
                 <case>%s</case>
                 <brainstorm>%s</brainstorm>
                 <user_answers>%s</user_answers>
-                Build `regulationQueries` from the statutes and concrete thresholds that need verification. Build `judgmentKeywordQueries` with keyword plus optional caseType, court, fromDate, toDate and maxResults. Write a dense summary of the case meaning, issues, facts, accumulated user answers and evidence gaps into `semanticCaseText` for semantic retrieval; keep it within 400 characters because the semantic provider rejects queries longer than 500 characters. Do not put MCP response fields such as laws, judgments, citations or notes into the plan.
+                Build `regulationQueries` from the statutes and concrete thresholds that need verification; every entry must name one specific article such as 民法第184條第1項 or 土地法第34條之1第2項 (never a bare law name, which would return the whole code), at most 15 entries. Build `judgmentKeywordQueries` with keyword plus optional caseType, court, fromDate, toDate and maxResults. Write a dense summary of the case meaning, issues, facts, accumulated user answers and evidence gaps into `semanticCaseText` for semantic retrieval; keep it within 400 characters because the semantic provider rejects queries longer than 500 characters. Do not put MCP response fields such as laws, judgments, citations or notes into the plan.
                 """.formatted(input.text(), toJson(brainstorm), toJson(answers));
     }
 
@@ -114,7 +114,10 @@ public final class LegalPrompts {
                 Output only the requested object: documents[], each with type (the code above), title (中文狀別全名, e.g. 民事起訴狀),
                 court (管轄法院; use ○○地方法院 if unknown), parties[] ({role, name}; use 甲/乙 or the names in the facts),
                 paragraphs[] (本文段落, numbered 一、二、三…, formal Taiwan legal register 「按…」「查…」「爰依…」),
-                attachments[] (證物清單 證一/證二…, only evidence appearing in the facts or answers), date (中華民國紀年 or empty).
+                attachments[] (證物清單 證一/證二…, only evidence appearing in the facts or answers), date (中華民國紀年 or empty),
+                issues[] (only for type=issues 爭點整理; otherwise empty): one row per disputed issue in the practitioners' 爭點整理表 format with
+                no (一、二、三…), issue (爭點), plaintiff (原告主張), defendant (被告主張), basis (法律依據, copied from research.laws[].ref / judgments[].citation),
+                evidence (證據方法, 證一/證二… from the facts or answers), court (法院應審酌事項). For 爭點整理 keep paragraphs[] to a short 前言 only; the table carries the substance.
                 <case>%s</case>
                 <brainstorm>%s</brainstorm>
                 <research>%s</research>

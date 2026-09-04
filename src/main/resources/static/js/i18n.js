@@ -2,6 +2,7 @@
 export const DICT = {
   en: {
     'app.title': 'Law Graph', 'app.subtitle': 'Taiwan legal relationship graph, built with your agent',
+    'nav.lawPowers': 'Law Powers skills · self-host, no limit',
     'agent.available': 'Agent tools: ready', 'agent.unavailable': 'Agent tools: unavailable',
     'input.placeholder': 'Describe the dispute: who, what happened, when, what you want.',
     'input.samples': 'Or start from a sample case', 'input.submit': 'Analyse',
@@ -25,6 +26,8 @@ export const DICT = {
     'doc.parties': 'Parties', 'doc.attachments': 'Evidence attachments', 'doc.to': 'To:',
     'doc.missing': 'This document was not generated for this case. Start a new case with it selected to draft it.',
     'doc.disclaimer': 'Draft for analysis support only — review with a licensed attorney before filing.',
+    'doc.issue.no': 'No.', 'doc.issue.issue': 'Issue', 'doc.issue.plaintiff': 'Plaintiff\'s position', 'doc.issue.defendant': 'Defendant\'s position',
+    'doc.issue.basis': 'Legal basis', 'doc.issue.evidence': 'Evidence', 'doc.issue.court': 'Matters for the court', 'doc.issue.export': 'Export CSV', 'doc.issue.file': 'issues.csv',
     'questions.title': 'A few facts only you know', 'questions.why': 'Why we ask', 'questions.submit': 'Continue',
     'result.tab.graph': 'Graph', 'result.tab.analysis': 'Analysis', 'result.tab.research': 'Research', 'result.tab.brainstorm': 'Brainstorm',
     'result.generatedIn': 'Generated in', 'result.notes': 'Verification notes', 'result.coverage': 'Research coverage', 'result.newCase': 'New case',
@@ -54,10 +57,16 @@ export const DICT = {
     'auth.semantic.ready': 'Semantic search: ready',
     'auth.semantic.required': 'Semantic search: not authorized',
     'auth.semantic.tip': 'Authorize to include semantic judgment search in this analysis.',
-    'auth.semantic.action': 'Authorize now'
+    'auth.semantic.action': 'Authorize now',
+    'usage.exhausted.title': 'Daily AI budget used up',
+    'usage.exhausted.tip': 'This site pauses new analyses once the shared daily token budget is spent. Install the Law Powers skills and run the same analysis with your own AI agent, with no limit.',
+    'usage.exhausted.action': 'Get Law Powers',
+    'input.lawPowers': 'This hosted site shares a daily AI budget. Prefer no limit? Install the open-source Law Powers skills and run the same analysis with your own AI agent.',
+    'input.lawPowersAction': 'Law Powers skills'
   },
   'zh-TW': {
     'app.title': '法律關係圖', 'app.subtitle': '與你的 Agent 一起建構的台灣法律關係圖',
+    'nav.lawPowers': 'Law Powers 技能 · 自用 Agent 不限額度',
     'agent.available': 'Agent 工具：可用', 'agent.unavailable': 'Agent 工具：不可用',
     'input.placeholder': '描述爭議：當事人、發生了什麼、時間、你想達成什麼。',
     'input.samples': '或從示範案例開始', 'input.submit': '開始分析',
@@ -81,6 +90,8 @@ export const DICT = {
     'doc.parties': '當事人', 'doc.attachments': '證物', 'doc.to': '此致',
     'doc.missing': '本案未產生此書狀；重新分析並勾選後即可起草。',
     'doc.disclaimer': '本書狀為分析輔助草稿，提出前請先經執業律師審閱。',
+    'doc.issue.no': '編號', 'doc.issue.issue': '爭點', 'doc.issue.plaintiff': '原告主張', 'doc.issue.defendant': '被告主張',
+    'doc.issue.basis': '法律依據', 'doc.issue.evidence': '證據方法', 'doc.issue.court': '法院應審酌事項', 'doc.issue.export': '匯出 CSV', 'doc.issue.file': '爭點整理.csv',
     'questions.title': '幾個只有你知道的事實', 'questions.why': '為何要問', 'questions.submit': '繼續',
     'result.tab.graph': '關係圖', 'result.tab.analysis': '分析', 'result.tab.research': '檢索', 'result.tab.brainstorm': '頭腦風暴',
     'result.generatedIn': '產生語系', 'result.notes': '驗證紀錄', 'result.coverage': '檢索涵蓋狀態', 'result.newCase': '新案件',
@@ -110,7 +121,12 @@ export const DICT = {
     'auth.semantic.ready': '語意檢索：就緒',
     'auth.semantic.required': '語意檢索：未授權',
     'auth.semantic.tip': '完成授權後，本次分析才會納入判決語意檢索。',
-    'auth.semantic.action': '一鍵授權'
+    'auth.semantic.action': '一鍵授權',
+    'usage.exhausted.title': '今日 AI 額度已用完',
+    'usage.exhausted.tip': '本站每日共享 token 額度用完後會暫停新的分析。你也可以安裝 Law Powers 技能，用自己的 AI Agent 做同樣的分析，不受額度限制。',
+    'usage.exhausted.action': '取得 Law Powers',
+    'input.lawPowers': '本站有每日共享 AI 額度。想不受限制，可安裝開源的 Law Powers 技能，用自己的 AI Agent 做同樣的分析。',
+    'input.lawPowersAction': 'Law Powers 技能'
   }
 };
 

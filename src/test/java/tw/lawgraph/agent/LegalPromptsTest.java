@@ -81,6 +81,9 @@ class LegalPromptsTest {
         assertFalse(prompt.contains("答辯狀"), "未勾選的狀別不得出現在要求清單");
         assertTrue(prompt.contains("民法第184條第1項"), "研究結果要原文列入 prompt 供複製");
         assertTrue(prompt.contains("copied verbatim"), "引用只能逐字複製已驗證的法條與判決");
+        assertTrue(prompt.contains("issues[]"), "爭點整理要求以表格列（issues[]）輸出");
+        assertTrue(prompt.contains("plaintiff") && prompt.contains("defendant") && prompt.contains("evidence"),
+                "每列需含兩造主張與證據欄");
     }
 
     /** 建圖 prompt 必須要求 ref、jid 逐字複製且禁止模型自填 met。 */

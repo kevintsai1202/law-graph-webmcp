@@ -86,6 +86,19 @@ test('input 綁定時使用目前語系，初始化完成後分析按鈕可送�
   submit.listeners.get('click')();
   assert.equal(submittedText, textarea.value);
 });
+test('input 今日額度用完時顯示提示與 Law Powers 連結；未用完不顯示', () => {
+  const exhausted = renderInput({ samples: [], usage: { exhausted: true, paused: true } }, 'zh-TW');
+  assert.match(exhausted, /今日 AI 額度已用完/);
+  assert.match(exhausted, /href="https:\/\/kevintsai1202\.github\.io\/law-powers\/"/);
+  assert.match(exhausted, /取得 Law Powers/);
+  const fine = renderInput({ samples: [], usage: { exhausted: false } }, 'zh-TW');
+  assert.doesNotMatch(fine, /今日 AI 額度已用完/);
+  assert.doesNotMatch(fine, /usage-banner/);
+  // 側欄常駐說明：不論額度狀態都要有 Law Powers 連結
+  assert.match(fine, /lawpowers-note/);
+  assert.match(fine, /Law Powers 技能/);
+  assert.match(renderInput({ samples: [] }, 'en'), /lawpowers-note[\s\S]*Law Powers skills/);
+});
 test('input 已附參考文件時不強制 20 字：短描述可送出，提示改為附檔說明，計數不再顯示 / 20', () => {
   const node = (extra = {}) => ({
     listeners: new Map(),
@@ -207,6 +220,40 @@ test('result 依 outputs 產生書狀分頁並以公文書狀版面呈現，未�
   assert.match(html, /此致/);
   assert.match(html, /證一：行車紀錄器/);
   assert.match(html, /中華民國115年9月1日/);
+});
+test('爭點整理以實務爭點整理表呈現：欄位表頭、逐列兩造主張、內容轉義，並附 CSV 匯出連結', () => {
+  const status = { locale: 'zh-TW', result: {
+    documents: [{ type: 'issues', title: '爭點整理', court: '臺灣臺北地方法院',
+      parties: [{ role: '原告', name: '甲' }], paragraphs: ['本件爭點整理如下：'],
+      issues: [
+        { no: '一', issue: '被告有無過失', plaintiff: '被告未保持安全距離', defendant: '<原告>突然變換車道',
+          basis: '民法第184條第1項', evidence: '證一：行車紀錄器', court: '審酌行車紀錄器影像' },
+        { no: '二', issue: '損害額', plaintiff: '修車費 5 萬', defendant: '應扣折舊', basis: '民法第196條', evidence: '證二：估價單', court: '' }
+      ], attachments: [], date: '' }],
+    graph: { nodes: [], edges: [] } } };
+  const html = renderResult({ status, outputs: ['issues'] }, 'zh-TW');
+  assert.match(html, /<table class="issue-table"/);
+  assert.match(html, /<th[^>]*>爭點<\/th>/);
+  assert.match(html, /<th[^>]*>原告主張<\/th>/);
+  assert.match(html, /<th[^>]*>被告主張<\/th>/);
+  assert.match(html, /<th[^>]*>法律依據<\/th>/);
+  assert.match(html, /<th[^>]*>證據方法<\/th>/);
+  assert.match(html, /被告未保持安全距離/);
+  assert.match(html, /&lt;原告&gt;突然變換車道/);
+  assert.match(html, /損害額/);
+  assert.match(html, /href="data:text\/csv;charset=utf-8,/);
+  assert.match(html, /download="爭點整理\.csv"/);
+  // CSV 內容需含表頭與兩列資料（URL 編碼後仍可找到欄位名）
+  assert.match(html, new RegExp(encodeURIComponent('爭點')));
+  assert.match(html, new RegExp(encodeURIComponent('民法第196條')));
+});
+test('爭點整理沒有表格列時退回段落版面，不拋錯', () => {
+  const status = { locale: 'zh-TW', result: {
+    documents: [{ type: 'issues', title: '爭點整理', court: '', parties: [], paragraphs: ['一、爭點甲'], attachments: [], date: '' }],
+    graph: { nodes: [], edges: [] } } };
+  const html = renderResult({ status, outputs: ['issues'] }, 'zh-TW');
+  assert.doesNotMatch(html, /issue-table/);
+  assert.match(html, /一、爭點甲/);
 });
 test('result 勾選書狀但後端沒回該書狀時顯示未產生提示，不拋錯', () => {
   const status = { locale: 'zh-TW', result: { graph: { nodes: [], edges: [] } } };

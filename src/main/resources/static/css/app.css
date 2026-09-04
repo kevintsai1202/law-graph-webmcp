@@ -105,6 +105,15 @@ a { color: var(--color-primary); }
 .topbar h1 { font-size: 1.5rem; font-weight: 700; line-height: 1.2; }
 .topbar p { font-size: 0.85rem; color: var(--color-text-sub); }
 .topbar-right { display: flex; align-items: center; gap: var(--space-3); flex: 0 0 auto; }
+/* 選單連結：金色實心膠囊，與狀態徽章區隔，讓 Law Powers 入口一眼可見 */
+.nav-link {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 4px 14px;
+  border-radius: var(--radius-pill); background: var(--color-gold); color: var(--color-on-primary, #fff);
+  font-size: 0.85rem; font-weight: 600; text-decoration: none; white-space: nowrap; box-shadow: var(--shadow-sm);
+}
+.nav-link::after { content: '↗'; font-size: 0.8em; }
+.nav-link:hover { filter: brightness(1.08); text-decoration: none; }
+@media (max-width: 640px) { .nav-link { font-size: 0.78rem; padding: 4px 10px; } }
 
 /* Agent 狀態徽章：文字前以 ::before 畫狀態點（不加子節點，保持 textContent 純淨） */
 .badge {
@@ -378,6 +387,9 @@ button svg { width: 18px; height: 18px; flex: 0 0 auto; }
 }
 @media (max-width: 720px) {
   .topbar { flex-wrap: wrap; padding: var(--space-3) var(--space-4); }
+  /* 窄螢幕：右側選單列自行換行，Law Powers 連結與徽章不得撐出水平捲軸 */
+  .topbar-right { flex: 1 1 100%; flex-wrap: wrap; row-gap: var(--space-2); }
+  .topbar-right .nav-link { order: -1; }
   .topbar h1 { font-size: 1.25rem; }
   #stage { padding: var(--space-4) var(--space-3) var(--space-8); }
   .input-main, .questions, .panel, .failed { padding: var(--space-4); }
@@ -423,6 +435,16 @@ button svg { width: 18px; height: 18px; flex: 0 0 auto; }
 .legal-doc .doc-body p { margin: 0 0 var(--space-3); text-align: justify; text-indent: 0; }
 .legal-doc .doc-section { margin: var(--space-5) 0 var(--space-2); font-size: 1.02rem; color: var(--color-heading); display: flex; align-items: center; gap: var(--space-2); }
 .legal-doc .doc-section::before { content: ''; width: 3px; height: 1em; background: var(--color-gold); border-radius: 2px; }
+/* 爭點整理表：實務表格版面，窄螢幕可橫向捲動 */
+.legal-doc .issue-toolbar { display: flex; justify-content: flex-end; margin: var(--space-3) 0 var(--space-2); }
+.legal-doc .doc-export { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-heading); font-size: 0.9rem; text-decoration: none; }
+.legal-doc .doc-export:hover { border-color: var(--color-gold); }
+.legal-doc .issue-table-wrap { overflow-x: auto; margin-bottom: var(--space-4); }
+.legal-doc .issue-table { width: 100%; min-width: 720px; border-collapse: collapse; font-family: var(--font-body, inherit); font-size: 0.92rem; line-height: 1.55; }
+.legal-doc .issue-table th, .legal-doc .issue-table td { border: 1px solid var(--color-border); padding: 8px 10px; text-align: left; vertical-align: top; }
+.legal-doc .issue-table th { background: var(--color-warn-soft, #f6efe2); color: var(--color-heading); font-weight: 600; white-space: nowrap; }
+.legal-doc .issue-table td:first-child { white-space: nowrap; text-align: center; }
+.legal-doc .issue-table tbody tr:nth-child(even) td { background: rgba(0, 0, 0, 0.02); }
 .legal-doc .doc-attachments { margin: 0 0 var(--space-4); padding-left: 1.5em; }
 .legal-doc .doc-attachments li { margin-bottom: var(--space-1); }
 .legal-doc .doc-footer { margin-top: var(--space-6); padding-top: var(--space-4); border-top: 1px solid var(--color-border); display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--space-3); }

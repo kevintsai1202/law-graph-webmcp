@@ -34,13 +34,31 @@ function renderSemanticAuthNotice(auth, locale) {
   </div>`;
 }
 
+/** Law Powers 技能頁：額度用完時引導使用者改用自己的 AI Agent。 */
+export const LAW_POWERS_URL = 'https://kevintsai1202.github.io/law-powers/';
+
+/** 今日 token 額度用完（或手動暫停）時顯示的提示；含 Law Powers 連結。 */
+function renderUsageNotice(usage, locale) {
+  if (!usage || !usage.exhausted) return '';
+  return `<div class="semantic-auth-banner usage-banner" role="alert">
+    <span class="auth-icon" aria-hidden="true">${ICONS.alert}</span>
+    <div class="auth-message">
+      <strong>${esc(t('usage.exhausted.title', locale))}</strong>
+      <span>${esc(t('usage.exhausted.tip', locale))}</span>
+    </div>
+    <a href="${LAW_POWERS_URL}" class="auth-link" target="_blank" rel="noopener">${esc(t('usage.exhausted.action', locale))} ↗</a>
+  </div>`;
+}
+
 /** 案情輸入頁：可見標籤＋文字框＋字數提示＋輸出勾選＋送出；右側示範案例卡與免責聲明。 */
-export function renderInput({ samples = [], semanticAuth = null }, locale) {
+export function renderInput({ samples = [], semanticAuth = null, usage = null }, locale) {
   const cards = samples.map((s) =>
     `<button type="button" class="sample" data-sample-id="${esc(s.id)}"><b>${esc(s.title)}</b><span>${esc(s.summary)}</span>${ICONS.arrowRight}</button>`).join('');
   const authNotice = renderSemanticAuthNotice(semanticAuth, locale);
+  const usageNotice = renderUsageNotice(usage, locale);
   return `<section class="input">
     <div class="input-main card">
+      ${usageNotice}
       ${authNotice}
       <label class="field-label" for="case-text">${esc(t('input.label', locale))}</label>
       <textarea id="case-text" rows="10" aria-describedby="case-hint" placeholder="${esc(t('input.placeholder', locale))}"></textarea>
@@ -63,6 +81,7 @@ export function renderInput({ samples = [], semanticAuth = null }, locale) {
     <aside class="input-side">
       <h3>${esc(t('input.samples', locale))}</h3><div class="samples">${cards}</div>
       <p class="disclaimer">${ICONS.info}<span>${esc(t('disclaimer', locale))}</span></p>
+      <p class="disclaimer lawpowers-note">${ICONS.info}<span>${esc(t('input.lawPowers', locale))} <a href="${LAW_POWERS_URL}" target="_blank" rel="noopener">${esc(t('input.lawPowersAction', locale))} ↗</a></span></p>
     </aside></section>`;
 }
 

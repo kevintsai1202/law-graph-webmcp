@@ -33,10 +33,30 @@ public class CaseController {
     private final CaseService service;
     private final RateLimiter limiter;
     private final CaseFileExtractor fileExtractor;
+    /** 每日 token 預算；用盡或手動暫停時拒絕任何會呼叫 LLM 的請求。 */
+    private final tw.lawgraph.usage.DailyTokenBudget budget;
 
-    /** 注入案件服務與 IP 限流器。 */
-    public CaseController(CaseService service, RateLimiter limiter, CaseFileExtractor fileExtractor) {
-        this.service = service; this.limiter = limiter; this.fileExtractor = fileExtractor;
+    /** 注入案件服務、IP 限流器、附件解析與每日 token 預算。 */
+    public CaseController(CaseService service, RateLimiter limiter, CaseFileExtractor fileExtractor,
+                          tw.lawgraph.usage.DailyTokenBudget budget) {
+        this.service = service; this.limiter = limiter; this.fileExtractor = fileExtractor; this.budget = budget;
+    }
+
+    /** 預算用盡時回 503 與可讀訊息；否則回 null 讓呼叫端繼續。 */
+    private ResponseEntity<?> budgetGate(String locale) {
+        if (!budget.exhausted()) return null;
+        var snapshot = budget.snapshot();
+        boolean zh = "zh-TW".equalsIgnoreCase(locale == null ? "" : locale.trim());
+        String alternative = zh
+                ? " 也可安裝 Law Powers 技能（https://kevintsai1202.github.io/law-powers/），用自己的 AI Agent 分析，不受額度限制。"
+                : " You can also install the Law Powers skills (https://kevintsai1202.github.io/law-powers/) and run the analysis with your own AI agent, with no limit.";
+        String message = (snapshot.paused()
+                ? (zh ? "服務暫停中：今日 AI 額度已用完，請明天再試。" : "Service paused: today's AI budget has been used up. Please try again tomorrow.")
+                : (zh ? "今日 AI 額度（" + snapshot.dailyLimit() + " tokens）已用完，請明天再試。"
+                      : "Today's AI budget (" + snapshot.dailyLimit() + " tokens) has been used up. Please try again tomorrow."))
+                + alternative;
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                .body(ApiExceptionHandler.error("DAILY_TOKEN_LIMIT", message));
     }
 
     /** 啟動新案件，成功回 201。 */
@@ -45,6 +65,8 @@ public class CaseController {
         if (request.caseText() == null || request.caseText().isBlank()) {
             return ResponseEntity.badRequest().body(ApiExceptionHandler.error("INVALID_INPUT", "caseText must not be blank"));
         }
+        ResponseEntity<?> gate = budgetGate(request.locale());
+        if (gate != null) return gate;
         if (!limiter.tryAcquire(clientIp(http))) {
             return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
                     .body(ApiExceptionHandler.error("RATE_LIMITED", "max cases per hour reached"));
@@ -64,6 +86,8 @@ public class CaseController {
         if ((caseText == null || caseText.isBlank()) && (files == null || files.stream().allMatch(MultipartFile::isEmpty))) {
             return ResponseEntity.badRequest().body(ApiExceptionHandler.error("INVALID_INPUT", "caseText or at least one file is required"));
         }
+        ResponseEntity<?> gate = budgetGate(locale);
+        if (gate != null) return gate;
         if (!limiter.tryAcquire(clientIp(http))) {
             return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
                     .body(ApiExceptionHandler.error("RATE_LIMITED", "max cases per hour reached"));
@@ -77,10 +101,13 @@ public class CaseController {
     @GetMapping("/{id}")
     public CaseStatus status(@PathVariable String id) { return service.status(id); }
 
-    /** 提交指定案件的人工答案。 */
+    /** 提交指定案件的人工答案；預算用盡時同樣拒絕，因為續跑仍會呼叫 LLM。 */
     @PostMapping("/{id}/answers")
-    public CaseStatus answers(@PathVariable String id, @RequestBody AnswersRequest request) {
-        return service.answer(id, request.answers() == null ? List.of() : request.answers());
+    public ResponseEntity<?> answers(@PathVariable String id, @RequestBody AnswersRequest request) {
+        CaseStatus current = service.status(id);
+        ResponseEntity<?> gate = budgetGate(current == null ? null : current.locale());
+        if (gate != null) return gate;
+        return ResponseEntity.ok(service.answer(id, request.answers() == null ? List.of() : request.answers()));
     }
 
     /** Cloudflare 後優先採用 CF-Connecting-IP。 */

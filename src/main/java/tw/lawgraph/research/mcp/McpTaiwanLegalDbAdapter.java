@@ -19,7 +19,11 @@ import java.util.regex.Pattern;
 
 /** 將 taiwan-legal-db MCP 的法規／關鍵字判決回應轉成 domain 候選。 */
 public final class McpTaiwanLegalDbAdapter implements TaiwanLegalDbPort {
-    private static final Pattern ARTICLE = Pattern.compile("^(.+?)第(\\d+(?:-\\d+)?)條(?:第(\\d+)項)?(?:第(\\d+)款)?$");
+    /** 法規引用格式：法規名＋第N條（支援「第34條之1」與「第34-1條」）＋選填第N項第N款。 */
+    private static final Pattern ARTICLE = Pattern.compile("^(.+?)第(\\d+)(?:-(\\d+))?條(?:之(\\d+))?(?:第(\\d+)項)?(?:第(\\d+)款)?$");
+
+    /** 研究結果可攜帶的法條上限；超過會撐爆分析／建圖 LLM 的上下文而反覆重試。 */
+    public static final int MAX_LAWS = 40;
 
     private final McpSyncClient client;
 
@@ -35,7 +39,13 @@ public final class McpTaiwanLegalDbAdapter implements TaiwanLegalDbPort {
         List<LawRef> laws = new ArrayList<>();
         List<JudgmentCandidate> judgments = new ArrayList<>();
         for (String query : plan.regulationQueries()) {
-            laws.addAll(readLaws(call("query_regulation", regulationArguments(query))));
+            // 沒有條號的整部法規查詢會回上千條（民法 1225 條，實測 laws=3683 造成 ANALYSIS 反覆重試），一律跳過
+            if (!ARTICLE.matcher(query.trim()).matches()) continue;
+            if (laws.size() >= MAX_LAWS) break;
+            for (LawRef law : readLaws(call("query_regulation", regulationArguments(query)), query)) {
+                if (laws.size() >= MAX_LAWS) break;
+                laws.add(law);
+            }
         }
         for (ResearchPlan.JudgmentKeywordQuery query : plan.judgmentKeywordQueries()) {
             if (!query.keyword().isBlank()) {
@@ -60,12 +70,15 @@ public final class McpTaiwanLegalDbAdapter implements TaiwanLegalDbPort {
     static Map<String, Object> regulationArguments(String query) {
         Matcher matcher = ARTICLE.matcher(query.trim());
         if (matcher.matches()) {
-            String article = matcher.group(2);
-            if (matcher.group(3) != null) article += "-" + matcher.group(3);
-            if (matcher.group(4) != null) article += "-" + matcher.group(4);
-            return Map.of("law_name", matcher.group(1), "article_no", article);
+            return Map.of("law_name", matcher.group(1), "article_no", articleNumber(matcher));
         }
         return Map.of("law_name", query.trim(), "article_no", "");
+    }
+
+    /** 由已匹配的引用取出 MCP 用的條號：「34條之1」與「34-1條」都回 34-1；項、款不進條號。 */
+    private static String articleNumber(Matcher matcher) {
+        String suffix = matcher.group(3) != null ? matcher.group(3) : matcher.group(4);
+        return suffix == null ? matcher.group(2) : matcher.group(2) + "-" + suffix;
     }
 
     /** 將關鍵字查詢的選填條件映射為 snake_case MCP arguments。 */
@@ -80,12 +93,50 @@ public final class McpTaiwanLegalDbAdapter implements TaiwanLegalDbPort {
         return Map.copyOf(arguments);
     }
 
-    /** 將法規候選欄位轉成既有 LawRef。 */
-    private static List<LawRef> readLaws(McpSchema.CallToolResult result) {
+    /**
+     * 將法規候選欄位轉成既有 LawRef。
+     * production legal-mcp（taiwan-legal-db）的 query_regulation 回傳 {law:{name,pcode,status}, articles:[{number,content}], source_url}，
+     * 只到條層級；ref 以查詢原文（含項／款）為準，讓 LLM 依 research.laws[].ref 建的節點能通過 GraphRules 比對。
+     * 仍相容早期扁平格式（law_name／article_no／article_text）。
+     */
+    private static List<LawRef> readLaws(McpSchema.CallToolResult result, String query) {
         Object payload = McpPayloadSupport.payload(result, "query_regulation");
+        List<LawRef> fromArticles = readArticles(payload, query);
+        if (!fromArticles.isEmpty()) return fromArticles;
         return McpPayloadSupport.records(payload, "laws", "regulations", "results", "matches", "data", "items").stream()
                 .map(McpTaiwanLegalDbAdapter::toLaw)
                 .filter(law -> law.ref() != null && !law.ref().isBlank()).toList();
+    }
+
+    /** 解析 production 格式的 law／articles；查不到法規或無條文時回空清單，不產生假法條。 */
+    private static List<LawRef> readArticles(Object payload, String query) {
+        if (!(payload instanceof Map<?, ?> raw)) return List.of();
+        Object lawValue = raw.get("law");
+        Object articlesValue = raw.get("articles");
+        if (!(lawValue instanceof Map<?, ?> law) || !(articlesValue instanceof List<?> articles) || articles.isEmpty()) {
+            return List.of();
+        }
+        String lawName = McpPayloadSupport.text(castMap(law), "name", "law_name", "title");
+        if (lawName == null) return List.of();
+        String source = raw.get("source_url") == null ? "law.moj.gov.tw" : String.valueOf(raw.get("source_url"));
+        Matcher matcher = ARTICLE.matcher(query.trim());
+        String queriedArticle = matcher.matches() ? articleNumber(matcher) : null;
+        List<LawRef> laws = new ArrayList<>();
+        for (Object item : articles) {
+            if (!(item instanceof Map<?, ?> article)) continue;
+            String number = McpPayloadSupport.text(castMap(article), "number", "article_no", "article");
+            if (number == null) continue;
+            // 查詢的是同一條時保留原文（含第X項第X款）；查條號範圍或全文時以「法規名第N條」表示
+            String ref = queriedArticle != null && queriedArticle.equals(number) ? query.trim() : lawName + "第" + number + "條";
+            laws.add(new LawRef(ref, lawName, McpPayloadSupport.text(castMap(article), "content", "article_text", "text"), source));
+        }
+        return laws;
+    }
+
+    /** 將任意 map 安全轉成字串 object map。 */
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object> castMap(Map<?, ?> value) {
+        return (Map<String, Object>) value;
     }
 
     /** 將判決候選欄位轉成帶 keyword provenance 的內部候選。 */

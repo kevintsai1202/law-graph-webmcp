@@ -26,6 +26,18 @@ embabel:
 lawgraph:
   skills-dir: ${LAWGRAPH_SKILLS_DIR:skills/law-powers/skills}
   rate-limit-per-hour: 10
+  usage:
+    # 每日 LLM token 上限（input＋output，台北時區日曆日）；達標後案件 API 回 503 DAILY_TOKEN_LIMIT。0 代表不限制。
+    daily-token-limit: ${LAWGRAPH_DAILY_TOKEN_LIMIT:2000000}
+    # 手動停用開關：true 時不論用量一律拒絕新案件與答案（今日額度已超支時先設這個）。
+    paused: ${LAWGRAPH_LLM_PAUSED:false}
+    # 儲存方式：db（Zeabur 同專案 PostgreSQL，重佈不歸零）或 file（本機 JSON，只撐過同容器重啟）。
+    store: ${LAWGRAPH_USAGE_STORE:file}
+    path: ${LAWGRAPH_USAGE_PATH:.data/token-usage.json}
+    db:
+      url: ${LAWGRAPH_DB_URL:}
+      username: ${LAWGRAPH_DB_USER:}
+      password: ${LAWGRAPH_DB_PASSWORD:}
   uploads:
     max-files: ${LAWGRAPH_UPLOAD_MAX_FILES:5}
     max-file-bytes: ${LAWGRAPH_UPLOAD_MAX_FILE_BYTES:10485760}

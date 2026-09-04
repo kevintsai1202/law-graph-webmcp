@@ -87,6 +87,10 @@ const coverage = finalStatus.result?.research?.coverage;
 const notes = finalStatus.result?.research?.notes || [];
 console.log('[3] coverage =', JSON.stringify(coverage));
 console.log('    notes    =', JSON.stringify(notes.filter((n) => /track|semantic/i.test(n))));
+// 法條數與建圖結果：laws=0 會讓 GraphRules 剔除所有法條節點，圖只剩事實
+const graph = finalStatus.result?.graph;
+const graphNotes = finalStatus.result?.graph ? (finalStatus.result?.research?.notes || []).filter((n) => n.startsWith('removed')) : [];
+console.log(`    laws=${finalStatus.result?.research?.laws?.length ?? 0} judgments=${finalStatus.result?.research?.judgments?.length ?? 0} graphNodes=${graph?.nodes?.length ?? 0} graphEdges=${graph?.edges?.length ?? 0} removed=${graphNotes.length}`);
 if (finalStatus.status !== 'COMPLETED') {
   console.error('FAIL: 案件未完成', JSON.stringify(finalStatus.error));
   process.exit(1);

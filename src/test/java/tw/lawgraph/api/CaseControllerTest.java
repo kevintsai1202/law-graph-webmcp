@@ -29,6 +29,24 @@ class CaseControllerTest {
     @Autowired MockMvc mockMvc;
     @MockitoBean CaseService service;
     @MockitoBean CaseFileExtractor fileExtractor;
+    @MockitoBean tw.lawgraph.usage.DailyTokenBudget budget;
+
+    /** 每日 token 預算用盡時，啟動案件與提交答案都回 503 DAILY_TOKEN_LIMIT，且不進入服務層。 */
+    @Test void dailyTokenLimitBlocksNewCasesAndAnswers() {
+        when(budget.exhausted()).thenReturn(true);
+        when(budget.snapshot()).thenReturn(new tw.lawgraph.usage.DailyTokenBudget.Snapshot(
+                "2026-09-04", 1_500_000, 600_000, 2_100_000, 2_000_000, false, true, "file"));
+        when(service.status("p1")).thenReturn(new CaseStatus("p1", "WAITING", "QUESTIONS", "zh-TW", null, null, null));
+
+        assertThat(mvc.post().uri("/api/cases").contentType(MediaType.APPLICATION_JSON)
+                .content("{\"caseText\":\"A hit B\",\"locale\":\"zh-TW\"}"))
+                .hasStatus(503).bodyJson().extractingPath("$.error").isEqualTo("DAILY_TOKEN_LIMIT");
+        assertThat(mvc.post().uri("/api/cases/p1/answers").contentType(MediaType.APPLICATION_JSON)
+                .content("{\"answers\":[]}"))
+                .hasStatus(503).bodyJson().extractingPath("$.message").asString().contains("今日 AI 額度");
+        org.mockito.Mockito.verify(service, org.mockito.Mockito.never()).start(anyString(), any(), anyList());
+        org.mockito.Mockito.verify(service, org.mockito.Mockito.never()).answer(anyString(), anyList());
+    }
 
     /** 建立 RUNNING 測試狀態。 */
     private CaseStatus running() {

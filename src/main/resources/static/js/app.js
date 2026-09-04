@@ -2,7 +2,7 @@ import { t, detectLocale, DICT } from './i18n.js';
 import { States, reduce, initialState } from './state.js';
 import { esc, mount as mountHtml } from './views/util.js';
 import { ICONS } from './views/icons.js';
-import { renderInput, bindInput, MIN_CHARS } from './views/input.js';
+import { renderInput, bindInput, MIN_CHARS, LAW_POWERS_URL } from './views/input.js';
 import { renderProgress, renderCancel } from './views/progress.js';
 import { renderQuestions, bindQuestions } from './views/questions.js';
 import { renderResult, bindResult, renderSections, tabsFor, tabLabel } from './views/result.js';
@@ -39,12 +39,14 @@ export function createApp({ root, client, storage, navigatorLanguage, partialCol
   let questionFillNotice = null;
   /** 語意檢索 MCP 授權狀態（null、未啟用、或已啟用未授權／已授權）。 */
   let semanticAuth = null;
+  /** 今日 token 用量快照（/api/usage）；null 代表尚未取得。 */
+  let usage = null;
   /** OAuth callback query 已被消耗時，不再自動導向，避免授權失敗造成重導迴圈。 */
   const hadAuthCallback = consumeAuthCallbackQuery();
   /** 同一頁面生命週期只允許自動導向授權一次。 */
   let authRedirected = hadAuthCallback;
 
-  /** 向後端查詢語意 MCP 的授權狀態。 */
+  /** 向後端查詢語意 MCP 的授權狀態，並一併更新今日 token 用量。 */
   async function refreshAuthStatus() {
     if (typeof client?.authStatus === 'function') {
       try {
@@ -53,7 +55,20 @@ export function createApp({ root, client, storage, navigatorLanguage, partialCol
         semanticAuth = null;
       }
     }
+    await refreshUsage();
     return semanticAuth;
+  }
+
+  /** 向後端查詢今日 token 用量；失敗時視為未知、不阻擋畫面。 */
+  async function refreshUsage() {
+    if (typeof client?.usage === 'function') {
+      try {
+        usage = await client.usage();
+      } catch {
+        usage = null;
+      }
+    }
+    return usage;
   }
   /** onChange 訂閱者：(state, kind) => void；kind 為 'STATE' 或 'RESULT_RENDERED'。 */
   const listeners = new Set();
@@ -86,7 +101,7 @@ export function createApp({ root, client, storage, navigatorLanguage, partialCol
     root.querySelectorAll('[data-i18n]').forEach((n) => { n.textContent = t(n.dataset.i18n, locale); });
     switch (state.view) {
       case States.INPUT:
-        mountHtml(el, renderInput({ samples, semanticAuth }, locale));
+        mountHtml(el, renderInput({ samples, semanticAuth, usage }, locale));
         bindInput(el, { onSubmit: start, onSample: startSample }, locale);
         break;
       case States.RUNNING:
@@ -130,10 +145,11 @@ export function createApp({ root, client, storage, navigatorLanguage, partialCol
     el.querySelector('#cancel-case')?.addEventListener('click', reset);
   }
 
-  /** 失敗頁：錯誤代碼、步驤、訊息與重試。 */
+  /** 失敗頁：錯誤代碼、步驤、訊息與重試；額度用完時附上 Law Powers 替代方案。 */
   function renderFailed(error, loc) {
     return `<section class="failed card" role="alert"><h2>${ICONS.alert}${esc(t('failed.title', loc))}</h2>
       <p class="code">${esc(error?.code || '')} @ ${esc(error?.step || '')}</p><p>${esc(error?.message || '')}</p>
+      ${error?.code === 'DAILY_TOKEN_LIMIT' ? `<p class="alt">${esc(t('usage.exhausted.tip', loc))} <a href="${LAW_POWERS_URL}" target="_blank" rel="noopener">${esc(t('usage.exhausted.action', loc))} ↗</a></p>` : ''}
       <div class="actions"><button id="retry" type="button" class="primary">${ICONS.refresh}${esc(t('failed.retry', loc))}</button></div></section>`;
   }
 
@@ -479,7 +495,7 @@ export function createApp({ root, client, storage, navigatorLanguage, partialCol
 
   return {
     mount, dispatch, getState: () => state, getLocale: () => locale, getSamples: () => samples,
-    getAuthStatus: () => semanticAuth, refreshAuthStatus,
+    getAuthStatus: () => semanticAuth, refreshAuthStatus, getUsage: () => usage, refreshUsage,
     setLocale, start, startSample, answer, fillQuestions, getQuestionProgress,
     setOutputs, getOutputOptions, getInputForm, getResultTabs, reset,
     verify: (ref) => client.verify(ref),

@@ -37,6 +37,16 @@ const waitForTool = (page, name) => expect.poll(async () => page.evaluate((toolN
   return document.modelContext.getTools().then((tools) => tools.some((tool) => tool.name === toolName));
 }, name)).toBe(true);
 
+test('選單上有 Law Powers 技能常駐連結，切換語系後文字跟著變', async ({ page }) => {
+  await page.goto('/');
+  const link = page.locator('#lawpowers-link');
+  await expect(link).toHaveAttribute('href', 'https://kevintsai1202.github.io/law-powers/');
+  await expect(link).toHaveAttribute('target', '_blank');
+  await page.selectOption('#lang-select', 'zh-TW');
+  await expect(link).toHaveText(/Law Powers 技能/);
+  await page.selectOption('#lang-select', 'en');
+  await expect(link).toHaveText(/Law Powers skills/);
+});
 test('input view lists four sample cards and switches locale', async ({ page }) => {
   await expect(page.locator('.sample')).toHaveCount(4);
   await expect(page.locator('#case-submit')).toHaveText('Analyse');

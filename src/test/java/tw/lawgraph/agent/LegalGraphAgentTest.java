@@ -66,6 +66,15 @@ class LegalGraphAgentTest {
         assertEquals(new UserAnswers(List.of()), agent.askUser(brainstorm));
     }
 
+    /** 模型省略 questions 欄位（反序列化為 null）時不得 NPE，應視為無問題直接繼續（2026-09-04 線上 gallant_keller 卡在 QUESTIONS）。 */
+    @Test
+    void askUserTreatsNullQuestionsAsNone() {
+        var withoutQuestions = new BrainstormResult(List.of("f"), null, null, null, null);
+        assertEquals(List.of(), withoutQuestions.questions());
+        assertEquals(List.of(), withoutQuestions.issues());
+        assertEquals(new UserAnswers(List.of()), agent.askUser(withoutQuestions));
+    }
+
     /** planResearch 只呼叫 LLM 產生查詢意圖，不把 MCP 回應混進計畫。 */
     @Test
     void planResearchProducesResearchPlan() {

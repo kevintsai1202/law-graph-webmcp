@@ -66,9 +66,35 @@ const SECTION_HTML = {
   }
 };
 
-/** 台灣公文書狀版面：狀別標題、當事人欄、本文段落、證物清單、此致法院與日期；全文經 esc。 */
+/** 爭點整理表欄位順序（i18n 鍵尾碼＝IssueRow 欄名）。 */
+const ISSUE_COLUMNS = ['no', 'issue', 'plaintiff', 'defendant', 'basis', 'evidence', 'court'];
+
+/** CSV 欄位轉義：含逗號、引號、換行者以雙引號包住並將引號加倍。 */
+function csvCell(value) {
+  const text = String(value ?? '');
+  return /[",\n\r]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+}
+
+/**
+ * 實務爭點整理表：每個爭點一列，兩造主張並列，附法律依據、證據方法與法院應審酌事項；
+ * 另提供 CSV 匯出（含 UTF-8 BOM，Excel 直接開啟不會亂碼）。
+ */
+function renderIssueTable(rows, locale) {
+  const head = ISSUE_COLUMNS.map((c) => `<th scope="col">${esc(t('doc.issue.' + c, locale))}</th>`).join('');
+  const body = rows.map((row) =>
+    `<tr>${ISSUE_COLUMNS.map((c) => `<td>${esc(row[c] || '')}</td>`).join('')}</tr>`).join('');
+  const csv = [ISSUE_COLUMNS.map((c) => t('doc.issue.' + c, locale)), ...rows.map((row) => ISSUE_COLUMNS.map((c) => row[c] || ''))]
+    .map((line) => line.map(csvCell).join(',')).join('\r\n');
+  const href = 'data:text/csv;charset=utf-8,' + encodeURIComponent('\uFEFF' + csv);
+  return `<div class="issue-toolbar"><a class="doc-export" href="${href}" download="${esc(t('doc.issue.file', locale))}">${ICONS.download || ''}${esc(t('doc.issue.export', locale))}</a></div>
+    <div class="issue-table-wrap"><table class="issue-table"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>`;
+}
+
+/** 台灣公文書狀版面：狀別標題、當事人欄、本文段落、證物清單、此致法院與日期；全文經 esc。爭點整理另插入爭點整理表。 */
 function renderDocument(doc, locale) {
   if (!doc) return `<p class="doc-missing">${ICONS.info}<span>${esc(t('doc.missing', locale))}</span></p>`;
+  const issueTable = doc.type === 'issues' && Array.isArray(doc.issues) && doc.issues.length
+    ? renderIssueTable(doc.issues, locale) : '';
   const parties = (doc.parties || []).map((p) =>
     `<tr><th scope="row">${esc(p.role)}</th><td>${esc(p.name)}</td></tr>`).join('');
   const paragraphs = (doc.paragraphs || []).map((p) => `<p>${esc(p)}</p>`).join('');
@@ -79,6 +105,7 @@ function renderDocument(doc, locale) {
       <h3 class="doc-title">${esc(doc.title || '')}</h3>
       ${parties ? `<table class="doc-parties" aria-label="${esc(t('doc.parties', locale))}"><tbody>${parties}</tbody></table>` : ''}
       <div class="doc-body">${paragraphs}</div>
+      ${issueTable}
       ${attachments}
       <p class="doc-footer"><span class="doc-to">${esc(t('doc.to', locale))} ${esc(doc.court || '')}</span><span class="doc-date">${esc(doc.date || '')}</span></p>
       <p class="disclaimer">${ICONS.info}<span>${esc(t('doc.disclaimer', locale))}</span></p>

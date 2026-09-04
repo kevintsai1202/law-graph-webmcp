@@ -10,6 +10,7 @@
     en: {
       "app.title": "Law Graph",
       "app.subtitle": "Taiwan legal relationship graph, built with your agent",
+      "nav.lawPowers": "Law Powers skills \xB7 self-host, no limit",
       "agent.available": "Agent tools: ready",
       "agent.unavailable": "Agent tools: unavailable",
       "input.placeholder": "Describe the dispute: who, what happened, when, what you want.",
@@ -49,6 +50,15 @@
       "doc.to": "To:",
       "doc.missing": "This document was not generated for this case. Start a new case with it selected to draft it.",
       "doc.disclaimer": "Draft for analysis support only \u2014 review with a licensed attorney before filing.",
+      "doc.issue.no": "No.",
+      "doc.issue.issue": "Issue",
+      "doc.issue.plaintiff": "Plaintiff's position",
+      "doc.issue.defendant": "Defendant's position",
+      "doc.issue.basis": "Legal basis",
+      "doc.issue.evidence": "Evidence",
+      "doc.issue.court": "Matters for the court",
+      "doc.issue.export": "Export CSV",
+      "doc.issue.file": "issues.csv",
       "questions.title": "A few facts only you know",
       "questions.why": "Why we ask",
       "questions.submit": "Continue",
@@ -120,11 +130,17 @@
       "auth.semantic.ready": "Semantic search: ready",
       "auth.semantic.required": "Semantic search: not authorized",
       "auth.semantic.tip": "Authorize to include semantic judgment search in this analysis.",
-      "auth.semantic.action": "Authorize now"
+      "auth.semantic.action": "Authorize now",
+      "usage.exhausted.title": "Daily AI budget used up",
+      "usage.exhausted.tip": "This site pauses new analyses once the shared daily token budget is spent. Install the Law Powers skills and run the same analysis with your own AI agent, with no limit.",
+      "usage.exhausted.action": "Get Law Powers",
+      "input.lawPowers": "This hosted site shares a daily AI budget. Prefer no limit? Install the open-source Law Powers skills and run the same analysis with your own AI agent.",
+      "input.lawPowersAction": "Law Powers skills"
     },
     "zh-TW": {
       "app.title": "\u6CD5\u5F8B\u95DC\u4FC2\u5716",
       "app.subtitle": "\u8207\u4F60\u7684 Agent \u4E00\u8D77\u5EFA\u69CB\u7684\u53F0\u7063\u6CD5\u5F8B\u95DC\u4FC2\u5716",
+      "nav.lawPowers": "Law Powers \u6280\u80FD \xB7 \u81EA\u7528 Agent \u4E0D\u9650\u984D\u5EA6",
       "agent.available": "Agent \u5DE5\u5177\uFF1A\u53EF\u7528",
       "agent.unavailable": "Agent \u5DE5\u5177\uFF1A\u4E0D\u53EF\u7528",
       "input.placeholder": "\u63CF\u8FF0\u722D\u8B70\uFF1A\u7576\u4E8B\u4EBA\u3001\u767C\u751F\u4E86\u4EC0\u9EBC\u3001\u6642\u9593\u3001\u4F60\u60F3\u9054\u6210\u4EC0\u9EBC\u3002",
@@ -164,6 +180,15 @@
       "doc.to": "\u6B64\u81F4",
       "doc.missing": "\u672C\u6848\u672A\u7522\u751F\u6B64\u66F8\u72C0\uFF1B\u91CD\u65B0\u5206\u6790\u4E26\u52FE\u9078\u5F8C\u5373\u53EF\u8D77\u8349\u3002",
       "doc.disclaimer": "\u672C\u66F8\u72C0\u70BA\u5206\u6790\u8F14\u52A9\u8349\u7A3F\uFF0C\u63D0\u51FA\u524D\u8ACB\u5148\u7D93\u57F7\u696D\u5F8B\u5E2B\u5BE9\u95B1\u3002",
+      "doc.issue.no": "\u7DE8\u865F",
+      "doc.issue.issue": "\u722D\u9EDE",
+      "doc.issue.plaintiff": "\u539F\u544A\u4E3B\u5F35",
+      "doc.issue.defendant": "\u88AB\u544A\u4E3B\u5F35",
+      "doc.issue.basis": "\u6CD5\u5F8B\u4F9D\u64DA",
+      "doc.issue.evidence": "\u8B49\u64DA\u65B9\u6CD5",
+      "doc.issue.court": "\u6CD5\u9662\u61C9\u5BE9\u914C\u4E8B\u9805",
+      "doc.issue.export": "\u532F\u51FA CSV",
+      "doc.issue.file": "\u722D\u9EDE\u6574\u7406.csv",
       "questions.title": "\u5E7E\u500B\u53EA\u6709\u4F60\u77E5\u9053\u7684\u4E8B\u5BE6",
       "questions.why": "\u70BA\u4F55\u8981\u554F",
       "questions.submit": "\u7E7C\u7E8C",
@@ -235,7 +260,12 @@
       "auth.semantic.ready": "\u8A9E\u610F\u6AA2\u7D22\uFF1A\u5C31\u7DD2",
       "auth.semantic.required": "\u8A9E\u610F\u6AA2\u7D22\uFF1A\u672A\u6388\u6B0A",
       "auth.semantic.tip": "\u5B8C\u6210\u6388\u6B0A\u5F8C\uFF0C\u672C\u6B21\u5206\u6790\u624D\u6703\u7D0D\u5165\u5224\u6C7A\u8A9E\u610F\u6AA2\u7D22\u3002",
-      "auth.semantic.action": "\u4E00\u9375\u6388\u6B0A"
+      "auth.semantic.action": "\u4E00\u9375\u6388\u6B0A",
+      "usage.exhausted.title": "\u4ECA\u65E5 AI \u984D\u5EA6\u5DF2\u7528\u5B8C",
+      "usage.exhausted.tip": "\u672C\u7AD9\u6BCF\u65E5\u5171\u4EAB token \u984D\u5EA6\u7528\u5B8C\u5F8C\u6703\u66AB\u505C\u65B0\u7684\u5206\u6790\u3002\u4F60\u4E5F\u53EF\u4EE5\u5B89\u88DD Law Powers \u6280\u80FD\uFF0C\u7528\u81EA\u5DF1\u7684 AI Agent \u505A\u540C\u6A23\u7684\u5206\u6790\uFF0C\u4E0D\u53D7\u984D\u5EA6\u9650\u5236\u3002",
+      "usage.exhausted.action": "\u53D6\u5F97 Law Powers",
+      "input.lawPowers": "\u672C\u7AD9\u6709\u6BCF\u65E5\u5171\u4EAB AI \u984D\u5EA6\u3002\u60F3\u4E0D\u53D7\u9650\u5236\uFF0C\u53EF\u5B89\u88DD\u958B\u6E90\u7684 Law Powers \u6280\u80FD\uFF0C\u7528\u81EA\u5DF1\u7684 AI Agent \u505A\u540C\u6A23\u7684\u5206\u6790\u3002",
+      "input.lawPowersAction": "Law Powers \u6280\u80FD"
     }
   };
   function t(key, locale2) {
@@ -338,11 +368,25 @@
     <a href="${esc(auth.startPath || "/api/auth/tw-legal-rag/start")}" class="auth-link">${esc(t("auth.semantic.action", locale2))} \u2197</a>
   </div>`;
   }
-  function renderInput({ samples = [], semanticAuth = null }, locale2) {
+  var LAW_POWERS_URL = "https://kevintsai1202.github.io/law-powers/";
+  function renderUsageNotice(usage, locale2) {
+    if (!usage || !usage.exhausted) return "";
+    return `<div class="semantic-auth-banner usage-banner" role="alert">
+    <span class="auth-icon" aria-hidden="true">${ICONS.alert}</span>
+    <div class="auth-message">
+      <strong>${esc(t("usage.exhausted.title", locale2))}</strong>
+      <span>${esc(t("usage.exhausted.tip", locale2))}</span>
+    </div>
+    <a href="${LAW_POWERS_URL}" class="auth-link" target="_blank" rel="noopener">${esc(t("usage.exhausted.action", locale2))} \u2197</a>
+  </div>`;
+  }
+  function renderInput({ samples = [], semanticAuth = null, usage = null }, locale2) {
     const cards = samples.map((s) => `<button type="button" class="sample" data-sample-id="${esc(s.id)}"><b>${esc(s.title)}</b><span>${esc(s.summary)}</span>${ICONS.arrowRight}</button>`).join("");
     const authNotice = renderSemanticAuthNotice(semanticAuth, locale2);
+    const usageNotice = renderUsageNotice(usage, locale2);
     return `<section class="input">
     <div class="input-main card">
+      ${usageNotice}
       ${authNotice}
       <label class="field-label" for="case-text">${esc(t("input.label", locale2))}</label>
       <textarea id="case-text" rows="10" aria-describedby="case-hint" placeholder="${esc(t("input.placeholder", locale2))}"></textarea>
@@ -365,6 +409,7 @@
     <aside class="input-side">
       <h3>${esc(t("input.samples", locale2))}</h3><div class="samples">${cards}</div>
       <p class="disclaimer">${ICONS.info}<span>${esc(t("disclaimer", locale2))}</span></p>
+      <p class="disclaimer lawpowers-note">${ICONS.info}<span>${esc(t("input.lawPowers", locale2))} <a href="${LAW_POWERS_URL}" target="_blank" rel="noopener">${esc(t("input.lawPowersAction", locale2))} \u2197</a></span></p>
     </aside></section>`;
   }
   function formatFileSize(bytes, locale2) {
@@ -551,8 +596,22 @@
       <p class="disclaimer">${ICONS.info}<span>${esc(a.disclaimer)}</span></p>`;
     }
   };
+  var ISSUE_COLUMNS = ["no", "issue", "plaintiff", "defendant", "basis", "evidence", "court"];
+  function csvCell(value) {
+    const text = String(value ?? "");
+    return /[",\n\r]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+  }
+  function renderIssueTable(rows, locale2) {
+    const head = ISSUE_COLUMNS.map((c) => `<th scope="col">${esc(t("doc.issue." + c, locale2))}</th>`).join("");
+    const body = rows.map((row) => `<tr>${ISSUE_COLUMNS.map((c) => `<td>${esc(row[c] || "")}</td>`).join("")}</tr>`).join("");
+    const csv = [ISSUE_COLUMNS.map((c) => t("doc.issue." + c, locale2)), ...rows.map((row) => ISSUE_COLUMNS.map((c) => row[c] || ""))].map((line) => line.map(csvCell).join(",")).join("\r\n");
+    const href = "data:text/csv;charset=utf-8," + encodeURIComponent("\uFEFF" + csv);
+    return `<div class="issue-toolbar"><a class="doc-export" href="${href}" download="${esc(t("doc.issue.file", locale2))}">${ICONS.download || ""}${esc(t("doc.issue.export", locale2))}</a></div>
+    <div class="issue-table-wrap"><table class="issue-table"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>`;
+  }
   function renderDocument(doc, locale2) {
     if (!doc) return `<p class="doc-missing">${ICONS.info}<span>${esc(t("doc.missing", locale2))}</span></p>`;
+    const issueTable = doc.type === "issues" && Array.isArray(doc.issues) && doc.issues.length ? renderIssueTable(doc.issues, locale2) : "";
     const parties = (doc.parties || []).map((p) => `<tr><th scope="row">${esc(p.role)}</th><td>${esc(p.name)}</td></tr>`).join("");
     const paragraphs = (doc.paragraphs || []).map((p) => `<p>${esc(p)}</p>`).join("");
     const attachments = (doc.attachments || []).length ? `<h4 class="doc-section">${esc(t("doc.attachments", locale2))}</h4><ol class="doc-attachments">${doc.attachments.map((a) => `<li>${esc(a)}</li>`).join("")}</ol>` : "";
@@ -560,6 +619,7 @@
       <h3 class="doc-title">${esc(doc.title || "")}</h3>
       ${parties ? `<table class="doc-parties" aria-label="${esc(t("doc.parties", locale2))}"><tbody>${parties}</tbody></table>` : ""}
       <div class="doc-body">${paragraphs}</div>
+      ${issueTable}
       ${attachments}
       <p class="doc-footer"><span class="doc-to">${esc(t("doc.to", locale2))} ${esc(doc.court || "")}</span><span class="doc-date">${esc(doc.date || "")}</span></p>
       <p class="disclaimer">${ICONS.info}<span>${esc(t("doc.disclaimer", locale2))}</span></p>
@@ -637,6 +697,7 @@
     let questionDraft = {};
     let questionFillNotice = null;
     let semanticAuth = null;
+    let usage = null;
     const hadAuthCallback = consumeAuthCallbackQuery();
     let authRedirected = hadAuthCallback;
     async function refreshAuthStatus() {
@@ -647,7 +708,18 @@
           semanticAuth = null;
         }
       }
+      await refreshUsage();
       return semanticAuth;
+    }
+    async function refreshUsage() {
+      if (typeof client?.usage === "function") {
+        try {
+          usage = await client.usage();
+        } catch {
+          usage = null;
+        }
+      }
+      return usage;
     }
     const listeners = /* @__PURE__ */ new Set();
     const stage = () => root.querySelector("#stage");
@@ -678,7 +750,7 @@
       });
       switch (state.view) {
         case States.INPUT:
-          mount(el, renderInput({ samples, semanticAuth }, locale2));
+          mount(el, renderInput({ samples, semanticAuth, usage }, locale2));
           bindInput(el, { onSubmit: start, onSample: startSample }, locale2);
           break;
         case States.RUNNING:
@@ -720,6 +792,7 @@
     function renderFailed(error, loc) {
       return `<section class="failed card" role="alert"><h2>${ICONS.alert}${esc(t("failed.title", loc))}</h2>
       <p class="code">${esc(error?.code || "")} @ ${esc(error?.step || "")}</p><p>${esc(error?.message || "")}</p>
+      ${error?.code === "DAILY_TOKEN_LIMIT" ? `<p class="alt">${esc(t("usage.exhausted.tip", loc))} <a href="${LAW_POWERS_URL}" target="_blank" rel="noopener">${esc(t("usage.exhausted.action", loc))} \u2197</a></p>` : ""}
       <div class="actions"><button id="retry" type="button" class="primary">${ICONS.refresh}${esc(t("failed.retry", loc))}</button></div></section>`;
     }
     function beginPolling(caseId, { resumed = false } = {}) {
@@ -1019,6 +1092,8 @@
       getSamples: () => samples,
       getAuthStatus: () => semanticAuth,
       refreshAuthStatus,
+      getUsage: () => usage,
+      refreshUsage,
       setLocale: setLocale2,
       start,
       startSample,
@@ -1082,6 +1157,8 @@
       samples: (locale2) => call(`/api/samples?locale=${encodeURIComponent(locale2)}`),
       verify: (ref) => call(`/api/laws/verify?ref=${encodeURIComponent(ref)}`),
       authStatus: () => call("/api/auth/tw-legal-rag/status"),
+      /** 今日 token 用量與是否停用。 */
+      usage: () => call("/api/usage"),
       /** 每 intervalMs 輪詢一次；COMPLETED／FAILED／WAITING 自動停（WAITING 由人工回答後以 answer 續接）；回傳 stop()。 */
       poll(id, onStatus, intervalMs = 2e3) {
         let stopped = false;
