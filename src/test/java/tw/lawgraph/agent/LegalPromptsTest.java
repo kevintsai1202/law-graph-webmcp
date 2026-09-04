@@ -140,6 +140,23 @@ class LegalPromptsTest {
         assertTrue(prompt.contains("Respond in zh-TW"));
     }
 
+    /** 對當事人的問題與清單要白話並附專業名詞；分析、抗辯回應與書狀維持專業用語。 */
+    @Test void promptsSeparatePlainQuestionsFromProfessionalOutput() {
+        var input = new CaseInput("A hit B", Locale.ZH_TW);
+        var brainstorm = new BrainstormResult(List.of(), List.of(), List.of(), List.of(), List.of());
+        String system = LegalPrompts.system(Locale.ZH_TW);
+        assertTrue(system.contains("plain language"));
+        assertTrue(system.contains("professional term in parentheses"));
+        String bs = LegalPrompts.brainstorm(input);
+        assertTrue(bs.contains("questions[].text and why: plain language"));
+        String clarify = LegalPrompts.clarify(input, brainstorm, List.of(), List.of(), 2);
+        assertTrue(clarify.contains("plain language"));
+        String assess = LegalPrompts.assess(input, brainstorm, new ResearchResult(List.of(), List.of(), List.of()),
+                new AnalysisResult(List.of(), "", List.of(), ""), new ClarifiedAnswers(List.of(), List.of()));
+        assertTrue(assess.contains("checklist rows: plain language"));
+        assertTrue(assess.contains("defenses, evidencePlan and riskSummary: professional Taiwan legal register"));
+    }
+
     /** 分析 prompt 必須使用 merged coverage，且禁止繞過白名單重新搜尋。 */
     @Test
     void analyzePromptReadsCoverageWithoutSearch() {
