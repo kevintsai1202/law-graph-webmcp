@@ -120,6 +120,26 @@ class LegalPromptsTest {
         assertTrue(prompt.contains("do not set \"met\""), "met 由 Java 覆寫，模型不得自填");
     }
 
+    /** 抗辯評估 prompt 必須啟用涵攝技能、鎖定引用白名單、規定舉證責任字串並要求逐爭點列抗辯。 */
+    @Test void assessPromptCoversDefensesBurdenAndAllowlist() {
+        var research = new ResearchResult(List.of(), List.of(), List.of());
+        var brainstorm = new BrainstormResult(List.of("f"), List.of(), List.of("時效是否完成"), List.of(), List.of());
+        var analysis = new AnalysisResult(List.of(), "", List.of(), "");
+        var answers = new ClarifiedAnswers(List.of(), List.of("無送達證明"));
+        String prompt = LegalPrompts.assess(new CaseInput("A hit B", Locale.ZH_TW), brainstorm, research, analysis, answers);
+        assertTrue(prompt.startsWith("Activate skill \"legal-element-analysis\""));
+        assertTrue(prompt.contains("defenses"));
+        assertTrue(prompt.contains("evidencePlan"));
+        assertTrue(prompt.contains("checklist"));
+        assertTrue(prompt.contains("證據文件|人證|程序事項|費用與期限|其他"));
+        assertTrue(prompt.contains("民事訴訟法第277條"));
+        assertTrue(prompt.contains("原告|被告|檢察官|不明"));
+        assertTrue(prompt.contains("never search for new judgments"));
+        assertTrue(prompt.contains("時效是否完成"));
+        assertTrue(prompt.contains("無送達證明"));
+        assertTrue(prompt.contains("Respond in zh-TW"));
+    }
+
     /** 分析 prompt 必須使用 merged coverage，且禁止繞過白名單重新搜尋。 */
     @Test
     void analyzePromptReadsCoverageWithoutSearch() {

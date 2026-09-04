@@ -142,6 +142,25 @@ public final class LegalPrompts {
                 """.formatted(toJson(research), toJson(brainstorm), locale.code());
     }
 
+    /** 建立抗辯評估與舉證責任 prompt：逐爭點列對造抗辯、我方回應與風險，逐待證事實定舉證責任與證據計畫。 */
+    public static String assess(CaseInput input, BrainstormResult brainstorm, ResearchResult research,
+                                AnalysisResult analysis, ClarifiedAnswers answers) {
+        return """
+                Activate skill "legal-element-analysis" and extend its step 4 (結論與證據缺口). Output only the requested object.
+                <case>%s</case>
+                <brainstorm>%s</brainstorm>
+                <research>%s</research>
+                <analysis>%s</analysis>
+                <answers>%s</answers>
+                Produce:
+                - defenses[]: for every issue in brainstorm.issues at least one row {issue, defense (what the opposing party will most likely argue, one sentence), response (our reply grounded in analysis.elements and the research allowlist, one or two sentences), risk (high|medium|low = likelihood the defense succeeds)}.
+                - evidencePlan[]: one row per fact that decides an element with met=unknown or met=no, plus any fact the opposing party will contest: {fact (待證事實), burden (exactly one of 原告|被告|檢察官|不明, decided under 民事訴訟法第277條 or the criminal in dubio pro reo rule), available (evidence already in the case or answers; write 無 if none), missing (what is still needed), howToObtain (concrete Taiwan procedure: 聲請調查證據、函查、鑑定、證人、書證提出命令…)}.
+                - checklist[]: a client preparation list the party can act on without a lawyer present: merge evidencePlan.missing, analysis.evidenceGaps and brainstorm.evidenceNeeds, deduplicate, then add procedural items (委任狀, 起訴或上訴期間, 裁判費概算, 管轄法院與當事人基本資料, 送達地址). Each row {category (exactly one of 證據文件|人證|程序事項|費用與期限|其他), item (what to prepare, concrete), why (one sentence linking it to an element, defense or procedural rule), dueHint (e.g. 下次會面前, 起訴前, 上訴期間內二十日, empty string if none)}.
+                - riskSummary: three sentences at most: overall position, the single most dangerous defense, the single most important piece of evidence to secure.
+                Rules: cite only research.laws[].ref, research.judgments[].citation and research.evidence — never search for new judgments; if coverage.semanticStatus is not SUCCESS, say so and lower certainty; Taiwan legal terms only (system rule 6); never invent facts, dates or amounts — use ○○ placeholders. Respond in %s.
+                """.formatted(toJson(input), toJson(brainstorm), toJson(research), toJson(analysis), toJson(answers), input.locale().code());
+    }
+
     /** 建立起草勾選書狀的 prompt：僅列勾選狀別、鎖定已驗證引用並要求結構化欄位。 */
     public static String draftDocuments(CaseInput input, BrainstormResult brainstorm, ResearchResult research,
                                         AnalysisResult analysis) {
