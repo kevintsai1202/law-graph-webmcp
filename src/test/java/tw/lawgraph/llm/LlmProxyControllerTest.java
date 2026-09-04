@@ -22,9 +22,10 @@ import static org.assertj.core.api.Assertions.assertThat;
  * 帳號金鑰由呼叫端 Authorization 帶入原樣轉送；只允許本機（loopback）呼叫。
  */
 @WebMvcTest(controllers = LlmProxyController.class, properties = "lawgraph.llm.reasoning-effort=low")
-@org.springframework.context.annotation.Import(tw.lawgraph.auth.SecurityConfig.class)
+@org.springframework.context.annotation.Import({tw.lawgraph.auth.SecurityConfig.class, LlmUsageStats.class})
 class LlmProxyControllerTest {
     @Autowired MockMvcTester mvc;
+    @Autowired LlmUsageStats stats;
 
     /** 假上游：記下收到的 body 與 Authorization，回固定 JSON。 */
     private static HttpServer upstream;
@@ -38,7 +39,9 @@ class LlmProxyControllerTest {
             receivedPath.set(exchange.getRequestURI().getPath());
             receivedAuth.set(exchange.getRequestHeaders().getFirst("Authorization"));
             receivedBody.set(new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8));
-            byte[] reply = "{\"id\":\"chatcmpl-1\",\"choices\":[]}".getBytes(StandardCharsets.UTF_8);
+            byte[] reply = ("{\"id\":\"chatcmpl-1\",\"choices\":[],\"usage\":{\"prompt_tokens\":10,\"completion_tokens\":5,"
+                    + "\"prompt_tokens_details\":{\"cached_tokens\":4},\"completion_tokens_details\":{\"reasoning_tokens\":3}}}")
+                    .getBytes(StandardCharsets.UTF_8);
             exchange.getResponseHeaders().add("Content-Type", "application/json");
             exchange.sendResponseHeaders(200, reply.length);
             exchange.getResponseBody().write(reply);
@@ -66,6 +69,15 @@ class LlmProxyControllerTest {
         assertThat(receivedPath.get()).isEqualTo("/v1/chat/completions");
         assertThat(receivedAuth.get()).isEqualTo("Bearer secret-key");
         assertThat(receivedBody.get()).contains("\"reasoning_effort\":\"low\"");
+    }
+
+    /** 成功轉送後累計 usage；假上游回應加上 usage 欄位。 */
+    @Test void recordsUsageFromUpstream() {
+        mvc.post().uri("/internal/llm/v1/chat/completions").contentType(MediaType.APPLICATION_JSON)
+                .content("{\"model\":\"m\",\"messages\":[]}").exchange();
+        var snap = stats.snapshot();
+        assertThat(snap.calls()).isGreaterThanOrEqualTo(1);
+        assertThat(snap.cachedTokens()).isGreaterThanOrEqualTo(4);
     }
 
     /** 非本機來源一律 403，避免公開網址被拿來當 LLM 跳板。 */

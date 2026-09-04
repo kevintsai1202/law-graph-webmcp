@@ -37,15 +37,19 @@ public class LlmProxyController {
     private final HttpClient http;
     /** 單次轉送逾時：reasoning 模型一次呼叫可能超過一分鐘，這裡放得比 Embabel 的逾時更長。 */
     private final Duration requestTimeout;
+    /** 成功回應時累計 usage（prompt／cached／completion／reasoning tokens）。 */
+    private final LlmUsageStats stats;
 
     /** 由設定建立轉送端點。 */
     public LlmProxyController(@Value("${lawgraph.llm.upstream-base-url:https://api.meta.ai/v1}") String upstreamBaseUrl,
                               @Value("${lawgraph.llm.reasoning-effort:}") String reasoningEffort,
-                              @Value("${lawgraph.llm.proxy-timeout:300s}") Duration requestTimeout) {
+                              @Value("${lawgraph.llm.proxy-timeout:300s}") Duration requestTimeout,
+                              LlmUsageStats stats) {
         this.upstreamBaseUrl = upstreamBaseUrl.replaceAll("/+$", "");
         this.reasoningEffort = reasoningEffort == null ? "" : reasoningEffort.trim();
         this.requestTimeout = requestTimeout;
         this.http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(20)).build();
+        this.stats = stats;
     }
 
     /** POST /internal/llm/v1/chat/completions：注入 reasoning_effort 後轉送，回傳上游的狀態碼與 body。 */
@@ -66,6 +70,12 @@ public class LlmProxyController {
         HttpResponse<String> response = http.send(upstream.build(), HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
         if (response.statusCode() >= 400) {
             LOGGER.warn("LLM 上游回 {}：{}", response.statusCode(), abbreviate(response.body()));
+        } else {
+            LlmUsageStats.Snapshot callUsage = stats.record(response.body());
+            if (callUsage != null) {
+                LOGGER.info("LLM usage prompt={} cached={} completion={} reasoning={}",
+                        callUsage.promptTokens(), callUsage.cachedTokens(), callUsage.completionTokens(), callUsage.reasoningTokens());
+            }
         }
         String contentType = response.headers().firstValue("Content-Type").orElse(MediaType.APPLICATION_JSON_VALUE);
         return ResponseEntity.status(response.statusCode()).header("Content-Type", contentType).body(response.body());
