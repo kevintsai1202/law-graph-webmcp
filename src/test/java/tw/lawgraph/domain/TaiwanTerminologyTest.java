@@ -7,6 +7,13 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+// 匯入 CaseAssessment 與相關類
+import tw.lawgraph.domain.CaseAssessment;
+import tw.lawgraph.domain.DefenseAssessment;
+import tw.lawgraph.domain.EvidenceItem;
+import tw.lawgraph.domain.ChecklistItem;
+import tw.lawgraph.domain.Risk;
+
 /** 用語守門：大陸或他國法律用語自動替換為台灣實務用語，台灣本有用語不受影響。 */
 class TaiwanTerminologyTest {
 
@@ -51,5 +58,22 @@ class TaiwanTerminologyTest {
         assertEquals("被告未盡注意義務", fixedAnalysis.elements().getFirst().basis());
         assertEquals("主張契約無效", fixedAnalysis.strategy());
         assertEquals(List.of("缺乏影片證據"), fixedAnalysis.evidenceGaps());
+    }
+
+    /** CaseAssessment 的抗辯、回應、證據欄位與風險摘要都要過用語守門。 */
+    @Test
+    void sanitizesCaseAssessmentStrings() {
+        var raw = new CaseAssessment(
+                List.of(new DefenseAssessment("合同效力", "合同無效", "合同有效", Risk.low)),
+                List.of(new EvidenceItem("合同簽署", "原告", "合同影本", "", "調取原本")),
+                List.of(new ChecklistItem("證據文件", "合同原本", "證明合同成立", "起訴前")),
+                "合同風險低");
+        var clean = TaiwanTerminology.sanitize(raw);
+        assertEquals("契約效力", clean.defenses().getFirst().issue());
+        assertEquals("契約無效", clean.defenses().getFirst().defense());
+        assertEquals("契約影本", clean.evidencePlan().getFirst().available());
+        assertEquals("契約原本", clean.checklist().getFirst().item());
+        assertEquals("契約風險低", clean.riskSummary());
+        assertEquals(Risk.low, clean.defenses().getFirst().risk());
     }
 }

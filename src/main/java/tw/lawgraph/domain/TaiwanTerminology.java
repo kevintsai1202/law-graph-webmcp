@@ -107,6 +107,24 @@ public final class TaiwanTerminology {
         return new DraftedDocuments(cleaned);
     }
 
+    /** 對 CaseAssessment 的所有文字欄位套用同一套黑名單替換；風險等級與結構不變。 */
+    public static CaseAssessment sanitize(CaseAssessment assessment) {
+        if (assessment == null) return null;
+        Auditor audit = new Auditor("caseAssessment");
+        var defenses = assessment.defenses().stream()
+                .map(d -> new DefenseAssessment(audit.fix(d.issue()), audit.fix(d.defense()), audit.fix(d.response()), d.risk()))
+                .toList();
+        var evidence = assessment.evidencePlan().stream()
+                .map(e -> new EvidenceItem(audit.fix(e.fact()), audit.fix(e.burden()), audit.fix(e.available()),
+                        audit.fix(e.missing()), audit.fix(e.howToObtain())))
+                .toList();
+        var checklist = assessment.checklist().stream()
+                .map(c -> new ChecklistItem(audit.fix(c.category()), audit.fix(c.item()), audit.fix(c.why()), audit.fix(c.dueHint())))
+                .toList();
+        audit.report();
+        return new CaseAssessment(defenses, evidence, checklist, audit.fix(assessment.riskSummary()));
+    }
+
     /** 收集一次淨化過程命中的詞，最後只寫一行 WARN。 */
     private static final class Auditor {
         private final String scope;
