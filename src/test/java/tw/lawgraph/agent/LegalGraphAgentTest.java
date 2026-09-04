@@ -173,11 +173,27 @@ class LegalGraphAgentTest {
         assertTrue(prompt.contains(longText.substring(0, 20)), "prompt 需帶入原始案情");
     }
 
+    /** 抗辯評估 Action 走技能 prompt、輸出經用語守門；模型漏欄位時兜底為空清單。 */
+    @Test
+    void assessCaseUsesSkillPromptAndSanitizes() {
+        var context = FakeOperationContext.create();
+        var raw = new tw.lawgraph.domain.CaseAssessment(
+                List.of(new tw.lawgraph.domain.DefenseAssessment("i", "合同無效", "合同有效", tw.lawgraph.domain.Risk.low)),
+                null, null, null);
+        context.expectResponse(raw);
+        var answers = new ClarifiedAnswers(List.of(), List.of());
+        var output = agent.assessCase(input, brainstorm, research, analysis, answers, context);
+        assertEquals("契約無效", output.defenses().getFirst().defense());
+        assertEquals(List.of(), output.evidencePlan());
+        assertTrue(context.getLlmInvocations().getFirst().getPrompt().startsWith("Activate skill \"legal-element-analysis\""));
+    }
+
     /** 未勾選任何書狀時直接回空清單，不得呼叫 LLM。 */
     @Test
     void draftDocumentsSkipsLlmWhenNothingSelected() {
         var context = FakeOperationContext.create();
-        var output = agent.draftDocuments(input, brainstorm, research, analysis, context);
+        var output = agent.draftDocuments(input, brainstorm, research, analysis,
+                new tw.lawgraph.domain.CaseAssessment(List.of(), List.of(), List.of(), ""), context);
         assertEquals(new DraftedDocuments(List.of()), output);
         assertTrue(context.getLlmInvocations().isEmpty());
     }
@@ -190,7 +206,8 @@ class LegalGraphAgentTest {
         var docs = new DraftedDocuments(List.of(new DraftedDocument("complaint", "民事起訴狀", "臺灣臺北地方法院",
                 List.of(new DraftedDocument.Party("原告", "甲")), List.of("一、緣被告駕車..."), List.of("證一"), "")));
         context.expectResponse(docs);
-        assertEquals(docs, agent.draftDocuments(docInput, brainstorm, research, analysis, context));
+        assertEquals(docs, agent.draftDocuments(docInput, brainstorm, research, analysis,
+                new tw.lawgraph.domain.CaseAssessment(List.of(), List.of(), List.of(), ""), context));
         assertTrue(context.getLlmInvocations().getFirst().getPrompt().contains("起訴狀"));
     }
 

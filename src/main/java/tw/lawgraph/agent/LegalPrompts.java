@@ -3,6 +3,7 @@ package tw.lawgraph.agent;
 import tools.jackson.databind.json.JsonMapper;
 import tw.lawgraph.domain.AnalysisResult;
 import tw.lawgraph.domain.BrainstormResult;
+import tw.lawgraph.domain.CaseAssessment;
 import tw.lawgraph.domain.CaseInput;
 import tw.lawgraph.domain.ClarificationAssessment;
 import tw.lawgraph.domain.ClarifiedAnswers;
@@ -172,7 +173,7 @@ public final class LegalPrompts {
 
     /** 建立起草勾選書狀的 prompt：僅列勾選狀別、鎖定已驗證引用並要求結構化欄位。 */
     public static String draftDocuments(CaseInput input, BrainstormResult brainstorm, ResearchResult research,
-                                        AnalysisResult analysis) {
+                                        AnalysisResult analysis, CaseAssessment assessment) {
         String requested = String.join("、", input.documents().stream()
                 .map(code -> DocumentTypes.chineseTitle(code) + " (type=" + code + ")")
                 .toList());
@@ -195,7 +196,9 @@ public final class LegalPrompts {
                 <brainstorm>%s</brainstorm>
                 <research>%s</research>
                 <analysis>%s</analysis>
+                <assessment>%s</assessment>
                 Rules:
+                - Use assessment.defenses: 答辯狀 and 準備書狀 must answer every listed defense in order; 起訴狀 pre-empts the defenses marked risk=high. Use assessment.evidencePlan to name the evidence offered or to be 聲請調查.
                 - Quality bar: what a Taiwan litigation attorney would file. Numbered paragraphs 一、二、三（次層（一）（二）、1. 2.）; formal register 「按…」「查…」「次查…」「惟…」「爰依…」「綜上所述」; one legal point per paragraph; cite the article then subsume the facts; no doctrine lectures, no repeating the case narrative, no padding.
                 - Taiwan terminology only (see system rule 6); never borrow mainland-China or other jurisdictions' terms.
                 - Statute and judgment citations must be copied verbatim from research.laws[].ref and research.judgments[].citation; never cite anything not listed there.
@@ -204,7 +207,7 @@ public final class LegalPrompts {
                 - Write document text in %s; keep bilingual identifiers as given.
                 - These are drafts for analysis support, not legal advice; do not add a lawyer's signature.
                 """.formatted(requested, templates, motion, input.text(), toJson(brainstorm), toJson(research), toJson(analysis),
-                input.locale().code());
+                toJson(assessment), input.locale().code());
     }
 
     /** 建立建圖步驟一至三的 prompt，要求識別碼逐字複製。 */

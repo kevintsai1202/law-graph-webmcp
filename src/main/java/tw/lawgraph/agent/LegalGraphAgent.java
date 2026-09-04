@@ -10,6 +10,7 @@ import com.embabel.agent.skills.Skills;
 import org.springframework.beans.factory.annotation.Autowired;
 import tw.lawgraph.domain.AnalysisResult;
 import tw.lawgraph.domain.BrainstormResult;
+import tw.lawgraph.domain.CaseAssessment;
 import tw.lawgraph.domain.CaseInput;
 import tw.lawgraph.domain.ClarificationAssessment;
 import tw.lawgraph.domain.ClarifiedAnswers;
@@ -221,17 +222,28 @@ public class LegalGraphAgent {
         return TaiwanTerminology.sanitize(analysis);
     }
 
-    /** 步驟五：起草使用者勾選的書狀；未勾選任何書狀時直接回空清單，不呼叫 LLM。 */
+    /** 步驟五之二：對造抗辯評估與舉證責任／證據計畫；只用已檢索法源，經台灣用語守門。 */
+    @Action
+    public CaseAssessment assessCase(CaseInput input, BrainstormResult brainstorm, ResearchResult research,
+                                     AnalysisResult analysis, ClarifiedAnswers answers, OperationContext context) {
+        CaseAssessment assessment = llm(context)
+                .withReference(skills)
+                .withSystemPrompt(LegalPrompts.system(input.locale()))
+                .createObject(LegalPrompts.assess(input, brainstorm, research, analysis, answers), CaseAssessment.class);
+        return TaiwanTerminology.sanitize(assessment == null ? new CaseAssessment(null, null, null, null) : assessment);
+    }
+
+    /** 步驟六：起草使用者勾選的書狀；帶入抗辯評估讓答辯／準備書狀能逐項回應。未勾選時不呼叫 LLM。 */
     @Action
     public DraftedDocuments draftDocuments(CaseInput input, BrainstormResult brainstorm, ResearchResult research,
-                                           AnalysisResult analysis, OperationContext context) {
+                                           AnalysisResult analysis, CaseAssessment assessment, OperationContext context) {
         if (input.documents().isEmpty()) {
             return new DraftedDocuments(List.of());
         }
         DraftedDocuments drafted = llm(context)
                 .withReference(skills)
                 .withSystemPrompt(LegalPrompts.system(input.locale()))
-                .createObject(LegalPrompts.draftDocuments(input, brainstorm, research, analysis),
+                .createObject(LegalPrompts.draftDocuments(input, brainstorm, research, analysis, assessment),
                         DraftedDocuments.class);
         // 台灣用語守門：黑名單詞自動替換並記 WARN
         return TaiwanTerminology.sanitize(drafted);

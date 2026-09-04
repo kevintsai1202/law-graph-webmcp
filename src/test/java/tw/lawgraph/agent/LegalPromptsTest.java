@@ -3,11 +3,14 @@ package tw.lawgraph.agent;
 import org.junit.jupiter.api.Test;
 import tw.lawgraph.domain.AnalysisResult;
 import tw.lawgraph.domain.BrainstormResult;
+import tw.lawgraph.domain.CaseAssessment;
 import tw.lawgraph.domain.CaseInput;
 import tw.lawgraph.domain.ClarifiedAnswers;
+import tw.lawgraph.domain.DefenseAssessment;
 import tw.lawgraph.domain.LawRef;
 import tw.lawgraph.domain.Locale;
 import tw.lawgraph.domain.ResearchResult;
+import tw.lawgraph.domain.Risk;
 import tw.lawgraph.domain.UserAnswers;
 
 import java.util.List;
@@ -77,10 +80,11 @@ class LegalPromptsTest {
                 List.of(new LawRef("民法第184條第1項", "Civil Code Art. 184 ¶1", "", "")), List.of(), List.of());
         String prompt = LegalPrompts.draftDocuments(docInput,
                 new BrainstormResult(List.of(), List.of(), List.of(), List.of(), List.of()), research,
-                new AnalysisResult(List.of(), "", List.of(), ""));
+                new AnalysisResult(List.of(), "", List.of(), ""),
+                new CaseAssessment(List.of(), List.of(), List.of(), ""));
         assertTrue(prompt.contains("起訴狀"), "勾選的狀別要以中文名稱要求起草");
         assertTrue(prompt.contains("爭點整理"));
-        assertFalse(prompt.contains("答辯狀"), "未勾選的狀別不得出現在要求清單");
+        assertFalse(prompt.contains("答辯狀 (type="), "未勾選的狀別不得出現在要求清單（assessment 規則行固定提及答辯狀，不在此列）");
         assertTrue(prompt.contains("民法第184條第1項"), "研究結果要原文列入 prompt 供複製");
         assertTrue(prompt.contains("copied verbatim"), "引用只能逐字複製已驗證的法條與判決");
         assertTrue(prompt.contains("issues[]"), "爭點整理要求以表格列（issues[]）輸出");
@@ -92,13 +96,28 @@ class LegalPromptsTest {
         assertTrue(prompt.contains("Taiwan terminology only"));
     }
 
+    /** 書狀 prompt 帶入抗辯評估，要求答辯狀／準備書狀逐項回應對造抗辯。 */
+    @Test
+    void draftPromptIncludesAssessment() {
+        var assessment = new CaseAssessment(
+                List.of(new DefenseAssessment("時效", "已罹於時效", "尚未屆滿", Risk.high)), List.of(), List.of(), "");
+        String prompt = LegalPrompts.draftDocuments(new CaseInput("A hit B", Locale.ZH_TW, List.of("answer"), ""),
+                new BrainstormResult(List.of(), List.of(), List.of(), List.of(), List.of()),
+                new ResearchResult(List.of(), List.of(), List.of()),
+                new AnalysisResult(List.of(), "", List.of(), ""), assessment);
+        assertTrue(prompt.contains("<assessment>"));
+        assertTrue(prompt.contains("已罹於時效"));
+        assertTrue(prompt.contains("assessment.defenses"));
+    }
+
     /** 勾選聲請狀且填寫聲請事項時，prompt 要帶入聲請事項與聲請狀範本；系統 prompt 需含用語與精簡規範。 */
     @Test
     void motionRequestAndRegisterRulesFlowIntoPrompts() {
         var motionInput = new CaseInput("A rear-ended B.", Locale.ZH_TW, java.util.List.of("motion"), "聲請調查行車紀錄器影像");
         String prompt = LegalPrompts.draftDocuments(motionInput,
                 new BrainstormResult(List.of(), List.of(), List.of(), List.of(), List.of()),
-                new ResearchResult(List.of(), List.of(), List.of()), new AnalysisResult(List.of(), "", List.of(), ""));
+                new ResearchResult(List.of(), List.of(), List.of()), new AnalysisResult(List.of(), "", List.of(), ""),
+                new CaseAssessment(List.of(), List.of(), List.of(), ""));
         assertTrue(prompt.contains("聲請調查行車紀錄器影像"));
         assertTrue(prompt.contains("民事聲請○○狀"));
         String system = LegalPrompts.system(Locale.ZH_TW);
