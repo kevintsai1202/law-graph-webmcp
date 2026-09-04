@@ -6,7 +6,7 @@
 
 ![Tool Inspector running focusNode on the rendered graph](docs/images/smoke-graph.png)
 
-> 中文摘要：把 law-powers 法律技能包做成網站。貼入案情或上傳 PDF／Markdown／DOCX，並勾選要產出的項目（關聯圖，及起訴狀、理由狀、陳報狀、準備狀、答辯狀、爭點整理、上訴狀、聲請狀八種書狀）→ 頭腦風暴 → 僅在缺少會影響結論的關鍵事實時詢問使用者，最多追問三輪 → 檢索法規判決 → 涵攝分析 → 起草勾選書狀 → 3D 法律關係圖。附件只在記憶體處理、不保存原檔；掃描型 PDF 頁面會由視覺模型忠實轉錄並標示需人工核對。頁面以 WebMCP 暴露工具供 ChatGPT／Chrome Agent 操作（`startCase` 仍為純文字契約），若產生問題，送出答案仍由人確認。
+> 中文摘要：把 law-powers 法律技能包做成網站。貼入案情或上傳 PDF／Markdown／DOCX，並勾選要產出的項目（關聯圖，及起訴狀、理由狀、陳報狀、準備狀、答辯狀、爭點整理、上訴狀、聲請狀八種書狀）→ 整理案情與爭執點 → 補充案情（等待你的回答，最多追問三輪） → 找法條與判決 → 逐條檢查是否符合法律要件 → 對方會怎麼反駁、誰要負責證明 → 撰寫法院文件 → 畫出法律關係圖。附件只在記憶體處理、不保存原檔；掃描型 PDF 頁面會由視覺模型忠實轉錄並標示需人工核對。頁面以 WebMCP 暴露工具供 ChatGPT／Chrome Agent 操作（`startCase` 仍為純文字契約），若產生問題，送出答案仍由人確認。
 
 ## Why WebMCP
 
@@ -20,13 +20,13 @@ Tools are registered imperatively with `document.modelContext.registerTool()` an
 ## What humans and agents accomplish together
 
 ```text
-Human pastes facts ──► Agent: startCase ──► BRAINSTORM ──► QUESTIONS
-                                                   │          │
-                              Agent: getQuestions / fillQuestions ──► Human reviews and submits
+Human pastes facts ──► Agent: startCase ──► BRAINSTORM ──► QUESTIONS ──► Human reviews/submits
+                                                   │          │                     │
+                              Agent: getQuestions / fillQuestions ◄─────────────────┘
                                                    │
-                        Agent: getCaseStatus ◄─────┘──► RESEARCH (taiwan-legal-db) ──► ANALYSIS ──► DOCUMENTS ──► GRAPH
-                                                                                                │
-                        Agent: getGraphSummary / focusNode / explainEdge / verifyCitation ◄─────┘
+                        Agent: getCaseStatus ◄─────┘──► RESEARCH ──► ANALYSIS ──► ASSESSMENT ──► DOCUMENTS ──► GRAPH
+                                                                          │
+                        Agent: getGraphSummary / focusNode / explainEdge / verifyCitation ◄──────────┘
 ```
 
 Video script skeleton: (1) open the site in ChatGPT, list samples; (2) Agent starts `car-accident`; (3) progress bar advances, page turns to *questions* — Agent calls `getQuestions`, proposes answers with `fillQuestions`, and the human reviews/submits; (4) graph appears; Agent summarises, flies to 民法第184條, explains an edge; (5) Agent verifies a citation against law.moj.gov.tw.
