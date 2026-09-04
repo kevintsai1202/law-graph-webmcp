@@ -369,7 +369,8 @@ button svg { width: 18px; height: 18px; flex: 0 0 auto; }
 /* 當事人準備清單：說明文字、匯出／列印按鈕列、僅列印清單本體 */
 .checklist .lead { color: var(--color-text-sub); margin-bottom: var(--space-3); }
 .checklist .actions { display: flex; gap: var(--space-2); margin-top: var(--space-3); }
-@media print { body * { visibility: hidden; } #checklist-sheet, #checklist-sheet * { visibility: visible; } #checklist-sheet { position: absolute; left: 0; top: 0; width: 100%; } #checklist-sheet .actions { display: none; } }
+/* 僅在按下「清單列印」按鈕時（body 加上 printing-checklist class）才隱藏其他內容，一般 Ctrl+P 不受影響 */
+@media print { body.printing-checklist * { visibility: hidden; } body.printing-checklist #checklist-sheet, body.printing-checklist #checklist-sheet * { visibility: visible; } body.printing-checklist #checklist-sheet { position: absolute; left: 0; top: 0; width: 100%; } body.printing-checklist #checklist-sheet .actions { display: none; } }
 
 /* 失敗頁 */
 .failed { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-5); border-left: 4px solid var(--color-bad); max-width: 720px; }

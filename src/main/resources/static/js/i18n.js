@@ -86,7 +86,9 @@ export const DICT = {
     'risk.high': 'High', 'risk.medium': 'Medium', 'risk.low': 'Low',
     'result.tab.checklist': 'Client checklist', 'checklist.lead': 'Suggested items to prepare before the next meeting or filing.',
     'checklist.category': 'Category', 'checklist.item': 'Item', 'checklist.why': 'Why it matters', 'checklist.due': 'When',
-    'checklist.export': 'Export CSV', 'checklist.print': 'Print', 'checklist.file': 'client-checklist.csv'
+    'checklist.export': 'Export CSV', 'checklist.print': 'Print', 'checklist.file': 'client-checklist.csv',
+    'checklist.cat.evidence': 'Documents & evidence', 'checklist.cat.witness': 'Witnesses',
+    'checklist.cat.procedure': 'Procedure', 'checklist.cat.cost': 'Fees & deadlines', 'checklist.cat.other': 'Other'
   },
   'zh-TW': {
     'app.title': '法律關係圖', 'app.subtitle': '與你的 Agent 一起建構的台灣法律關係圖',
@@ -174,7 +176,9 @@ export const DICT = {
     'risk.high': '高', 'risk.medium': '中', 'risk.low': '低',
     'result.tab.checklist': '你需要準備的東西', 'checklist.lead': '下面是這個案子建議你先準備好的東西，最好在下次跟律師見面或送文件給法院之前備妥。',
     'checklist.category': '分類', 'checklist.item': '項目', 'checklist.why': '為何需要', 'checklist.due': '時限',
-    'checklist.export': '匯出 CSV', 'checklist.print': '列印', 'checklist.file': '當事人準備清單.csv'
+    'checklist.export': '匯出 CSV', 'checklist.print': '列印', 'checklist.file': '當事人準備清單.csv',
+    'checklist.cat.evidence': '證據文件', 'checklist.cat.witness': '人證',
+    'checklist.cat.procedure': '程序事項', 'checklist.cat.cost': '費用與期限', 'checklist.cat.other': '其他'
   }
 };
 

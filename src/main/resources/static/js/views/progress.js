@@ -10,7 +10,7 @@ export function renderCancel(locale) {
 }
 
 /**
- * 五步進度列：當前 active（aria-current="step"）、之前 done；每步帶序號圓點。
+ * 七步進度列：當前 active（aria-current="step"）、之前 done；每步帶序號圓點。
  * busy=true 時 active 步驟顯示旋轉環（系統仍在工作）；等待人工回答時不轉。
  */
 export function renderProgress({ step, busy = true }, locale) {

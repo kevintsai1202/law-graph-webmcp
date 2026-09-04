@@ -144,7 +144,19 @@ export function createApp({ root, client, storage, navigatorLanguage, partialCol
           const items = state.last?.result?.assessment?.checklist || [];
           downloadText(checklistCsv(items, locale), t('checklist.file', locale), 'text/csv;charset=utf-8');
         });
-        el.querySelector('#checklist-print')?.addEventListener('click', () => globalThis.print?.());
+        el.querySelector('#checklist-print')?.addEventListener('click', () => {
+          // 僅列印清單本體：加上 printing-checklist class 限縮 @media print 範圍，
+          // 列印結束（afterprint）或逾時後移除，避免影響一般 Ctrl+P 列印其他頁籤
+          const body = globalThis.document?.body;
+          body?.classList.add('printing-checklist');
+          const cleanup = () => body?.classList.remove('printing-checklist');
+          try {
+            globalThis.addEventListener?.('afterprint', cleanup, { once: true });
+            globalThis.print?.();
+          } finally {
+            globalThis.setTimeout?.(cleanup, 2000);
+          }
+        });
         listeners.forEach((l) => l(state, 'RESULT_RENDERED'));
         break;
       case States.FAILED:

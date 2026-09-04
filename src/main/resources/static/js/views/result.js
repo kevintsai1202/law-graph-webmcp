@@ -69,14 +69,20 @@ function evidenceTable(items, locale) {
   return `<div class="table-wrap"><table class="assess-table"><thead><tr>${head}</tr></thead><tbody>${rows}</tbody></table></div>`;
 }
 
-/** 五個固定分類的顯示順序；模型給出其他字串時歸入「其他」。 */
+/** 五個固定分類的顯示順序（提示詞產出的分組鍵，維持中文字串不變）；模型給出其他字串時歸入「其他」。 */
 const CHECKLIST_CATEGORIES = ['證據文件', '人證', '程序事項', '費用與期限', '其他'];
+/** 分類鍵 → i18n 鍵尾碼，供標題與 CSV 欄位依語系顯示（不影響上面的分組鍵本身）。 */
+const CHECKLIST_CATEGORY_I18N = {
+  '證據文件': 'evidence', '人證': 'witness', '程序事項': 'procedure', '費用與期限': 'cost', '其他': 'other'
+};
+/** 依語系取得分類顯示文字。 */
+const checklistCatLabel = (cat, locale) => t('checklist.cat.' + (CHECKLIST_CATEGORY_I18N[cat] || 'other'), locale);
 
 /** 當事人準備清單：依分類分組的表格，加匯出與列印按鈕。 */
 function checklistTable(items, locale) {
   const groups = new Map(CHECKLIST_CATEGORIES.map((c) => [c, []]));
   (items || []).forEach((i) => groups.get(CHECKLIST_CATEGORIES.includes(i.category) ? i.category : '其他').push(i));
-  const sections = [...groups.entries()].filter(([, rows]) => rows.length).map(([cat, rows]) => `<h3>${esc(cat)}</h3>
+  const sections = [...groups.entries()].filter(([, rows]) => rows.length).map(([cat, rows]) => `<h3>${esc(checklistCatLabel(cat, locale))}</h3>
     <div class="table-wrap"><table class="assess-table checklist-table"><thead><tr><th>${esc(t('checklist.item', locale))}</th><th>${esc(t('checklist.why', locale))}</th><th>${esc(t('checklist.due', locale))}</th></tr></thead>
     <tbody>${rows.map((r) => `<tr><td>${esc(r.item)}</td><td>${esc(r.why)}</td><td>${esc(r.dueHint || '')}</td></tr>`).join('')}</tbody></table></div>`).join('');
   return `<section class="checklist" id="checklist-sheet"><p class="lead">${esc(t('checklist.lead', locale))}</p>${sections}
@@ -84,11 +90,16 @@ function checklistTable(items, locale) {
     <button type="button" id="checklist-print" class="secondary">${esc(t('checklist.print', locale))}</button></div></section>`;
 }
 
-/** 清單 CSV（含 BOM 讓 Excel 正確讀 UTF-8）：分類、項目、為何需要、時限；含雙引號、逗號或換行的欄位依 RFC 4180 轉義。 */
+/** 清單 CSV（含 BOM 讓 Excel 正確讀 UTF-8）：分類、項目、為何需要、時限；含雙引號、逗號或換行的欄位依 RFC 4180 轉義；
+ *  以 = + - @ Tab CR 開頭的欄位另加單引號前綴，避免 LLM 產出內容在 Excel/Sheets 被當公式執行（CSV 公式注入）。 */
 export function checklistCsv(items, locale) {
-  const cell = (v) => { const s = String(v ?? ''); return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
+  const cell = (v) => {
+    let s = String(v ?? '');
+    if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;
+    return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
   const head = [t('checklist.category', locale), t('checklist.item', locale), t('checklist.why', locale), t('checklist.due', locale)].join(',');
-  return '﻿' + [head, ...(items || []).map((i) => [i.category, i.item, i.why, i.dueHint].map(cell).join(','))].join('\n');
+  return '﻿' + [head, ...(items || []).map((i) => [checklistCatLabel(CHECKLIST_CATEGORIES.includes(i.category) ? i.category : '其他', locale), i.item, i.why, i.dueHint].map(cell).join(','))].join('\r\n');
 }
 
 /** 三段文字型成果（brainstorm／research／analysis）的 HTML 產生器；graph 由 graphView 渲染。 */
@@ -130,9 +141,10 @@ const ISSUE_COLUMNS = ['no', 'issue', 'plaintiff', 'plaintiffEvidence', 'defenda
 const CLAIM_COLUMNS = ['no', 'basis', 'claim'];
 const UNDISPUTED_COLUMNS = ['no', 'fact', 'evidence'];
 
-/** CSV 欄位轉義：含逗號、引號、換行者以雙引號包住並將引號加倍。 */
+/** CSV 欄位轉義：以 = + - @ Tab CR 開頭者先加單引號前綴防公式注入，再依含逗號、引號、換行者以雙引號包住並將引號加倍。 */
 function csvCell(value) {
-  const text = String(value ?? '');
+  let text = String(value ?? '');
+  if (/^[=+\-@\t\r]/.test(text)) text = "'" + text;
   return /[",\n\r]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
 }
 

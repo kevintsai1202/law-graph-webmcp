@@ -189,7 +189,12 @@
       "checklist.due": "When",
       "checklist.export": "Export CSV",
       "checklist.print": "Print",
-      "checklist.file": "client-checklist.csv"
+      "checklist.file": "client-checklist.csv",
+      "checklist.cat.evidence": "Documents & evidence",
+      "checklist.cat.witness": "Witnesses",
+      "checklist.cat.procedure": "Procedure",
+      "checklist.cat.cost": "Fees & deadlines",
+      "checklist.cat.other": "Other"
     },
     "zh-TW": {
       "app.title": "\u6CD5\u5F8B\u95DC\u4FC2\u5716",
@@ -373,7 +378,12 @@
       "checklist.due": "\u6642\u9650",
       "checklist.export": "\u532F\u51FA CSV",
       "checklist.print": "\u5217\u5370",
-      "checklist.file": "\u7576\u4E8B\u4EBA\u6E96\u5099\u6E05\u55AE.csv"
+      "checklist.file": "\u7576\u4E8B\u4EBA\u6E96\u5099\u6E05\u55AE.csv",
+      "checklist.cat.evidence": "\u8B49\u64DA\u6587\u4EF6",
+      "checklist.cat.witness": "\u4EBA\u8B49",
+      "checklist.cat.procedure": "\u7A0B\u5E8F\u4E8B\u9805",
+      "checklist.cat.cost": "\u8CBB\u7528\u8207\u671F\u9650",
+      "checklist.cat.other": "\u5176\u4ED6"
     }
   };
   function t(key, locale2) {
@@ -742,10 +752,18 @@
     return `<div class="table-wrap"><table class="assess-table"><thead><tr>${head}</tr></thead><tbody>${rows}</tbody></table></div>`;
   }
   var CHECKLIST_CATEGORIES = ["\u8B49\u64DA\u6587\u4EF6", "\u4EBA\u8B49", "\u7A0B\u5E8F\u4E8B\u9805", "\u8CBB\u7528\u8207\u671F\u9650", "\u5176\u4ED6"];
+  var CHECKLIST_CATEGORY_I18N = {
+    "\u8B49\u64DA\u6587\u4EF6": "evidence",
+    "\u4EBA\u8B49": "witness",
+    "\u7A0B\u5E8F\u4E8B\u9805": "procedure",
+    "\u8CBB\u7528\u8207\u671F\u9650": "cost",
+    "\u5176\u4ED6": "other"
+  };
+  var checklistCatLabel = (cat, locale2) => t("checklist.cat." + (CHECKLIST_CATEGORY_I18N[cat] || "other"), locale2);
   function checklistTable(items, locale2) {
     const groups = new Map(CHECKLIST_CATEGORIES.map((c) => [c, []]));
     (items || []).forEach((i) => groups.get(CHECKLIST_CATEGORIES.includes(i.category) ? i.category : "\u5176\u4ED6").push(i));
-    const sections = [...groups.entries()].filter(([, rows]) => rows.length).map(([cat, rows]) => `<h3>${esc(cat)}</h3>
+    const sections = [...groups.entries()].filter(([, rows]) => rows.length).map(([cat, rows]) => `<h3>${esc(checklistCatLabel(cat, locale2))}</h3>
     <div class="table-wrap"><table class="assess-table checklist-table"><thead><tr><th>${esc(t("checklist.item", locale2))}</th><th>${esc(t("checklist.why", locale2))}</th><th>${esc(t("checklist.due", locale2))}</th></tr></thead>
     <tbody>${rows.map((r) => `<tr><td>${esc(r.item)}</td><td>${esc(r.why)}</td><td>${esc(r.dueHint || "")}</td></tr>`).join("")}</tbody></table></div>`).join("");
     return `<section class="checklist" id="checklist-sheet"><p class="lead">${esc(t("checklist.lead", locale2))}</p>${sections}
@@ -754,11 +772,12 @@
   }
   function checklistCsv(items, locale2) {
     const cell = (v) => {
-      const s = String(v ?? "");
-      return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+      let s = String(v ?? "");
+      if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;
+      return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
     };
     const head = [t("checklist.category", locale2), t("checklist.item", locale2), t("checklist.why", locale2), t("checklist.due", locale2)].join(",");
-    return "\uFEFF" + [head, ...(items || []).map((i) => [i.category, i.item, i.why, i.dueHint].map(cell).join(","))].join("\n");
+    return "\uFEFF" + [head, ...(items || []).map((i) => [checklistCatLabel(CHECKLIST_CATEGORIES.includes(i.category) ? i.category : "\u5176\u4ED6", locale2), i.item, i.why, i.dueHint].map(cell).join(","))].join("\r\n");
   }
   var SECTION_HTML = {
     brainstorm: (b, locale2) => {
@@ -794,7 +813,8 @@
   var CLAIM_COLUMNS = ["no", "basis", "claim"];
   var UNDISPUTED_COLUMNS = ["no", "fact", "evidence"];
   function csvCell(value) {
-    const text = String(value ?? "");
+    let text = String(value ?? "");
+    if (/^[=+\-@\t\r]/.test(text)) text = "'" + text;
     return /[",\n\r]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
   }
   function renderOfficialTable(rows, columns, prefix, locale2) {
@@ -993,7 +1013,17 @@
             const items = state.last?.result?.assessment?.checklist || [];
             downloadText(checklistCsv(items, locale2), t("checklist.file", locale2), "text/csv;charset=utf-8");
           });
-          el.querySelector("#checklist-print")?.addEventListener("click", () => globalThis.print?.());
+          el.querySelector("#checklist-print")?.addEventListener("click", () => {
+            const body = globalThis.document?.body;
+            body?.classList.add("printing-checklist");
+            const cleanup = () => body?.classList.remove("printing-checklist");
+            try {
+              globalThis.addEventListener?.("afterprint", cleanup, { once: true });
+              globalThis.print?.();
+            } finally {
+              globalThis.setTimeout?.(cleanup, 2e3);
+            }
+          });
           listeners.forEach((l) => l(state, "RESULT_RENDERED"));
           break;
         case States.FAILED:

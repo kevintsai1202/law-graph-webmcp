@@ -457,7 +457,42 @@ test('當事人準備清單分頁：依五類分組、匯出與列印按鈕；CS
   assert.match(csv, /證據文件,醫療費用單據正本,證明損害額,起訴前/);
 });
 
-test('沒有清單資料時分頁不出現', () => {
+test('沒有清單資料時分頁不出現（undefined）', () => {
   const status = { status: 'COMPLETED', step: 'GRAPH', result: { analysis: { elements: [] }, graph: { nodes: [], edges: [] } } };
   assert.doesNotMatch(renderResult({ status, activeTab: 'graph', outputs: ['graph'] }, 'zh-TW'), /data-tab="checklist"/);
+});
+
+test('清單為空陣列時分頁也不出現', () => {
+  const status = { status: 'COMPLETED', step: 'GRAPH', result: {
+    analysis: { elements: [] }, assessment: { defenses: [], evidencePlan: [], riskSummary: '', checklist: [] }, graph: { nodes: [], edges: [] } } };
+  assert.doesNotMatch(renderResult({ status, activeTab: 'graph', outputs: ['graph'] }, 'zh-TW'), /data-tab="checklist"/);
+});
+
+test('清單分類標題以 i18n 呈現：en 顯示 Witnesses／Procedure，zh 維持中文不變', () => {
+  const status = { status: 'COMPLETED', step: 'GRAPH', result: {
+    brainstorm: { facts: [], relations: [], issues: [], evidenceNeeds: [] },
+    research: { laws: [], judgments: [], notes: [] },
+    analysis: { elements: [], strategy: '', evidenceGaps: [], disclaimer: '' },
+    assessment: { defenses: [], evidencePlan: [], riskSummary: '', checklist: [
+      { category: '人證', item: 'witness A', why: 'testify', dueHint: 'before hearing' },
+      { category: '程序事項', item: 'POA', why: 'representation', dueHint: 'before first hearing' }
+    ] },
+    graph: { nodes: [], edges: [] } } };
+  const htmlEn = renderResult({ status, activeTab: 'checklist', outputs: ['graph'] }, 'en');
+  assert.match(htmlEn, /<h3>Witnesses<\/h3>/);
+  assert.match(htmlEn, /<h3>Procedure<\/h3>/);
+  const htmlZh = renderResult({ status, activeTab: 'checklist', outputs: ['graph'] }, 'zh-TW');
+  assert.match(htmlZh, /<h3>人證<\/h3>/);
+  assert.match(htmlZh, /<h3>程序事項<\/h3>/);
+});
+
+test('checklistCsv 對 LLM 產出的公式前綴欄位加單引號防 CSV 公式注入，且以 CRLF 分隔列', () => {
+  const csv = checklistCsv([{ category: '其他', item: '=HYPERLINK("x")', why: '-1', dueHint: '+2' }], 'zh-TW');
+  const lines = csv.split('\r\n');
+  assert.equal(lines.length, 2);
+  assert.ok(lines[0].startsWith('﻿分類,項目,為何需要,時限'));
+  assert.match(lines[1], /^其他,"'=HYPERLINK\(""x""\)"|^其他,'=HYPERLINK/);
+  assert.match(lines[1], /'=HYPERLINK/);
+  assert.match(lines[1], /'-1/);
+  assert.match(lines[1], /'\+2/);
 });

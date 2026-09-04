@@ -8,7 +8,7 @@ import tools.jackson.databind.json.JsonMapper;
  * 累計經轉送端點的 LLM 呼叫 usage：prompt／cached／completion／reasoning tokens。
  * 目的：量測供應商端 prompt cache 命中率與 reasoning 佔比，決定要不要調整提示詞前綴。記憶體累計，重啟歸零。
  * 五個欄位改用一般 long 並以 synchronized 保護累計與讀取：若各欄位各自用獨立的 AtomicLong，
- * 併發呼叫時 snapshot() 可能讀到「累計到一半」的組合（例如 cached 已加but prompt 還沒加），
+ * 併發呼叫時 snapshot() 可能讀到「累計到一半」的組合（例如 cached 已累計但 prompt 尚未累計），
  * 導致 cacheHitRatio 短暫失真；用同一把鎖讓每次累計與每次讀取都是原子操作可避免此問題。
  */
 @Component
