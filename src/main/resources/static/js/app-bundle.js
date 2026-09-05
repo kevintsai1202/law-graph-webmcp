@@ -149,6 +149,7 @@
       "usage.exhausted.tip": "This site pauses new analyses once the shared daily token budget is spent. Install the Law Powers skills and run the same analysis with your own AI agent, with no limit.",
       "usage.exhausted.action": "Get Law Powers",
       "quota.count": "Analyses used today:",
+      "input.previewAria": "Case description (click to edit)",
       "quota.loginTip": "Sign in with Google to get {limit} analyses per day.",
       "nav.login": "Sign in with Google",
       "nav.logout": "Sign out",
@@ -338,6 +339,7 @@
       "usage.exhausted.tip": "\u672C\u7AD9\u6BCF\u65E5\u5171\u4EAB token \u984D\u5EA6\u7528\u5B8C\u5F8C\u6703\u66AB\u505C\u65B0\u7684\u5206\u6790\u3002\u4F60\u4E5F\u53EF\u4EE5\u5B89\u88DD Law Powers \u6280\u80FD\uFF0C\u7528\u81EA\u5DF1\u7684 AI Agent \u505A\u540C\u6A23\u7684\u5206\u6790\uFF0C\u4E0D\u53D7\u984D\u5EA6\u9650\u5236\u3002",
       "usage.exhausted.action": "\u53D6\u5F97 Law Powers",
       "quota.count": "\u4ECA\u65E5\u5DF2\u5206\u6790",
+      "input.previewAria": "\u6848\u60C5\u63CF\u8FF0\uFF08\u9EDE\u4E00\u4E0B\u7DE8\u8F2F\uFF09",
       "quota.loginTip": "\u7528 Google \u767B\u5165\u5F8C\u6BCF\u5929\u53EF\u5206\u6790 {limit} \u6B21\u3002",
       "nav.login": "Google \u767B\u5165",
       "nav.logout": "\u767B\u51FA",
@@ -525,7 +527,9 @@
       ${quotaNotice}
       ${authNotice}
       <label class="field-label" for="case-text">${esc(t("input.label", locale2))}</label>
-      <textarea id="case-text" rows="10" aria-describedby="case-hint" placeholder="${esc(t("input.placeholder", locale2))}"></textarea>
+      <textarea id="case-text" rows="3" aria-describedby="case-hint" placeholder="${esc(t("input.placeholder", locale2))}"></textarea>
+      <!-- \u5931\u7126\u4E14\u5DF2\u6709\u5167\u5BB9\u6642\uFF0C\u4EE5\u4E09\u884C\u9810\u89BD\u53D6\u4EE3\u8F38\u5165\u6846\uFF08\u8D85\u9577\u4EE5 \u2026 \u6536\u5C3E\uFF09\uFF1B\u9EDE\u9810\u89BD\u5373\u56DE\u5230\u8F38\u5165\u6846\u4E26\u653E\u5927 -->
+      <button type="button" class="case-preview" id="case-preview" hidden aria-label="${esc(t("input.previewAria", locale2))}"></button>
       <div class="field-hint" id="case-hint"><span id="case-hint-text">${esc(t("input.hint", locale2))}</span><span class="count" id="case-count" aria-live="polite">0 / ${MIN_CHARS}</span></div>
       <div class="upload-field">
         <label class="field-label" for="case-files">${esc(t("input.files", locale2))}</label>
@@ -621,6 +625,30 @@
       btn.disabled = !hasInput || checked().length === 0 || selectedFiles.length > MAX_FILES;
     };
     ta.addEventListener("input", sync);
+    const preview = root.querySelector("#case-preview");
+    const collapse = () => {
+      ta.classList.remove("expanded");
+      if (!preview) return;
+      const text = ta.value.trim();
+      if (text) {
+        preview.textContent = ta.value;
+        preview.hidden = false;
+        ta.hidden = true;
+      }
+    };
+    const expand = () => {
+      if (preview) {
+        preview.hidden = true;
+        ta.hidden = false;
+      }
+      ta.classList.add("expanded");
+    };
+    ta.addEventListener("focus", expand);
+    ta.addEventListener("blur", collapse);
+    if (preview) preview.addEventListener("click", () => {
+      expand();
+      ta.focus?.();
+    });
     files.addEventListener("change", () => {
       selectedFiles = [...files.files];
       syncFiles();

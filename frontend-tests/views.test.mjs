@@ -496,3 +496,45 @@ test('checklistCsv 對 LLM 產出的公式前綴欄位加單引號防 CSV 公式
   assert.match(lines[1], /'-1/);
   assert.match(lines[1], /'\+2/);
 });
+
+test('input 案情框失焦時縮成預覽（超長由 CSS 以 … 截斷），點預覽或聚焦即放大並回到輸入框', () => {
+  const node = (extra = {}) => ({
+    listeners: new Map(), hidden: false, classes: new Set(),
+    classList: { toggle() {}, add(c) { this.owner.classes.add(c); }, remove(c) { this.owner.classes.delete(c); } },
+    addEventListener(type, listener) { this.listeners.set(type, listener); },
+    ...extra
+  });
+  const mk = (extra) => { const n = node(extra); n.classList.owner = n; return n; };
+  let focused = 0;
+  const textarea = mk({ value: '', focus() { focused++; } });
+  const preview = mk({ textContent: '' });
+  const bySelector = {
+    '#case-text': textarea, '#case-preview': preview,
+    '#case-files': mk({ files: [], value: '', click() {} }), '#case-submit': mk({ disabled: true }),
+    '#case-count': mk({ textContent: '' }), '#file-status': mk({ textContent: '' }), '#file-dropzone': mk(), '#file-list': mk({ replaceChildren() {} })
+  };
+  const root = { querySelector: (sel) => bySelector[sel], querySelectorAll: (sel) => sel.includes('outputs') ? [mk({ checked: true, value: 'graph' })] : [] };
+  bindInput(root, { onSubmit() {}, onSample() {} }, 'zh-TW');
+  // 聚焦放大
+  textarea.listeners.get('focus')();
+  assert.ok(textarea.classes.has('expanded'));
+  // 空內容失焦：縮小但不顯示預覽
+  textarea.listeners.get('blur')();
+  assert.ok(!textarea.classes.has('expanded'));
+  assert.equal(preview.hidden, true);
+  assert.equal(textarea.hidden, false);
+  // 有內容失焦：預覽顯示全文（截斷交給 CSS line-clamp），輸入框隱藏
+  textarea.value = '甲於2024年1月駕車撞傷乙，乙住院兩週並支出醫療費十萬元，甲拒絕賠償。';
+  textarea.listeners.get('blur')();
+  assert.equal(preview.hidden, false);
+  assert.equal(textarea.hidden, true);
+  assert.equal(preview.textContent, textarea.value);
+  // 點預覽：回到輸入框、放大並取得焦點
+  preview.listeners.get('click')();
+  assert.equal(preview.hidden, true);
+  assert.equal(textarea.hidden, false);
+  assert.ok(textarea.classes.has('expanded'));
+  assert.equal(focused, 1);
+  // 標記含預覽元素
+  assert.match(renderInput({ samples: [] }, 'zh-TW'), /id="case-preview" hidden/);
+});

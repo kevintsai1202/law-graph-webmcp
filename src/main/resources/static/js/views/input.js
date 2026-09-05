@@ -84,7 +84,9 @@ export function renderInput({ samples = [], semanticAuth = null, usage = null, q
       ${quotaNotice}
       ${authNotice}
       <label class="field-label" for="case-text">${esc(t('input.label', locale))}</label>
-      <textarea id="case-text" rows="10" aria-describedby="case-hint" placeholder="${esc(t('input.placeholder', locale))}"></textarea>
+      <textarea id="case-text" rows="3" aria-describedby="case-hint" placeholder="${esc(t('input.placeholder', locale))}"></textarea>
+      <!-- 失焦且已有內容時，以三行預覽取代輸入框（超長以 … 收尾）；點預覽即回到輸入框並放大 -->
+      <button type="button" class="case-preview" id="case-preview" hidden aria-label="${esc(t('input.previewAria', locale))}"></button>
       <div class="field-hint" id="case-hint"><span id="case-hint-text">${esc(t('input.hint', locale))}</span><span class="count" id="case-count" aria-live="polite">0 / ${MIN_CHARS}</span></div>
       <div class="upload-field">
         <label class="field-label" for="case-files">${esc(t('input.files', locale))}</label>
@@ -198,6 +200,21 @@ export function bindInput(root, { onSubmit, onSample }, locale = 'en') {
     btn.disabled = !hasInput || checked().length === 0 || selectedFiles.length > MAX_FILES;
   };
   ta.addEventListener('input', sync);
+  /** 失焦縮小：有內容就換成三行預覽（CSS line-clamp 以 … 收尾）；取得焦點放大並隱藏預覽。 */
+  const preview = root.querySelector('#case-preview');
+  const collapse = () => {
+    ta.classList.remove('expanded');
+    if (!preview) return;
+    const text = ta.value.trim();
+    if (text) { preview.textContent = ta.value; preview.hidden = false; ta.hidden = true; }
+  };
+  const expand = () => {
+    if (preview) { preview.hidden = true; ta.hidden = false; }
+    ta.classList.add('expanded');
+  };
+  ta.addEventListener('focus', expand);
+  ta.addEventListener('blur', collapse);
+  if (preview) preview.addEventListener('click', () => { expand(); ta.focus?.(); });
   files.addEventListener('change', () => {
     selectedFiles = [...files.files];
     syncFiles();
