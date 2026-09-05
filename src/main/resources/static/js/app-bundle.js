@@ -1092,7 +1092,13 @@
     </article>`;
   }
   function renderRevised(revised, locale2) {
-    return revised?.items?.length ? "" : `<p class="doc-missing">${ICONS.info}<span>${esc(t("doc.missing", locale2))}</span></p>`;
+    const items = revised?.items || [];
+    if (!items.length) return `<p class="doc-missing">${ICONS.info}<span>${esc(t("doc.missing", locale2))}</span></p>`;
+    const head = ["clauseNo", "original", "revised", "rationale"].map((k) => `<th scope="col">${esc(t(k === "clauseNo" ? "finding.clauseNo" : "revised." + k, locale2))}</th>`).join("");
+    const rows = items.map(
+      (i) => `<tr><td>${esc(i.clauseNo)}</td><td class="clause-text">${esc(i.original)}</td><td class="clause-text">${esc(i.revised)}</td><td>${esc(i.rationale)}</td></tr>`
+    ).join("");
+    return `<div class="table-wrap"><table class="assess-table revised-table"><thead><tr>${head}</tr></thead><tbody>${rows}</tbody></table></div><p class="disclaimer">${ICONS.info}<span>${esc(t("doc.disclaimer", locale2))}</span></p>`;
   }
   function renderSections(result, locale2, mode = "case") {
     if (!result) return "";
@@ -2322,6 +2328,17 @@
       lb.appendChild(document.createTextNode(" " + groupName(g)));
       box.appendChild(lb);
     });
+    if (nodes.some((n) => n.group === "clause")) {
+      const legend = document.createElement("div");
+      legend.className = "legend-risks";
+      ["high", "medium", "low"].forEach((r) => {
+        const span = document.createElement("span");
+        span.className = "legend-risk risk-" + r;
+        span.textContent = t("graph.risk." + r, locale);
+        legend.appendChild(span);
+      });
+      box.appendChild(legend);
+    }
     Graph.nodeVisibility(nodeVis).linkVisibility(linkVis);
   }
   function syncFilterCheckboxes() {

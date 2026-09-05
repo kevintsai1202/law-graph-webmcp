@@ -262,9 +262,20 @@ function renderDocument(doc, locale) {
     </article>`;
 }
 
-/** 修訂條款版面（M1 里程碑僅顯示未產生提示，M2 補逐條對照表）。 */
+/** 修訂條款對照表：原條款｜修訂後｜理由。 */
 function renderRevised(revised, locale) {
-  return revised?.items?.length ? '' : `<p class="doc-missing">${ICONS.info}<span>${esc(t('doc.missing', locale))}</span></p>`;
+  const items = revised?.items || [];
+  if (!items.length) return `<p class="doc-missing">${ICONS.info}<span>${esc(t('doc.missing', locale))}</span></p>`;
+  const head = ['clauseNo', 'original', 'revised', 'rationale']
+    .map((k) => `<th scope="col">${esc(t(k === 'clauseNo' ? 'finding.clauseNo' : 'revised.' + k, locale))}</th>`)
+    .join('');
+  const rows = items
+    .map(
+      (i) =>
+        `<tr><td>${esc(i.clauseNo)}</td><td class="clause-text">${esc(i.original)}</td><td class="clause-text">${esc(i.revised)}</td><td>${esc(i.rationale)}</td></tr>`
+    )
+    .join('');
+  return `<div class="table-wrap"><table class="assess-table revised-table"><thead><tr>${head}</tr></thead><tbody>${rows}</tbody></table></div><p class="disclaimer">${ICONS.info}<span>${esc(t('doc.disclaimer', locale))}</span></p>`;
 }
 
 /** 進行中／等待回答時的「目前成果」：案件模式列出 brainstorm → research → analysis，合約模式列出 contract → research → findings；

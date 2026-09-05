@@ -381,6 +381,10 @@ button svg { width: 18px; height: 18px; flex: 0 0 auto; }
 .risk-medium { background: var(--color-warn-soft); color: var(--color-warn); }
 .risk-low { background: var(--color-ok-soft); color: var(--color-ok); }
 
+/* 契約圖圖例：風險色說明列 */
+.legend-risks { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-2); }
+.legend-risk { display: inline-block; padding: 2px 8px; border-radius: var(--radius-pill); font-size: 0.78rem; font-weight: 600; }
+
 /* 當事人準備清單：說明文字、匯出／列印按鈕列、僅列印清單本體 */
 .checklist .lead { color: var(--color-text-sub); margin-bottom: var(--space-3); }
 .checklist .actions { display: flex; gap: var(--space-2); margin-top: var(--space-3); }

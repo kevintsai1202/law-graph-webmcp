@@ -354,6 +354,18 @@ function buildFilters(nodes) {
     cb.addEventListener('change', () => { filterState[g] = cb.checked; Graph.nodeVisibility(nodeVis).linkVisibility(linkVis); });
     lb.appendChild(cb); lb.appendChild(document.createTextNode(' ' + groupName(g))); box.appendChild(lb);
   });
+  // 契約圖：附風險色說明（只在有 clause 節點時）
+  if (nodes.some((n) => n.group === 'clause')) {
+    const legend = document.createElement('div');
+    legend.className = 'legend-risks';
+    ['high', 'medium', 'low'].forEach((r) => {
+      const span = document.createElement('span');
+      span.className = 'legend-risk risk-' + r;
+      span.textContent = t('graph.risk.' + r, locale);
+      legend.appendChild(span);
+    });
+    box.appendChild(legend);
+  }
   Graph.nodeVisibility(nodeVis).linkVisibility(linkVis);
 }
 /** 讓篩選器 checkbox 與 filterState 同步（程式化 filter 後呼叫）。 */

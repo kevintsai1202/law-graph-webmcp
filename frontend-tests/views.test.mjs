@@ -612,6 +612,15 @@ test('合約模式分頁順序與風險清單', () => {
   assert.match(html, /整體風險/); assert.match(html, /先改第二條/);
   assert.match(html, /勞動基準法第24條/);
 });
+
+test('合約 revised 面板顯示原條款與修訂後對照；graph 分頁在有圖時出現', () => {
+  const status = { locale: 'zh-TW', mode: 'contract', result: { compliance: { findings: [] }, research: { laws: [], judgments: [] },
+    revised: { items: [{ clauseNo: '第二條', original: '舊', revised: '新<b>', rationale: '依勞基法24' }] }, graph: { nodes: [], edges: [] } } };
+  const html = renderResult({ status, outputs: ['revised'], mode: 'contract', activeTab: 'doc-revised' }, 'zh-TW');
+  assert.match(html, /data-tab="doc-revised"[^>]*>修訂版條款/);
+  assert.match(html, /<th scope="col">原條款<\/th>/); assert.match(html, /新&lt;b&gt;/);
+  assert.match(html, /data-tab="graph"/);
+});
 test('riskFilter 只顯示該級條款', () => {
   const html = renderResult({ status: contractStatus, outputs: [], mode: 'contract', riskFilter: 'high' }, 'zh-TW');
   assert.match(html, /<tr data-risk="high">/); assert.doesNotMatch(html, /<tr data-risk="medium">/);
