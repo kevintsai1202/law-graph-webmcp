@@ -45,19 +45,19 @@ public final class StatusMapper {
         }
     }
 
-    /** 合約模式：COMPLETED 需有 ComplianceReport；有 outcome（M2）就一併附上圖並以 GRAPH 為步驤，否則以 SUMMARY 為步驤。 */
+    /** 合約模式：COMPLETED 需有 ComplianceReport 與 outcome（M2 起圖為必要產物），否則視為失敗；成功一律以 GRAPH 為步驤。 */
     private static CaseStatus mapContract(StatusSnapshot s) {
         String step = deriveStep(s);
         switch (s.code()) {
             case COMPLETED -> {
                 if (s.compliance() == null) return failed(s, "COMPLETED_WITHOUT_REPORT", "process completed without a compliance report", step);
+                if (s.outcome() == null) return failed(s, "COMPLETED_WITHOUT_GRAPH", "process completed without a graph", step);
                 List<String> notes = new ArrayList<>(s.research() == null ? List.of() : s.research().notes());
-                if (s.outcome() != null) notes.addAll(s.outcome().notes());
+                notes.addAll(s.outcome().notes());
                 ResearchResult research = s.research() == null ? null : s.research().withNotes(notes);
-                String completedStep = s.outcome() == null ? "SUMMARY" : "GRAPH";
-                return new CaseStatus(s.caseId(), "COMPLETED", completedStep, s.locale().code(), null,
-                        new CaseStatus.Result(null, research, null, null, null, s.outcome() == null ? null : s.outcome().graph(),
-                                s.contract(), s.findings(), s.compliance()), null, CaseMode.CONTRACT);
+                return new CaseStatus(s.caseId(), "COMPLETED", "GRAPH", s.locale().code(), null,
+                        new CaseStatus.Result(null, research, null, null, null, s.outcome().graph(),
+                                s.contract(), s.findings(), s.compliance(), s.revised()), null, CaseMode.CONTRACT);
             }
             case WAITING -> {
                 return new CaseStatus(s.caseId(), "WAITING", "QUESTIONS", s.locale().code(), s.pendingQuestions(), partialContract(s), null, CaseMode.CONTRACT);
@@ -81,10 +81,10 @@ public final class StatusMapper {
                 snapshot.assessment(), documents(snapshot), null);
     }
 
-    /** 合約模式中間成果：已產出的 contract／research／findings 逐段公開；尚無任何產物則回 null。 */
+    /** 合約模式中間成果：已產出的 contract／research／findings／revised 逐段公開；尚無任何產物則回 null。 */
     static CaseStatus.Result partialContract(StatusSnapshot s) {
         if (s.contract() == null && s.research() == null && s.findings() == null) return null;
-        return new CaseStatus.Result(null, s.research(), null, null, null, null, s.contract(), s.findings(), s.compliance());
+        return new CaseStatus.Result(null, s.research(), null, null, null, null, s.contract(), s.findings(), s.compliance(), s.revised());
     }
 
     /** 已起草的書狀清單；draftDocuments 尚未執行時為 null。 */
@@ -95,7 +95,7 @@ public final class StatusMapper {
     /** 依 blackboard 已產生的最後成果推導目前步驤；兩模式各一套。 */
     static String deriveStep(StatusSnapshot snapshot) {
         if (snapshot.isContract()) {
-            if (snapshot.compliance() != null) return "GRAPH";
+            if (snapshot.compliance() != null || snapshot.revised() != null) return "GRAPH";
             if (snapshot.findings() != null) return "SUMMARY";
             if (snapshot.research() != null) return "REVIEW";
             if (snapshot.answers() != null) return "RESEARCH";

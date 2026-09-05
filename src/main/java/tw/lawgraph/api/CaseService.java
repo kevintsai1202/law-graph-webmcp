@@ -30,6 +30,7 @@ import tw.lawgraph.domain.GraphOutcome;
 import tw.lawgraph.domain.Locale;
 import tw.lawgraph.domain.Question;
 import tw.lawgraph.domain.ResearchResult;
+import tw.lawgraph.domain.RevisedClauses;
 import tw.lawgraph.domain.UserAnswers;
 
 import java.time.Clock;
@@ -175,7 +176,8 @@ public class CaseService {
                 modes.getOrDefault(caseId, CaseMode.CASE),
                 blackboard.last(ContractBrainstorm.class),
                 blackboard.last(ClauseFindings.class),
-                blackboard.last(ComplianceReport.class));
+                blackboard.last(ComplianceReport.class),
+                blackboard.last(RevisedClauses.class));
     }
 
     /** 決定回傳給前端的錯誤碼：逾時優先，其次辨識條款批次審查失敗。 */
