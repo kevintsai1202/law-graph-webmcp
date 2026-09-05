@@ -135,23 +135,52 @@ public class CaseService {
      * model 為 API 層已過濾的測試模型覆寫（空白用預設）。
      */
     public CaseStatus start(String text, Locale locale, List<String> documents, String motionRequest, String model) {
-        return launch(LegalGraphAgent.AGENT_NAME, CaseMode.CASE, locale, new CaseInput(text, locale, documents, motionRequest, model));
+        return start(text, locale, documents, motionRequest, CaseStartContext.anonymous(model));
     }
 
-    /** 啟動合約審查流程（ContractReviewAgent）。 */
+    /** 啟動案件流程並帶入統計脈絡（身分與模型），供 case_event 記錄。 */
+    public CaseStatus start(String text, Locale locale, List<String> documents, String motionRequest, CaseStartContext context) {
+        return launch(LegalGraphAgent.AGENT_NAME, CaseMode.CASE, locale,
+                new CaseInput(text, locale, documents, motionRequest, context.model()), context);
+    }
+
+    /** 相容舊呼叫端：無統計脈絡的合約審查。 */
     public CaseStatus startContract(ContractInput input) {
-        return launch(ContractReviewAgent.AGENT_NAME, CaseMode.CONTRACT, input.locale(), input);
+        return startContract(input, CaseStartContext.anonymous(input.model()));
     }
 
-    /** 依 agent 名稱建立流程並啟動；記住語系與模式。 */
-    private CaseStatus launch(String agentName, String mode, Locale locale, Object input) {
+    /** 啟動合約審查流程（ContractReviewAgent）並帶入統計脈絡。 */
+    public CaseStatus startContract(ContractInput input, CaseStartContext context) {
+        return launch(ContractReviewAgent.AGENT_NAME, CaseMode.CONTRACT, input.locale(), input, context);
+    }
+
+    /**
+     * 依 agent 名稱建立流程並啟動；記住語系與模式。
+     * case_event 的啟動列必須在 platform.start 之前寫入：流程一旦開跑，token 統計與終態回寫都可能立刻發生，
+     * 晚寫會讓那些更新找不到列（token 遺失、快速失敗的案件永遠停在 RUNNING）。
+     */
+    private CaseStatus launch(String agentName, String mode, Locale locale, Object input, CaseStartContext context) {
         Agent agent = platform.agents().stream().filter(c -> agentName.equals(c.getName()))
                 .findFirst().orElseThrow(() -> new IllegalStateException(agentName + " not deployed"));
         AgentProcess process = platform.createAgentProcessFrom(agent, new ProcessOptions(), input);
         locales.put(process.getId(), locale);
         modes.put(process.getId(), mode);
+        recordStart(process.getId(), mode, context);
         platform.start(process);
         return status(process.getId());
+    }
+
+    /** 寫入案件啟動事件（同時是當日配額計數依據）；統計失敗不得讓已建立的案件無法啟動。 */
+    private void recordStart(String caseId, String mode, CaseStartContext context) {
+        try {
+            events.recordStart(new tw.lawgraph.usage.CaseEvent(caseId,
+                    java.time.LocalDate.ofInstant(clock.instant(), DailyCaseQuota.ZONE), mode,
+                    context.identityKind(), context.identityHash(),
+                    context.model() == null || context.model().isBlank() ? "default" : context.model(),
+                    "RUNNING", 0, 0, clock.instant(), null));
+        } catch (RuntimeException exception) {
+            LOGGER.warn("無法記錄案件啟動事件 caseId={} 錯誤類型={}", caseId, exception.getClass().getSimpleName());
+        }
     }
 
     /** 讀取案件目前狀態。 */

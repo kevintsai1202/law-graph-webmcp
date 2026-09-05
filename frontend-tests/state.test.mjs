@@ -26,3 +26,12 @@ test('RESET 與 GO_HOME 回 HOME', () => {
   assert.deepEqual(reduce({ view: States.RESULT, caseId: 'p1', last: {}, mode: 'case' }, { type: 'RESET' }), initialState);
   assert.equal(reduce({ view: States.INPUT, caseId: null, last: null, mode: 'contract' }, { type: 'GO_HOME' }).view, States.HOME);
 });
+
+test('SHOW_STATS 進入統計頁但保留 mode 與 caseId，離開後才能回到原案件', () => {
+  const running = reduce(initialState, { type: 'START', caseId: 'c1', mode: 'contract' });
+  const stats = reduce(running, { type: 'SHOW_STATS' });
+  assert.equal(stats.view, 'STATS');
+  assert.equal(stats.caseId, 'c1');
+  assert.equal(stats.mode, 'contract');
+  assert.equal(reduce(initialState, { type: 'SHOW_STATS' }).view, 'STATS');
+});

@@ -186,4 +186,42 @@ class CaseServiceTest {
         when(process.getStatus()).thenReturn(AgentProcessStatusCode.KILLED);
         assertEquals("FAILED", finishing.status("p1").status());
     }
+
+    /** 啟動事件必須在 platform.start 之前寫入，否則流程一開跑的 token／終態回寫會找不到列。 */
+    @Test void recordsStartEventBeforeStartingProcess() {
+        var events = mock(UsageEventStore.class);
+        var starting = new CaseService(platform, new StepWatchdog(Duration.ofSeconds(300)), events);
+
+        starting.start("A hit B", Locale.ZH_TW, List.of(), "", new CaseStartContext("member", "g-1", "gpt-5.4-nano"));
+
+        var order = org.mockito.Mockito.inOrder(events, platform);
+        order.verify(events).recordStart(org.mockito.ArgumentMatchers.argThat(e ->
+                "p1".equals(e.caseId()) && "case".equals(e.mode()) && "member".equals(e.identityKind())
+                        && "g-1".equals(e.identityHash()) && "gpt-5.4-nano".equals(e.model())
+                        && "RUNNING".equals(e.status()) && e.startedAt() != null && e.finishedAt() == null));
+        order.verify(platform).start(process);
+    }
+
+    /** 未帶統計脈絡的舊呼叫端仍會留下事件，模型以 default 記錄。 */
+    @Test void legacyStartStillRecordsAnonymousEvent() {
+        var events = mock(UsageEventStore.class);
+        var starting = new CaseService(platform, new StepWatchdog(Duration.ofSeconds(300)), events);
+
+        starting.start("A hit B", Locale.EN, List.of());
+
+        verify(events).recordStart(org.mockito.ArgumentMatchers.argThat(e ->
+                "anonymous".equals(e.identityKind()) && "unknown".equals(e.identityHash())
+                        && "default".equals(e.model())));
+    }
+
+    /** case_event 寫入失敗不得讓案件無法啟動（統計不能擋流程）。 */
+    @Test void startSurvivesEventStoreFailure() {
+        var events = mock(UsageEventStore.class);
+        org.mockito.Mockito.doThrow(new IllegalStateException("db down"))
+                .when(events).recordStart(any(tw.lawgraph.usage.CaseEvent.class));
+        var starting = new CaseService(platform, new StepWatchdog(Duration.ofSeconds(300)), events);
+
+        assertEquals("p1", starting.start("A hit B", Locale.EN, List.of()).caseId());
+        verify(platform).start(process);
+    }
 }

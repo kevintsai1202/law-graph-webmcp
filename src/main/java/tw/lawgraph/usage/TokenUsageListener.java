@@ -42,7 +42,14 @@ public class TokenUsageListener implements AgenticEventListener {
             long completion = usage.getCompletionTokens() == null ? 0 : usage.getCompletionTokens();
             // observeProcessUsage 回的是相對上次觀測的增量，case_event 需累加增量而非累計值
             long[] delta = budget.observeProcessUsage(process.getId(), prompt, completion);
-            if (delta[0] + delta[1] > 0) events.recordTokens(process.getId(), delta[0], delta[1]);
+            if (delta[0] + delta[1] > 0) {
+                try {
+                    events.recordTokens(process.getId(), delta[0], delta[1]);
+                } catch (RuntimeException exception) {
+                    // case_event 回寫失敗只影響統計，不能讓後續紀錄與流程受影響
+                    LOGGER.warn("無法回寫 token 用量 caseId={} 錯誤類型={}", process.getId(), exception.getClass().getSimpleName());
+                }
+            }
             LOGGER.debug("token usage process={} prompt={} completion={} todayUsed={}", process.getId(),
                     prompt, completion, budget.usedTokens());
         } catch (RuntimeException exception) {

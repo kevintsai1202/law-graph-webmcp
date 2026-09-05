@@ -214,6 +214,28 @@
       "nav.login": "Sign in with Google",
       "nav.logout": "Sign out",
       "nav.loginBenefit": "Signed-in users get {limit} analyses per day",
+      "nav.stats": "Stats",
+      "stats.title": "Usage statistics",
+      "stats.lead": "Aggregated numbers only: how many analyses ran and how many tokens they used. No case content and no personal data.",
+      "stats.todayCases": "Analyses today",
+      "stats.todayTokens": "Tokens today",
+      "stats.members": "Signed-in members",
+      "stats.activeToday": "active today",
+      "stats.member": "members",
+      "stats.anonymous": "anonymous",
+      "stats.loading": "Loading\u2026",
+      "stats.error": "Statistics could not be loaded right now. Please try again later.",
+      "stats.chart.cases": "Analyses per day",
+      "stats.chart.tokens": "Tokens per day",
+      "stats.col.day": "Date",
+      "stats.col.total": "Analyses",
+      "stats.col.case": "Case",
+      "stats.col.contract": "Contract",
+      "stats.col.completed": "Completed",
+      "stats.col.failed": "Failed",
+      "stats.col.prompt": "Prompt",
+      "stats.col.completion": "Completion",
+      "stats.col.tokens": "Total tokens",
       "license.banner.title": "License",
       "license.banner.prefix": ": this site is free for everyone to use, except ",
       "license.banner.suffix": " (Meridian International Law Firm). We owe this service to them.",
@@ -464,6 +486,28 @@
       "nav.login": "Google \u767B\u5165",
       "nav.logout": "\u767B\u51FA",
       "nav.loginBenefit": "\u767B\u5165\u5F8C\u6BCF\u5929\u53EF\u5206\u6790 {limit} \u6B21",
+      "nav.stats": "\u4F7F\u7528\u7D71\u8A08",
+      "stats.title": "\u4F7F\u7528\u7D71\u8A08",
+      "stats.lead": "\u53EA\u5448\u73FE\u5F59\u7E3D\u6578\u5B57\uFF1A\u5206\u6790\u6B21\u6578\u8207 token \u7528\u91CF\u3002\u4E0D\u542B\u4EFB\u4F55\u6848\u60C5\u5167\u5BB9\u8207\u500B\u4EBA\u8CC7\u6599\u3002",
+      "stats.todayCases": "\u4ECA\u65E5\u5206\u6790\u6B21\u6578",
+      "stats.todayTokens": "\u4ECA\u65E5 token \u7528\u91CF",
+      "stats.members": "\u767B\u5165\u6210\u54E1\u6578",
+      "stats.activeToday": "\u4ECA\u65E5\u6D3B\u8E8D",
+      "stats.member": "\u6703\u54E1",
+      "stats.anonymous": "\u8A2A\u5BA2",
+      "stats.loading": "\u8F09\u5165\u4E2D\u2026",
+      "stats.error": "\u76EE\u524D\u7121\u6CD5\u8F09\u5165\u7D71\u8A08\u8CC7\u6599\uFF0C\u8ACB\u7A0D\u5F8C\u518D\u8A66\u3002",
+      "stats.chart.cases": "\u6BCF\u65E5\u5206\u6790\u6B21\u6578",
+      "stats.chart.tokens": "\u6BCF\u65E5 token \u7528\u91CF",
+      "stats.col.day": "\u65E5\u671F",
+      "stats.col.total": "\u5206\u6790\u6B21\u6578",
+      "stats.col.case": "\u6848\u4EF6",
+      "stats.col.contract": "\u5408\u7D04",
+      "stats.col.completed": "\u5B8C\u6210",
+      "stats.col.failed": "\u5931\u6557",
+      "stats.col.prompt": "Prompt",
+      "stats.col.completion": "Completion",
+      "stats.col.tokens": "Token \u5408\u8A08",
       "license.banner.title": "\u4F7F\u7528\u6388\u6B0A",
       "license.banner.prefix": "\uFF1A\u672C\u7AD9\u7121\u511F\u6388\u6B0A\u6240\u6709\u4EBA\u81EA\u7531\u4F7F\u7528 \u2014\u2014 \u552F ",
       "license.banner.suffix": " \u9664\u5916\u3002\u62DC\u4ED6\u5011\u6240\u8CDC\uFF0C\u624D\u6709\u9019\u500B\u670D\u52D9\u7684\u8A95\u751F\u3002",
@@ -517,7 +561,7 @@
   }
 
   // src/main/resources/static/js/state.js
-  var States = Object.freeze({ HOME: "HOME", INPUT: "INPUT", RUNNING: "RUNNING", QUESTIONS: "QUESTIONS", RESULT: "RESULT", FAILED: "FAILED" });
+  var States = Object.freeze({ HOME: "HOME", INPUT: "INPUT", RUNNING: "RUNNING", QUESTIONS: "QUESTIONS", RESULT: "RESULT", FAILED: "FAILED", STATS: "STATS" });
   var VIEW_BY_STATUS = { RUNNING: States.RUNNING, WAITING: States.QUESTIONS, COMPLETED: States.RESULT, FAILED: States.FAILED };
   var normalizeMode = (mode) => mode === "contract" ? "contract" : "case";
   var initialState = Object.freeze({ view: States.HOME, caseId: null, last: null, mode: null });
@@ -536,6 +580,9 @@
           last: event.status,
           mode: event.status.mode ? normalizeMode(event.status.mode) : state.mode
         };
+      // 統計頁為唯讀分頁：保留 mode／caseId，離開後才能回到原本的案件畫面
+      case "SHOW_STATS":
+        return { ...state, view: States.STATS };
       case "RESET":
         return { ...initialState };
       default:
@@ -1191,13 +1238,39 @@
     });
   }
 
+  // src/main/resources/static/js/views/stats.js
+  function bars(rows, pick, labelKey, locale2) {
+    const max = Math.max(1, ...rows.map(pick));
+    return `<div class="bars" role="img" aria-label="${esc(t(labelKey, locale2))}">${rows.map((r) => `<div class="bar-row"><span class="bar-day">${esc(r.day.slice(5))}</span><span class="bar" style="width:${Math.round(pick(r) / max * 100)}%" aria-label="${esc(r.day)} ${pick(r).toLocaleString(locale2)}"></span><span class="bar-value">${pick(r).toLocaleString(locale2)}</span></div>`).join("")}</div>`;
+  }
+  function renderStats(data, locale2) {
+    if (!data) return `<section class="stats card"><p role="status">${esc(t("stats.loading", locale2))}</p></section>`;
+    if (data.error) return `<section class="stats card" role="alert"><p>${esc(t("stats.error", locale2))}</p></section>`;
+    const asc = [...data.days || []].sort((a, b) => a.day.localeCompare(b.day)), desc = [...asc].reverse(), today = data.today || desc[0] || {};
+    const n = (v) => Number(v || 0).toLocaleString(locale2);
+    const tile = (title, big, sub) => `<div class="stat-tile"><span class="stat-title">${esc(title)}</span><strong class="stat-big">${esc(big)}</strong><span class="stat-sub">${esc(sub)}</span></div>`;
+    const head = ["day", "total", "case", "contract", "completed", "failed", "prompt", "completion", "tokens"].map((k) => `<th scope="col">${esc(t("stats.col." + k, locale2))}</th>`).join("");
+    const rows = desc.map((r) => `<tr data-day="${esc(r.day)}"><td>${esc(r.day)}</td><td>${n(r.total)}</td><td>${n(r.byMode?.case)}</td><td>${n(r.byMode?.contract)}</td><td>${n(r.completed)}</td><td>${n(r.failed)}</td><td>${n(r.promptTokens)}</td><td>${n(r.completionTokens)}</td><td>${n(r.totalTokens)}</td></tr>`).join("");
+    return `<section class="stats"><h2>${esc(t("stats.title", locale2))}</h2><p class="home-lead">${esc(t("stats.lead", locale2))}</p>
+    <div id="stats-today" class="stat-tiles">
+      ${tile(t("stats.todayCases", locale2), n(today.total), `${t("home.case.title", locale2)} ${n(today.byMode?.case)} \xB7 ${t("home.contract.title", locale2)} ${n(today.byMode?.contract)} \xB7 ${t("stats.member", locale2)} ${n(today.byIdentity?.member)}`)}
+      ${tile(t("stats.todayTokens", locale2), n(today.totalTokens), `prompt ${n(today.promptTokens)} \xB7 completion ${n(today.completionTokens)}`)}
+      ${tile(t("stats.members", locale2), n(data.members?.total), `${t("stats.activeToday", locale2)} ${n(data.members?.activeToday)}`)}
+    </div>
+    <div class="card"><h3>${esc(t("stats.chart.cases", locale2))}</h3>${bars(asc, (r) => Number(r.total || 0), "stats.chart.cases", locale2)}</div>
+    <div class="card"><h3>${esc(t("stats.chart.tokens", locale2))}</h3>${bars(asc, (r) => Number(r.totalTokens || 0), "stats.chart.tokens", locale2)}</div>
+    <div class="card table-wrap"><table class="assess-table stats-table"><thead><tr>${head}</tr></thead><tbody>${rows}</tbody></table></div></section>`;
+  }
+
   // src/main/resources/static/js/router.js
   var MODES = Object.freeze(["case", "contract"]);
   function parseHash(hash) {
     const path = String(hash || "").replace(/^#\/?/, "");
+    if (path === "stats") return { view: "STATS", mode: null };
     return MODES.includes(path) ? { view: "INPUT", mode: path } : { view: "HOME", mode: null };
   }
   function hashFor(state) {
+    if (state?.view === "STATS") return "#/stats";
     return state?.view !== "HOME" && MODES.includes(state?.mode) ? `#/${state.mode}` : "#/";
   }
 
@@ -1234,6 +1307,7 @@
     let semanticAuth = null;
     let usage = null;
     let quota = null;
+    let stats = null;
     const hadAuthCallback = consumeAuthCallbackQuery();
     let authRedirected = hadAuthCallback;
     async function refreshAuthStatus() {
@@ -1351,6 +1425,9 @@
           });
           listeners.forEach((l) => l(state, "RESULT_RENDERED"));
           break;
+        case States.STATS:
+          mount(el, renderStats(stats, locale2));
+          break;
         case States.FAILED:
           mount(el, renderFailed(state.last?.error, locale2));
           el.querySelector("#retry").addEventListener("click", reset);
@@ -1372,6 +1449,17 @@
     async function selectMode(next) {
       dispatch({ type: "SELECT_MODE", mode: next });
       samples = await Promise.resolve().then(() => client.samples(locale2, mode())).catch(() => []);
+      render2();
+    }
+    async function showStats() {
+      dispatch({ type: "SHOW_STATS" });
+      stats = null;
+      render2();
+      try {
+        stats = await client.stats(30);
+      } catch (e) {
+        stats = { error: e?.message || "ERROR" };
+      }
       render2();
     }
     function goHome() {
@@ -1714,6 +1802,8 @@
         activeTab = savedMode === "contract" ? "findings" : selectedOutputs.includes("graph") ? "graph" : "doc-" + selectedOutputs[0];
         dispatch({ type: "START", caseId: saved, mode: savedMode });
         beginPolling(saved, { resumed: true });
+      } else if (initial.view === "STATS") {
+        await showStats();
       } else if (initial.view === "INPUT") {
         await selectMode(initial.mode);
       } else render2();
@@ -1723,6 +1813,11 @@
       hashListenerBound = true;
       globalThis.addEventListener?.("hashchange", () => {
         const parsed = parseHash(locationLike?.hash);
+        if (parsed.view === "STATS") return showStats();
+        if (state.view === States.STATS && state.caseId && state.last && state.last.status !== "COMPLETED" && state.last.status !== "FAILED" && (parsed.view === "INPUT" || parsed.view === "HOME")) {
+          dispatch({ type: "STATUS", status: state.last });
+          return void 0;
+        }
         if (state.view === States.HOME && parsed.view === "INPUT") return selectMode(parsed.mode);
         if (parsed.view === "HOME" && state.view !== States.HOME) return leaveToHome();
         if (state.view === States.INPUT && parsed.view === "INPUT" && parsed.mode !== mode()) return selectMode(parsed.mode);
@@ -1763,6 +1858,8 @@
       setLocale: setLocale2,
       selectMode,
       goHome,
+      showStats,
+      getStats: (days = 30) => client.stats(days),
       getMode: mode,
       setRiskFilter: (r) => {
         riskFilter = r;
@@ -1851,6 +1948,8 @@
       usage: () => entry("/api/usage"),
       /** 呼叫端今日案件配額（已用／上限／剩餘）。 */
       quota: () => entry("/api/quota"),
+      /** 近 N 日站台使用統計（案件數、tokens、成員數）。 */
+      stats: (days = 30) => entry("/api/stats?days=" + encodeURIComponent(days)),
       /** 目前登入者（Google）；未登入 loggedIn=false。 */
       me: () => entry("/api/me"),
       /** 登出：Spring Security 的 POST /logout 會 302 回首頁，這裡只需送出請求。 */
@@ -2685,17 +2784,17 @@
       name: "getUsageStats",
       phase: "base",
       annotations: { readOnlyHint: true },
-      description: "Read this page usage statistics for the last N days. Not available yet in this release.",
+      description: "Read aggregated site usage for the last N days: analyses per day, tokens and member counts.",
       inputSchema: S({ days: { type: "integer", minimum: 1, maximum: 90, description: "How many days back to summarise." } })
     }
   ];
   var TOOL_NAMES_BY_VIEW = Object.freeze({
-    // getUsageStats 保留在 TOOL_DEFS，但 M3 接上實際用量前不對任何頁面曝光
-    HOME: Object.freeze(["listCapabilities", "selectCapability", "startCase", "startContractReview", "listSampleCases", "verifyCitation"]),
-    INPUT: Object.freeze(["listSampleCases", "startCase", "setOutputSelection", "getOutputOptions", "getInputForm", "verifyCitation", "listCapabilities", "selectCapability", "startContractReview"]),
+    // getUsageStats 為唯讀彙總統計，於 HOME／INPUT／RESULT 曝光（流程進行中的頁面不加，避免干擾）
+    HOME: Object.freeze(["listCapabilities", "selectCapability", "startCase", "startContractReview", "listSampleCases", "verifyCitation", "getUsageStats"]),
+    INPUT: Object.freeze(["listSampleCases", "startCase", "setOutputSelection", "getOutputOptions", "getInputForm", "verifyCitation", "listCapabilities", "selectCapability", "startContractReview", "getUsageStats"]),
     RUNNING: Object.freeze(["getCaseStatus", "resetCase"]),
     QUESTIONS: Object.freeze(["getCaseStatus", "getQuestions", "fillQuestions", "resetCase"]),
-    RESULT: Object.freeze(["getCaseStatus", "getResultTabs", "getAnalysis", "getGraphSummary", "focusNode", "filterGraph", "explainEdge", "verifyCitation", "resetCase", "getComplianceReport", "filterFindingsByRisk"]),
+    RESULT: Object.freeze(["getCaseStatus", "getResultTabs", "getAnalysis", "getGraphSummary", "focusNode", "filterGraph", "explainEdge", "verifyCitation", "resetCase", "getComplianceReport", "filterFindingsByRisk", "getUsageStats"]),
     FAILED: Object.freeze(["getCaseStatus", "resetCase"])
   });
   function truncate(obj, max = 1500) {
@@ -2921,8 +3020,11 @@
         app2.setRiskFilter?.(risk);
         return { ok: true, risk };
       },
-      /** 使用量統計於下一個里程碑接上，本版先明確回不可用。 */
-      getUsageStats: async () => ({ ok: false, error: "NOT_AVAILABLE", message: "Usage statistics arrive in the next release." })
+      /** 近 N 日站台使用統計（1～90 日，預設 30）；應用層未提供時明確回不可用。 */
+      getUsageStats: async ({ days } = {}) => truncate(
+        await app2.getStats?.(Math.min(90, Math.max(1, Number(days) || 30))) ?? { ok: false, error: "NOT_AVAILABLE" },
+        4e3
+      )
     };
     let syncQueue = Promise.resolve();
     function syncForState(view) {

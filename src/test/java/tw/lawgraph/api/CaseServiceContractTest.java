@@ -33,6 +33,18 @@ class CaseServiceContractTest {
         service = new CaseService(platform);
     }
 
+    /** 合約模式的啟動事件同樣在流程啟動前寫入，且 mode 記為 contract。 */
+    @Test void contractStartRecordsEventBeforeStartingProcess() {
+        var events = org.mockito.Mockito.mock(tw.lawgraph.usage.UsageEventStore.class);
+        var recording = new CaseService(platform, new StepWatchdog(java.time.Duration.ofSeconds(300)), events);
+        recording.startContract(new ContractInput("x", Locale.ZH_TW, "partyA", List.of(), List.of(), ""),
+                new CaseStartContext("anonymous", "hash-1", ""));
+        var order = org.mockito.Mockito.inOrder(events, platform);
+        order.verify(events).recordStart(org.mockito.ArgumentMatchers.argThat(e ->
+                "contract".equals(e.mode()) && "hash-1".equals(e.identityHash()) && "default".equals(e.model())));
+        order.verify(platform).start(process);
+    }
+
     @Test void startContractUsesContractAgentAndReportsMode() {
         var input = new ContractInput("合約全文", Locale.ZH_TW, "partyA", List.of("labor"), List.of(), "");
         var status = service.startContract(input);

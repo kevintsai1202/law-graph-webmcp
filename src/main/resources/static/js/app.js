@@ -7,6 +7,7 @@ import { renderProgress, renderCancel } from './views/progress.js';
 import { renderQuestions, bindQuestions } from './views/questions.js';
 import { renderResult, bindResult, renderSections, tabsFor, tabLabel, checklistCsv, findingsCsv } from './views/result.js';
 import { renderHome, bindHome } from './views/home.js';
+import { renderStats } from './views/stats.js';
 import { parseHash, hashFor } from './router.js';
 import { normalizeOutputs, OUTPUT_OPTIONS, outputOptionsFor } from './documents.js';
 
@@ -62,6 +63,8 @@ export function createApp({ root, client, storage, navigatorLanguage, partialCol
   let usage = null;
   /** 呼叫端今日案件配額（/api/quota）；null 代表尚未取得或後端不限制。 */
   let quota = null;
+  /** 統計頁資料（/api/stats）；null 代表載入中，{ error } 代表載入失敗。 */
+  let stats = null;
   /** OAuth callback query 已被消耗時，不再自動導向，避免授權失敗造成重導迴圈。 */
   const hadAuthCallback = consumeAuthCallbackQuery();
   /** 同一頁面生命週期只允許自動導向授權一次。 */
@@ -190,6 +193,9 @@ export function createApp({ root, client, storage, navigatorLanguage, partialCol
         });
         listeners.forEach((l) => l(state, 'RESULT_RENDERED'));
         break;
+      case States.STATS:
+        mountHtml(el, renderStats(stats, locale));
+        break;
       case States.FAILED:
         mountHtml(el, renderFailed(state.last?.error, locale));
         el.querySelector('#retry').addEventListener('click', reset);
@@ -216,6 +222,19 @@ export function createApp({ root, client, storage, navigatorLanguage, partialCol
   async function selectMode(next) {
     dispatch({ type: 'SELECT_MODE', mode: next });
     samples = await Promise.resolve().then(() => client.samples(locale, mode())).catch(() => []);
+    render();
+  }
+
+  /** 進入統計頁：先顯示載入中，再取近 30 日資料；失敗時顯示錯誤而不影響進行中的案件。 */
+  async function showStats() {
+    dispatch({ type: 'SHOW_STATS' });
+    stats = null;
+    render();
+    try {
+      stats = await client.stats(30);
+    } catch (e) {
+      stats = { error: e?.message || 'ERROR' };
+    }
     render();
   }
 
@@ -630,6 +649,8 @@ export function createApp({ root, client, storage, navigatorLanguage, partialCol
         : selectedOutputs.includes('graph') ? 'graph' : 'doc-' + selectedOutputs[0];
       dispatch({ type: 'START', caseId: saved, mode: savedMode });
       beginPolling(saved, { resumed: true });
+    } else if (initial.view === 'STATS') {
+      await showStats();
     } else if (initial.view === 'INPUT') {
       await selectMode(initial.mode);
     } else render();
@@ -642,6 +663,14 @@ export function createApp({ root, client, storage, navigatorLanguage, partialCol
     // 回傳監聽器內的 Promise（reset 為非同步），讓測試可以 await 這次 hash 變更的處理結果
     globalThis.addEventListener?.('hashchange', () => {
       const parsed = parseHash(locationLike?.hash);
+      if (parsed.view === 'STATS') return showStats();
+      // 離開統計頁時，若案件仍在進行（或等待回答）就回到該案件畫面，不當成捨棄案件
+      if (state.view === States.STATS && state.caseId && state.last
+        && state.last.status !== 'COMPLETED' && state.last.status !== 'FAILED'
+        && (parsed.view === 'INPUT' || parsed.view === 'HOME')) {
+        dispatch({ type: 'STATUS', status: state.last });
+        return undefined;
+      }
       if (state.view === States.HOME && parsed.view === 'INPUT') return selectMode(parsed.mode);
       if (parsed.view === 'HOME' && state.view !== States.HOME) return leaveToHome();
       // 直接在兩條輸入頁之間切換 hash（例如 #/contract → #/case），也要重新載入該模式的示範案例
@@ -674,7 +703,7 @@ export function createApp({ root, client, storage, navigatorLanguage, partialCol
     getAuthStatus: () => semanticAuth, refreshAuthStatus, getUsage: () => usage, refreshUsage,
     /** 呼叫端今日配額（含 loggedIn／memberLimit）與 REST client，供右上角登入區使用。 */
     getQuota: () => quota, client,
-    setLocale, selectMode, goHome, getMode: mode, setRiskFilter: (r) => { riskFilter = r; render(); },
+    setLocale, selectMode, goHome, showStats, getStats: (days = 30) => client.stats(days), getMode: mode, setRiskFilter: (r) => { riskFilter = r; render(); },
     start, startSample, answer, fillQuestions, getQuestionProgress,
     setOutputs, getOutputOptions, getInputForm, getResultTabs, reset,
     verify: (ref) => client.verify(ref),

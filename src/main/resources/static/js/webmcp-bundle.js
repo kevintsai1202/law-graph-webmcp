@@ -185,17 +185,17 @@
       name: "getUsageStats",
       phase: "base",
       annotations: { readOnlyHint: true },
-      description: "Read this page usage statistics for the last N days. Not available yet in this release.",
+      description: "Read aggregated site usage for the last N days: analyses per day, tokens and member counts.",
       inputSchema: S({ days: { type: "integer", minimum: 1, maximum: 90, description: "How many days back to summarise." } })
     }
   ];
   var TOOL_NAMES_BY_VIEW = Object.freeze({
-    // getUsageStats 保留在 TOOL_DEFS，但 M3 接上實際用量前不對任何頁面曝光
-    HOME: Object.freeze(["listCapabilities", "selectCapability", "startCase", "startContractReview", "listSampleCases", "verifyCitation"]),
-    INPUT: Object.freeze(["listSampleCases", "startCase", "setOutputSelection", "getOutputOptions", "getInputForm", "verifyCitation", "listCapabilities", "selectCapability", "startContractReview"]),
+    // getUsageStats 為唯讀彙總統計，於 HOME／INPUT／RESULT 曝光（流程進行中的頁面不加，避免干擾）
+    HOME: Object.freeze(["listCapabilities", "selectCapability", "startCase", "startContractReview", "listSampleCases", "verifyCitation", "getUsageStats"]),
+    INPUT: Object.freeze(["listSampleCases", "startCase", "setOutputSelection", "getOutputOptions", "getInputForm", "verifyCitation", "listCapabilities", "selectCapability", "startContractReview", "getUsageStats"]),
     RUNNING: Object.freeze(["getCaseStatus", "resetCase"]),
     QUESTIONS: Object.freeze(["getCaseStatus", "getQuestions", "fillQuestions", "resetCase"]),
-    RESULT: Object.freeze(["getCaseStatus", "getResultTabs", "getAnalysis", "getGraphSummary", "focusNode", "filterGraph", "explainEdge", "verifyCitation", "resetCase", "getComplianceReport", "filterFindingsByRisk"]),
+    RESULT: Object.freeze(["getCaseStatus", "getResultTabs", "getAnalysis", "getGraphSummary", "focusNode", "filterGraph", "explainEdge", "verifyCitation", "resetCase", "getComplianceReport", "filterFindingsByRisk", "getUsageStats"]),
     FAILED: Object.freeze(["getCaseStatus", "resetCase"])
   });
   function truncate(obj, max = 1500) {
@@ -421,8 +421,11 @@
         app.setRiskFilter?.(risk);
         return { ok: true, risk };
       },
-      /** 使用量統計於下一個里程碑接上，本版先明確回不可用。 */
-      getUsageStats: async () => ({ ok: false, error: "NOT_AVAILABLE", message: "Usage statistics arrive in the next release." })
+      /** 近 N 日站台使用統計（1～90 日，預設 30）；應用層未提供時明確回不可用。 */
+      getUsageStats: async ({ days } = {}) => truncate(
+        await app.getStats?.(Math.min(90, Math.max(1, Number(days) || 30))) ?? { ok: false, error: "NOT_AVAILABLE" },
+        4e3
+      )
     };
     let syncQueue = Promise.resolve();
     function syncForState(view) {

@@ -26,8 +26,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/cases")
 public class CaseController {
-    private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(CaseController.class);
-
     /** 啟動案件請求；documents 為勾選的書狀代碼（可省略）；mode 為 case／contract（預設 case），party／scopes 僅合約模式使用。 */
     public record StartRequest(String caseText, String locale, List<String> documents, String motionRequest,
                                String mode, String party, List<String> scopes) {}
@@ -45,8 +43,6 @@ public class CaseController {
     private final CaseFileExtractor fileExtractor;
     /** 每日 token 預算；用盡或手動暫停時拒絕任何會呼叫 LLM 的請求。 */
     private final tw.lawgraph.usage.DailyTokenBudget budget;
-    /** case_event 事件儲存：案件啟動即記錄一筆，作為統計與配額計數的唯一來源。 */
-    private final tw.lawgraph.usage.UsageEventStore events;
     /** 測試專用便宜模型名稱（唯一允許透過 header 指定的模型）；空白代表關閉覆寫。 */
     private final String testModel;
 
@@ -57,10 +53,9 @@ public class CaseController {
     public CaseController(CaseService service, RateLimiter limiter, DailyCaseQuota quota, QuotaIdentityResolver identities,
                           tw.lawgraph.auth.AccessPolicy accessPolicy,
                           CaseFileExtractor fileExtractor, tw.lawgraph.usage.DailyTokenBudget budget,
-                          tw.lawgraph.usage.UsageEventStore events,
                           @org.springframework.beans.factory.annotation.Value("${lawgraph.test-model:gpt-5.4-nano}") String testModel) {
         this.service = service; this.limiter = limiter; this.quota = quota; this.identities = identities; this.accessPolicy = accessPolicy;
-        this.fileExtractor = fileExtractor; this.budget = budget; this.events = events;
+        this.fileExtractor = fileExtractor; this.budget = budget;
         this.testModel = testModel == null ? "" : testModel.trim();
     }
 
@@ -131,10 +126,11 @@ public class CaseController {
         Locale loc = Locale.fromCode(request.locale());
         List<String> documents = request.documents() == null ? List.of() : request.documents();
         String model = modelOverride(http);
+        // 統計脈絡交給 CaseService，於流程啟動前寫入 case_event
+        var context = new CaseStartContext(identity.kind(), identity.hash(), model);
         CaseStatus created = CaseMode.CONTRACT.equals(CaseMode.normalize(request.mode()))
-                ? service.startContract(new ContractInput(request.caseText().trim(), loc, request.party(), request.scopes(), documents, model))
-                : service.start(request.caseText().trim(), loc, documents, request.motionRequest() == null ? "" : request.motionRequest(), model);
-        recordStart(created, identity, model);
+                ? service.startContract(new ContractInput(request.caseText().trim(), loc, request.party(), request.scopes(), documents, model), context)
+                : service.start(request.caseText().trim(), loc, documents, request.motionRequest() == null ? "" : request.motionRequest(), context);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
@@ -165,10 +161,10 @@ public class CaseController {
         Locale loc = Locale.fromCode(locale);
         List<String> docs = documents == null ? List.of() : documents;
         String model = modelOverride(http);
+        var context = new CaseStartContext(identity.kind(), identity.hash(), model);
         CaseStatus created = CaseMode.CONTRACT.equals(CaseMode.normalize(mode))
-                ? service.startContract(new ContractInput(composed, loc, party, scopes, docs, model))
-                : service.start(composed, loc, docs, motionRequest, model);
-        recordStart(created, identity, model);
+                ? service.startContract(new ContractInput(composed, loc, party, scopes, docs, model), context)
+                : service.start(composed, loc, docs, motionRequest, context);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
@@ -183,21 +179,6 @@ public class CaseController {
         ResponseEntity<?> gate = budgetGate(current == null ? null : current.locale());
         if (gate != null) return gate;
         return ResponseEntity.ok(service.answer(id, request.answers() == null ? List.of() : request.answers()));
-    }
-
-    /**
-     * 記錄一筆案件啟動事件（同時是當日配額的計數依據）；
-     * 統計失敗絕不能讓已經啟動的案件失敗，因此只記警告。
-     */
-    private void recordStart(CaseStatus created, QuotaIdentityResolver.Identity identity, String model) {
-        try {
-            events.recordStart(new tw.lawgraph.usage.CaseEvent(created.caseId(),
-                    java.time.LocalDate.now(DailyCaseQuota.ZONE), created.mode(), identity.kind(), identity.hash(),
-                    model == null || model.isBlank() ? "default" : model, "RUNNING", 0, 0,
-                    java.time.Instant.now(), null));
-        } catch (RuntimeException exception) {
-            LOGGER.warn("無法記錄案件啟動事件 caseId={} 錯誤類型={}", created.caseId(), exception.getClass().getSimpleName());
-        }
     }
 
     /** Cloudflare 後優先採用 CF-Connecting-IP；其餘代理靠 server.forward-headers-strategy 還原 X-Forwarded-For。 */

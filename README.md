@@ -85,11 +85,11 @@ await modelContext.registerTool({ name, description, inputSchema, annotations,
 | `startContractReview` | `HOME`, `INPUT` | | Start a contract review（`contractText`／`sampleId`／`party`／`scopes`／`outputs`／`locale`）；案件分析表單開著時回 `WRONG_CAPABILITY` |
 | `getComplianceReport` | `RESULT`（contract） | ✓（untrusted content） | Contract mode findings, priorities, overall risk |
 | `filterFindingsByRisk` | `RESULT`（contract） | | Filter the findings table by risk level |
-| `getUsageStats` | 暫不曝光（M3） | ✓ | Daily token/case usage：定義保留於 `TOOL_DEFS`，接上實際用量前不註冊到任何頁面 |
+| `getUsageStats` | `HOME`, `INPUT`, `RESULT` | ✓ | 近 N 日（1～90，預設 30）站台彙總用量：每日分析次數、tokens 與成員數；讀 `GET /api/stats`，不含案情內容與個資 |
 
 `RESULT` in contract mode additionally exposes the合約義務關係圖 (`getGraphSummary`／`focusNode`／`filterGraph`／`explainEdge`, same tools as case mode) and, when `documents` included `"revised"`, the `doc-revised` tab in the rendered page (no dedicated tool — read via `getResultTabs`/`getAnalysis`).
 
-Environment notes: in **Chrome 149+** enable `chrome://flags/#enable-webmcp-testing`, then `await document.modelContext.getTools()` returns the tools for the current view (`HOME` / `INPUT` / `RUNNING` / `QUESTIONS` / `RESULT` / `FAILED` = 6 / 9 / 2 / 4 / 11 / 2 tools; 22 tool definitions total in `TOOL_DEFS`，其中 `getUsageStats` 於 M3 接上前不曝光； the WebMCP layer ships as a separate `js/webmcp-bundle.js` loaded synchronously in `<head>` so tools are registered before the app bundle runs). In the **ChatGPT desktop app**, the address-bar *Site tools* list is page-scoped and should be refreshed after a state transition. The declarative (`<form>`-based) WebMCP API is not used.
+Environment notes: in **Chrome 149+** enable `chrome://flags/#enable-webmcp-testing`, then `await document.modelContext.getTools()` returns the tools for the current view (`HOME` / `INPUT` / `RUNNING` / `QUESTIONS` / `RESULT` / `FAILED` = 7 / 10 / 2 / 4 / 12 / 2 tools; 22 tool definitions total in `TOOL_DEFS`； the WebMCP layer ships as a separate `js/webmcp-bundle.js` loaded synchronously in `<head>` so tools are registered before the app bundle runs). In the **ChatGPT desktop app**, the address-bar *Site tools* list is page-scoped and should be refreshed after a state transition. The declarative (`<form>`-based) WebMCP API is not used.
 
 ## UI design system
 

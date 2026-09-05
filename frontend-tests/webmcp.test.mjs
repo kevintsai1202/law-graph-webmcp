@@ -21,10 +21,13 @@ test('二十二個工具，名稱/描述長度符合 Chrome 安全預算', () =>
   assert.ok(TOOL_NAMES_BY_VIEW.QUESTIONS.includes('fillQuestions'), 'QUESTIONS 應可填入答案');
   assert.ok(TOOL_NAMES_BY_VIEW.QUESTIONS.includes('getQuestions'), 'QUESTIONS 應可讀取題目格式');
   assert.ok(!TOOL_NAMES_BY_VIEW.QUESTIONS.includes('startCase'), 'QUESTIONS 不得再啟動其他案件');
-  // getUsageStats 仍在 TOOL_DEFS，但尚未對任何頁面曝光：M3 接上後再加入
+  // getUsageStats（M3 接上 /api/stats）：唯讀彙總統計，於 HOME／INPUT／RESULT 曝光
   assert.ok(names.has('getUsageStats'), 'getUsageStats 仍保留在 TOOL_DEFS');
-  for (const [view, tools] of Object.entries(TOOL_NAMES_BY_VIEW)) {
-    assert.ok(!tools.includes('getUsageStats'), `${view} 不應曝光 getUsageStats（M3 接上後再加入）`);
+  for (const view of ['HOME', 'INPUT', 'RESULT']) {
+    assert.ok(TOOL_NAMES_BY_VIEW[view].includes('getUsageStats'), `${view} 應曝光 getUsageStats`);
+  }
+  for (const view of ['RUNNING', 'QUESTIONS', 'FAILED']) {
+    assert.ok(!TOOL_NAMES_BY_VIEW[view].includes('getUsageStats'), `${view} 流程進行中不曝光 getUsageStats`);
   }
 });
 test('唯讀工具帶 readOnlyHint；getAnalysis 帶 untrustedContentHint', () => {
@@ -318,4 +321,24 @@ test('filterFindingsByRisk 只在合約結果頁可用', async () => {
   state.view = 'RESULT';
   r = await w.execute('filterFindingsByRisk', { risk: 'high' });
   assert.equal(r.ok, true); assert.equal(applied, 'high');
+});
+
+test('getUsageStats 轉交 app.getStats，days 夾在 1～90 且預設 30', async () => {
+  const asked = [];
+  const payload = { days: [{ day: '2026-09-05', total: 3, totalTokens: 1200 }] };
+  const app = {
+    getState: () => ({ view: 'HOME' }), getLocale: () => 'en',
+    getStats: async (days) => { asked.push(days); return payload; }
+  };
+  const w = createWebMcp({ app, graphView: {}, modelContext: undefined });
+  assert.deepEqual(await w.execute('getUsageStats', {}), payload);
+  assert.deepEqual(await w.execute('getUsageStats', { days: 7 }), payload);
+  await w.execute('getUsageStats', { days: 900 });
+  await w.execute('getUsageStats', { days: 0 });
+  assert.deepEqual(asked, [30, 7, 90, 30]);
+});
+
+test('app 未提供 getStats 時 getUsageStats 明確回不可用', async () => {
+  const w = createWebMcp({ app: { getState: () => ({ view: 'HOME' }), getLocale: () => 'en' }, graphView: {}, modelContext: undefined });
+  assert.deepEqual(await w.execute('getUsageStats', {}), { ok: false, error: 'NOT_AVAILABLE' });
 });

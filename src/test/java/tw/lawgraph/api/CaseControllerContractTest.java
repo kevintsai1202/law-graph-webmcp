@@ -37,11 +37,11 @@ class CaseControllerContractTest {
 
     @Test void jsonContractStart() {
         var expected = new ContractInput("合約全文", Locale.ZH_TW, "partyB", List.of("labor", "privacy"), List.of("revised"), "");
-        when(service.startContract(expected)).thenReturn(running());
+        when(service.startContract(eq(expected), any(CaseStartContext.class))).thenReturn(running());
         assertThat(mvc.post().uri("/api/cases").contentType(MediaType.APPLICATION_JSON)
                 .content("{\"caseText\":\"合約全文\",\"locale\":\"zh-TW\",\"mode\":\"contract\",\"party\":\"partyB\",\"scopes\":[\"privacy\",\"labor\"],\"documents\":[\"revised\"]}"))
                 .hasStatus(201).bodyJson().extractingPath("$.mode").isEqualTo("contract");
-        verify(service, never()).start(anyString(), any(), anyList(), anyString(), anyString());
+        verify(service, never()).start(anyString(), any(), anyList(), anyString(), any(CaseStartContext.class));
     }
 
     @Test void multipartContractStartComposesFiles() throws Exception {
@@ -49,14 +49,14 @@ class CaseControllerContractTest {
         var extracted = List.of(new CaseFileExtractor.ExtractedFile("contract.md", "# 合約"));
         when(fileExtractor.extract(anyList())).thenReturn(extracted);
         when(fileExtractor.composeCaseText("", extracted)).thenReturn("composed");
-        when(service.startContract(new ContractInput("composed", Locale.ZH_TW, "partyA", List.of("commercial"), List.of(), ""))).thenReturn(running());
+        when(service.startContract(eq(new ContractInput("composed", Locale.ZH_TW, "partyA", List.of("commercial"), List.of(), "")), any(CaseStartContext.class))).thenReturn(running());
         mockMvc.perform(multipart("/api/cases").file(upload).param("locale", "zh-TW").param("mode", "contract")
                         .param("party", "partyA").param("scopes", "commercial"))
                 .andExpect(status().isCreated());
     }
 
     @Test void unknownModeFallsBackToCase() {
-        when(service.start("A hit B", Locale.EN, List.of(), "", "")).thenReturn(new CaseStatus("p1", "RUNNING", "BRAINSTORM", "en", null, null, null));
+        when(service.start(eq("A hit B"), eq(Locale.EN), eq(List.of()), eq(""), any(CaseStartContext.class))).thenReturn(new CaseStatus("p1", "RUNNING", "BRAINSTORM", "en", null, null, null));
         assertThat(mvc.post().uri("/api/cases").contentType(MediaType.APPLICATION_JSON)
                 .content("{\"caseText\":\"A hit B\",\"locale\":\"en\",\"mode\":\"weird\"}"))
                 .hasStatus(201).bodyJson().extractingPath("$.mode").isEqualTo("case");

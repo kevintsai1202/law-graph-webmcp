@@ -220,10 +220,10 @@ test('WebMCP getOutputOptions／getInputForm 回報輸入頁可見內容：9 個
 
 test('每個頁面狀態的 WebMCP 工具與 Inspector 清單一致', async ({ page }) => {
   const stateTools = {
-    INPUT: ['listSampleCases', 'startCase', 'setOutputSelection', 'getOutputOptions', 'getInputForm', 'verifyCitation', 'listCapabilities', 'selectCapability', 'startContractReview'],
+    INPUT: ['listSampleCases', 'startCase', 'setOutputSelection', 'getOutputOptions', 'getInputForm', 'verifyCitation', 'listCapabilities', 'selectCapability', 'startContractReview', 'getUsageStats'],
     RUNNING: ['getCaseStatus', 'resetCase'],
     QUESTIONS: ['getCaseStatus', 'getQuestions', 'fillQuestions', 'resetCase'],
-    RESULT: ['getAnalysis', 'getCaseStatus', 'getResultTabs', 'getGraphSummary', 'focusNode', 'filterGraph', 'explainEdge', 'resetCase', 'verifyCitation', 'getComplianceReport', 'filterFindingsByRisk'],
+    RESULT: ['getAnalysis', 'getCaseStatus', 'getResultTabs', 'getGraphSummary', 'focusNode', 'filterGraph', 'explainEdge', 'resetCase', 'verifyCitation', 'getComplianceReport', 'filterFindingsByRisk', 'getUsageStats'],
     FAILED: ['getCaseStatus', 'resetCase']
   };
   const names = async () => (await page.evaluate(() => document.modelContext.getTools())).map((t) => t.name).sort();
@@ -345,7 +345,7 @@ test('inspector is read-only: shows state and tool list, no run controls; tools 
   await page.click('#insp-toggle');
   // 唯讀：只顯示頁面狀態與可用工具清單，不提供直接執行
   await expect(page.locator('#insp-state')).toContainText('RESULT');
-  await expect(page.locator('#insp-list li')).toHaveCount(11);
+  await expect(page.locator('#insp-list li')).toHaveCount(12);
   await expect(page.locator('#insp-list')).toContainText('getGraphSummary');
   await expect(page.locator('#insp-run')).toHaveCount(0);
   await expect(page.locator('#insp-tool')).toHaveCount(0);

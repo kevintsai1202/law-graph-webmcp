@@ -16,3 +16,10 @@ test('hashFor', () => {
   assert.equal(hashFor({ view: 'RUNNING', mode: 'case' }), '#/case');
   assert.deepEqual(MODES, ['case', 'contract']);
 });
+
+test('#/stats 解析為統計頁，且狀態可反推回 #/stats', () => {
+  assert.deepEqual(parseHash('#/stats'), { view: 'STATS', mode: null });
+  assert.equal(hashFor({ view: 'STATS', mode: null }), '#/stats');
+  // 統計頁保留 mode 時仍應停在 #/stats，避免離開統計頁前網址就先跳回流程
+  assert.equal(hashFor({ view: 'STATS', mode: 'contract' }), '#/stats');
+});

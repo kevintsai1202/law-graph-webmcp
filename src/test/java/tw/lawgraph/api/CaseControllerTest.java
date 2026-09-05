@@ -58,7 +58,7 @@ class CaseControllerTest {
 
     /** POST /api/cases 成功回 201；未帶 documents 視為未勾選。 */
     @Test void postCasesReturns201WithStatus() {
-        when(service.start("A hit B", Locale.EN, java.util.List.of(), "", "")).thenReturn(running());
+        when(service.start(eq("A hit B"), eq(Locale.EN), eq(java.util.List.of()), eq(""), any(CaseStartContext.class))).thenReturn(running());
         assertThat(mvc.post().uri("/api/cases").contentType(MediaType.APPLICATION_JSON)
                 .content("{\"caseText\":\"A hit B\",\"locale\":\"en\"}"))
                 .hasStatus(201).bodyJson().extractingPath("$.caseId").isEqualTo("p1");
@@ -66,7 +66,7 @@ class CaseControllerTest {
 
     /** 聲請事項需與 documents 一併轉交服務層（JSON 與 multipart）。 */
     @Test void postCasesForwardsMotionRequest() throws Exception {
-        when(service.start("A hit B", Locale.ZH_TW, java.util.List.of("motion"), "聲請調查證據", "")).thenReturn(running());
+        when(service.start(eq("A hit B"), eq(Locale.ZH_TW), eq(java.util.List.of("motion")), eq("聲請調查證據"), any(CaseStartContext.class))).thenReturn(running());
         assertThat(mvc.post().uri("/api/cases").contentType(MediaType.APPLICATION_JSON)
                 .content("{\"caseText\":\"A hit B\",\"locale\":\"zh-TW\",\"documents\":[\"motion\"],\"motionRequest\":\"聲請調查證據\"}"))
                 .hasStatus(201);
@@ -74,7 +74,7 @@ class CaseControllerTest {
         var extracted = java.util.List.of(new CaseFileExtractor.ExtractedFile("facts.md", "# Facts"));
         when(fileExtractor.extract(anyList())).thenReturn(extracted);
         when(fileExtractor.composeCaseText("x", extracted)).thenReturn("composed");
-        when(service.start("composed", Locale.ZH_TW, java.util.List.of("motion"), "聲請假扣押", "")).thenReturn(running());
+        when(service.start(eq("composed"), eq(Locale.ZH_TW), eq(java.util.List.of("motion")), eq("聲請假扣押"), any(CaseStartContext.class))).thenReturn(running());
         mockMvc.perform(multipart("/api/cases").file(upload).param("caseText", "x").param("locale", "zh-TW")
                         .param("documents", "motion").param("motionRequest", "聲請假扣押"))
                 .andExpect(status().isCreated());
@@ -82,7 +82,7 @@ class CaseControllerTest {
 
     /** documents 勾選清單需原樣轉交服務層。 */
     @Test void postCasesForwardsDocuments() {
-        when(service.start("A hit B", Locale.EN, java.util.List.of("complaint", "issues"), "", "")).thenReturn(running());
+        when(service.start(eq("A hit B"), eq(Locale.EN), eq(java.util.List.of("complaint", "issues")), eq(""), any(CaseStartContext.class))).thenReturn(running());
         assertThat(mvc.post().uri("/api/cases").contentType(MediaType.APPLICATION_JSON)
                 .content("{\"caseText\":\"A hit B\",\"locale\":\"en\",\"documents\":[\"complaint\",\"issues\"]}"))
                 .hasStatus(201).bodyJson().extractingPath("$.caseId").isEqualTo("p1");
@@ -94,7 +94,7 @@ class CaseControllerTest {
         var extracted = java.util.List.of(new CaseFileExtractor.ExtractedFile("facts.md", "# Facts"));
         when(fileExtractor.extract(anyList())).thenReturn(extracted);
         when(fileExtractor.composeCaseText("事故說明", extracted)).thenReturn("composed case");
-        when(service.start("composed case", Locale.ZH_TW, java.util.List.of("complaint"), "", "")).thenReturn(running());
+        when(service.start(eq("composed case"), eq(Locale.ZH_TW), eq(java.util.List.of("complaint")), eq(""), any(CaseStartContext.class))).thenReturn(running());
 
         mockMvc.perform(multipart("/api/cases").file(upload)
                         .param("caseText", "事故說明").param("locale", "zh-TW").param("documents", "complaint"))
@@ -103,7 +103,7 @@ class CaseControllerTest {
 
     /** 同 IP 第三次建立案件回 429。 */
     @Test void thirdPostFromSameIpIs429() {
-        when(service.start(anyString(), any(), anyList(), anyString(), anyString())).thenReturn(running());
+        when(service.start(anyString(), any(), anyList(), anyString(), any(CaseStartContext.class))).thenReturn(running());
         String body = "{\"caseText\":\"x\",\"locale\":\"en\"}";
         mvc.post().uri("/api/cases").contentType(MediaType.APPLICATION_JSON).content(body).exchange();
         mvc.post().uri("/api/cases").contentType(MediaType.APPLICATION_JSON).content(body).exchange();
@@ -133,16 +133,18 @@ class CaseControllerTest {
 
     /** 測試專用便宜模型：帶 X-LawGraph-Model 且值等於允許的測試模型時才轉交服務層，其他值一律忽略用預設模型。 */
     @Test void testModelHeaderOnlyAcceptsAllowedModel() {
-        when(service.start(anyString(), any(), anyList(), anyString(), anyString())).thenReturn(running());
+        when(service.start(anyString(), any(), anyList(), anyString(), any(CaseStartContext.class))).thenReturn(running());
 
         assertThat(mvc.post().uri("/api/cases").contentType(MediaType.APPLICATION_JSON)
                 .header("X-LawGraph-Model", "gpt-5.4-nano")
                 .content("{\"caseText\":\"A hit B\",\"locale\":\"en\"}")).hasStatus(201);
-        org.mockito.Mockito.verify(service).start("A hit B", Locale.EN, java.util.List.of(), "", "gpt-5.4-nano");
+        org.mockito.Mockito.verify(service).start(eq("A hit B"), eq(Locale.EN), eq(java.util.List.of()), eq(""),
+                org.mockito.ArgumentMatchers.<CaseStartContext>argThat(c -> "gpt-5.4-nano".equals(c.model())));
 
         assertThat(mvc.post().uri("/api/cases").contentType(MediaType.APPLICATION_JSON)
                 .header("X-LawGraph-Model", "gpt-5.4-pro")
                 .content("{\"caseText\":\"A hit B\",\"locale\":\"en\"}")).hasStatus(201);
-        org.mockito.Mockito.verify(service).start("A hit B", Locale.EN, java.util.List.of(), "", "");
+        org.mockito.Mockito.verify(service).start(eq("A hit B"), eq(Locale.EN), eq(java.util.List.of()), eq(""),
+                org.mockito.ArgumentMatchers.<CaseStartContext>argThat(c -> c.model().isEmpty()));
     }
 }

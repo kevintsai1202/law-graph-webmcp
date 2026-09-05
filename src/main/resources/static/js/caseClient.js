@@ -56,6 +56,8 @@ export function createCaseClient(fetchImpl = globalThis.fetch, base = '', { entr
     usage: () => entry('/api/usage'),
     /** 呼叫端今日案件配額（已用／上限／剩餘）。 */
     quota: () => entry('/api/quota'),
+    /** 近 N 日站台使用統計（案件數、tokens、成員數）。 */
+    stats: (days = 30) => entry('/api/stats?days=' + encodeURIComponent(days)),
     /** 目前登入者（Google）；未登入 loggedIn=false。 */
     me: () => entry('/api/me'),
     /** 登出：Spring Security 的 POST /logout 會 302 回首頁，這裡只需送出請求。 */

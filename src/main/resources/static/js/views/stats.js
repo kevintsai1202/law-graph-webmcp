@@ -1,0 +1,32 @@
+import { esc } from './util.js';
+import { t } from '../i18n.js';
+
+/** 純 CSS 長條：寬度＝值／最大值；每條帶 aria-label 數值。 */
+function bars(rows, pick, labelKey, locale) {
+  const max = Math.max(1, ...rows.map(pick));
+  return `<div class="bars" role="img" aria-label="${esc(t(labelKey, locale))}">${rows.map((r) => `<div class="bar-row"><span class="bar-day">${esc(r.day.slice(5))}</span><span class="bar" style="width:${Math.round(pick(r) / max * 100)}%" aria-label="${esc(r.day)} ${pick(r).toLocaleString(locale)}"></span><span class="bar-value">${pick(r).toLocaleString(locale)}</span></div>`).join('')}</div>`;
+}
+
+/**
+ * 統計頁：data 為 /api/stats 回應、null（載入中）或 { error }。
+ * 僅呈現彙總數字，不輸出任何可辨識個人的欄位。
+ */
+export function renderStats(data, locale) {
+  if (!data) return `<section class="stats card"><p role="status">${esc(t('stats.loading', locale))}</p></section>`;
+  if (data.error) return `<section class="stats card" role="alert"><p>${esc(t('stats.error', locale))}</p></section>`;
+  // asc 供長條圖（左舊右新），desc 供表格（最新在上）
+  const asc = [...(data.days || [])].sort((a, b) => a.day.localeCompare(b.day)), desc = [...asc].reverse(), today = data.today || desc[0] || {};
+  const n = (v) => Number(v || 0).toLocaleString(locale);
+  const tile = (title, big, sub) => `<div class="stat-tile"><span class="stat-title">${esc(title)}</span><strong class="stat-big">${esc(big)}</strong><span class="stat-sub">${esc(sub)}</span></div>`;
+  const head = ['day', 'total', 'case', 'contract', 'completed', 'failed', 'prompt', 'completion', 'tokens'].map((k) => `<th scope="col">${esc(t('stats.col.' + k, locale))}</th>`).join('');
+  const rows = desc.map((r) => `<tr data-day="${esc(r.day)}"><td>${esc(r.day)}</td><td>${n(r.total)}</td><td>${n(r.byMode?.case)}</td><td>${n(r.byMode?.contract)}</td><td>${n(r.completed)}</td><td>${n(r.failed)}</td><td>${n(r.promptTokens)}</td><td>${n(r.completionTokens)}</td><td>${n(r.totalTokens)}</td></tr>`).join('');
+  return `<section class="stats"><h2>${esc(t('stats.title', locale))}</h2><p class="home-lead">${esc(t('stats.lead', locale))}</p>
+    <div id="stats-today" class="stat-tiles">
+      ${tile(t('stats.todayCases', locale), n(today.total), `${t('home.case.title', locale)} ${n(today.byMode?.case)} · ${t('home.contract.title', locale)} ${n(today.byMode?.contract)} · ${t('stats.member', locale)} ${n(today.byIdentity?.member)}`)}
+      ${tile(t('stats.todayTokens', locale), n(today.totalTokens), `prompt ${n(today.promptTokens)} · completion ${n(today.completionTokens)}`)}
+      ${tile(t('stats.members', locale), n(data.members?.total), `${t('stats.activeToday', locale)} ${n(data.members?.activeToday)}`)}
+    </div>
+    <div class="card"><h3>${esc(t('stats.chart.cases', locale))}</h3>${bars(asc, (r) => Number(r.total || 0), 'stats.chart.cases', locale)}</div>
+    <div class="card"><h3>${esc(t('stats.chart.tokens', locale))}</h3>${bars(asc, (r) => Number(r.totalTokens || 0), 'stats.chart.tokens', locale)}</div>
+    <div class="card table-wrap"><table class="assess-table stats-table"><thead><tr>${head}</tr></thead><tbody>${rows}</tbody></table></div></section>`;
+}

@@ -2,7 +2,6 @@ package tw.lawgraph.api;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import tw.lawgraph.usage.CaseEvent;
 import tw.lawgraph.usage.UsageEventStore;
 
 import java.util.Map;
@@ -39,15 +38,22 @@ class DailyCaseQuotaControllerTest {
 
     /** identityHash → 今日已記錄的啟動次數。 */
     private final Map<String, Integer> counts = new ConcurrentHashMap<>();
+    /** 依序記下每次啟動所帶的統計脈絡，供斷言身分與模型。 */
+    private final java.util.List<CaseStartContext> contexts = new java.util.concurrent.CopyOnWriteArrayList<>();
 
-    /** 讓 mock 的事件儲存表現得像真的：recordStart 累加、countToday 讀回。 */
+    /**
+     * 啟動事件實際由 CaseService 於流程啟動前寫入，這個切片的 CaseService 是 mock，
+     * 因此以 start 的統計脈絡模擬「啟動即計一次」，再讓 countToday 讀回。
+     */
     @BeforeEach void stubEventStore() {
         counts.clear();
-        org.mockito.Mockito.doAnswer(invocation -> {
-            CaseEvent event = invocation.getArgument(0);
-            counts.merge(event.identityHash(), 1, Integer::sum);
-            return null;
-        }).when(events).recordStart(any(CaseEvent.class));
+        when(service.start(anyString(), any(), anyList(), anyString(), any(CaseStartContext.class)))
+                .thenAnswer(invocation -> {
+                    CaseStartContext context = invocation.getArgument(4);
+                    contexts.add(context);
+                    counts.merge(context.identityHash(), 1, Integer::sum);
+                    return new CaseStatus("p1", "RUNNING", "BRAINSTORM", "zh-TW", null, null, null);
+                });
         when(events.countToday(anyString(), any())).thenAnswer(i -> counts.getOrDefault(i.getArgument(0), 0));
     }
 
@@ -55,8 +61,6 @@ class DailyCaseQuotaControllerTest {
 
     /** 三次成功後第四次被拒，訊息包含免費與造福更多人的說明；配額端點同步顯示 3/3。 */
     @Test void fourthCaseOfTheDayIsRejectedWithReason() {
-        when(service.start(anyString(), any(), anyList(), anyString(), anyString()))
-                .thenReturn(new CaseStatus("p1", "RUNNING", "BRAINSTORM", "zh-TW", null, null, null));
         for (int i = 0; i < 3; i++) {
             assertThat(mvc.post().uri("/api/cases").contentType(MediaType.APPLICATION_JSON).content(BODY)).hasStatus(201);
         }
@@ -82,8 +86,6 @@ class DailyCaseQuotaControllerTest {
 
     /** 英文語系的拒絕訊息也要說明原因。 */
     @Test void rejectionMessageIsLocalized() {
-        when(service.start(anyString(), any(), anyList(), anyString(), anyString()))
-                .thenReturn(new CaseStatus("p1", "RUNNING", "BRAINSTORM", "en", null, null, null));
         String en = "{\"caseText\":\"A hit B\",\"locale\":\"en\"}";
         for (int i = 0; i < 3; i++) mvc.post().uri("/api/cases").contentType(MediaType.APPLICATION_JSON).content(en).exchange();
         assertThat(mvc.post().uri("/api/cases").contentType(MediaType.APPLICATION_JSON).content(en))
@@ -103,8 +105,6 @@ class DailyCaseQuotaControllerTest {
 
     /** Google 登入者以帳號計數、上限 5，且 /api/me 回名稱與頭像。 */
     @Test void memberGetsHigherLimitAndProfile() {
-        when(service.start(anyString(), any(), anyList(), anyString(), anyString()))
-                .thenReturn(new CaseStatus("p1", "RUNNING", "BRAINSTORM", "zh-TW", null, null, null));
         var login = oauth2Login().attributes(a -> { a.put("sub", "g-123"); a.put("name", "Kevin"); a.put("email", "k@example.com"); a.put("picture", "https://img/x.png"); });
         for (int i = 0; i < 4; i++) {
             assertThat(mvc.post().uri("/api/cases").contentType(MediaType.APPLICATION_JSON).content(BODY).with(login)).hasStatus(201);
@@ -130,36 +130,24 @@ class DailyCaseQuotaControllerTest {
         var me = mvc.get().uri("/api/me").with(login).exchange();
         assertThat(me).bodyJson().extractingPath("$.blocked").isEqualTo(true);
         assertThat(me).bodyJson().extractingPath("$.blockedMessage").asString().contains("使用授權");
-        org.mockito.Mockito.verify(service, org.mockito.Mockito.never()).start(anyString(), any(), anyList(), anyString(), anyString());
+        org.mockito.Mockito.verify(service, org.mockito.Mockito.never()).start(anyString(), any(), anyList(), anyString(), any(CaseStartContext.class));
     }
 
-    /** 啟動成功後必須寫入 case_event：匿名身分、雜湊過的識別（非原始 IP）、mode 為 case。 */
-    @Test void startRecordsCaseEventWithHashedAnonymousIdentity() {
-        when(service.start(anyString(), any(), anyList(), anyString(), anyString()))
-                .thenReturn(new CaseStatus("p1", "RUNNING", "BRAINSTORM", "zh-TW", null, null, null));
+    /** 啟動時交給服務層的統計脈絡：匿名身分、雜湊過的識別（SHA-256 十六進位，非原始 IP）。 */
+    @Test void startPassesHashedAnonymousIdentityToService() {
         assertThat(mvc.post().uri("/api/cases").contentType(MediaType.APPLICATION_JSON).content(BODY)).hasStatus(201);
-        org.mockito.Mockito.verify(events).recordStart(org.mockito.ArgumentMatchers.argThat(e ->
-                "p1".equals(e.caseId()) && "anonymous".equals(e.identityKind()) && "case".equals(e.mode())
-                        && "RUNNING".equals(e.status()) && e.identityHash() != null && !e.identityHash().contains(".")
-                        && e.startedAt() != null && e.finishedAt() == null));
+        assertThat(contexts).hasSize(1);
+        assertThat(contexts.get(0).identityKind()).isEqualTo("anonymous");
+        assertThat(contexts.get(0).identityHash()).matches("[0-9a-f]{64}");
     }
 
-    /** 登入者的事件以 member 身分記錄。 */
-    @Test void memberStartRecordsMemberIdentityKind() {
-        when(service.start(anyString(), any(), anyList(), anyString(), anyString()))
-                .thenReturn(new CaseStatus("p2", "RUNNING", "BRAINSTORM", "zh-TW", null, null, null));
+    /** 登入者的統計脈絡以 member 身分與 Google sub 記錄。 */
+    @Test void memberStartPassesMemberIdentityKind() {
         var login = oauth2Login().attributes(a -> { a.put("sub", "g-123"); a.put("email", "k@example.com"); });
         assertThat(mvc.post().uri("/api/cases").contentType(MediaType.APPLICATION_JSON).content(BODY).with(login)).hasStatus(201);
-        org.mockito.Mockito.verify(events).recordStart(org.mockito.ArgumentMatchers.argThat(e ->
-                "member".equals(e.identityKind()) && "g-123".equals(e.identityHash())));
-    }
-
-    /** case_event 寫入失敗不得影響案件啟動（統計不能擋流程）。 */
-    @Test void recordStartFailureDoesNotBreakStart() {
-        when(service.start(anyString(), any(), anyList(), anyString(), anyString()))
-                .thenReturn(new CaseStatus("p1", "RUNNING", "BRAINSTORM", "zh-TW", null, null, null));
-        org.mockito.Mockito.doThrow(new IllegalStateException("db down")).when(events).recordStart(any(CaseEvent.class));
-        assertThat(mvc.post().uri("/api/cases").contentType(MediaType.APPLICATION_JSON).content(BODY)).hasStatus(201);
+        assertThat(contexts).hasSize(1);
+        assertThat(contexts.get(0).identityKind()).isEqualTo("member");
+        assertThat(contexts.get(0).identityHash()).isEqualTo("g-123");
     }
 
     /** 配額計數來源（資料庫）壞掉時明確回 503，不得靜默放行。 */
@@ -169,6 +157,6 @@ class DailyCaseQuotaControllerTest {
         assertThat(rejected).hasStatus(503);
         assertThat(rejected).bodyJson().extractingPath("$.error").isEqualTo("QUOTA_STORE_UNAVAILABLE");
         org.mockito.Mockito.verify(service, org.mockito.Mockito.never())
-                .start(anyString(), any(), anyList(), anyString(), anyString());
+                .start(anyString(), any(), anyList(), anyString(), any(CaseStartContext.class));
     }
 }

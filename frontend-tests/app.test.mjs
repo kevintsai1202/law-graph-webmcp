@@ -249,3 +249,52 @@ test('合約模式 RESULT 預設分頁為 findings（即使結果帶圖）', asy
   assert.equal(app.getState().view, 'RESULT');
   assert.equal(app.getResultTabs().activeTab, 'findings');
 });
+
+test('mount 時 hash 為 #/stats 會載入統計資料並停在統計頁；getStats 轉交 client', async () => {
+  let askedDays = null;
+  const payload = { days: [{ day: '2026-09-05', total: 1 }] };
+  const client = {
+    samples: async () => [], poll: () => () => {}, usage: async () => null, quota: async () => null,
+    authStatus: async () => null,
+    stats: async (days) => { askedDays = days; return payload; }
+  };
+  const app = createApp({ root: mountRoot(), client, storage: fakeStorage(), navigatorLanguage: 'zh-TW', locationLike: { hash: '#/stats', pathname: '/', search: '' } });
+  await app.mount();
+  assert.equal(app.getState().view, 'STATS');
+  assert.equal(askedDays, 30);
+  assert.deepEqual(await app.getStats(7), payload);
+  assert.equal(askedDays, 7);
+});
+
+test('統計頁為唯讀分頁：進行中的案件在返回 #/case 時直接回到進行中畫面，不被捨棄', async () => {
+  const originalAdd = globalThis.addEventListener;
+  let onHashChange = null;
+  globalThis.addEventListener = (type, handler) => { if (type === 'hashchange') onHashChange = handler; };
+  try {
+    const client = {
+      samples: async () => [], poll: () => () => {}, usage: async () => null, quota: async () => null,
+      authStatus: async () => null, stats: async () => ({ days: [] })
+    };
+    const storage = fakeStorage();
+    const loc = { hash: '', pathname: '/', search: '' };
+    const app = createApp({ root: mountRoot(), client, storage, navigatorLanguage: 'zh-TW', locationLike: loc });
+    await app.mount();
+    await app.selectMode('case');
+    storage.setItem('caseId', 'c9'); storage.setItem('mode', 'case');
+    app.dispatch({ type: 'START', caseId: 'c9', mode: 'case' });
+    app.dispatch({ type: 'STATUS', status: { caseId: 'c9', status: 'RUNNING', step: 'BRAINSTORM', mode: 'case' } });
+    assert.equal(app.getState().view, 'RUNNING');
+
+    loc.hash = '#/stats';
+    await onHashChange();
+    assert.equal(app.getState().view, 'STATS');
+    assert.equal(app.getState().caseId, 'c9');
+
+    loc.hash = '#/case';
+    await onHashChange();
+    assert.equal(app.getState().view, 'RUNNING');
+    assert.equal(storage.getItem('caseId'), 'c9');
+  } finally {
+    globalThis.addEventListener = originalAdd;
+  }
+});
