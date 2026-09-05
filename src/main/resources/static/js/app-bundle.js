@@ -138,6 +138,8 @@
       "result.tab.analysis": "Analysis",
       "result.tab.research": "Research",
       "result.tab.brainstorm": "Facts & issues",
+      "result.researchWarning.title": "Statutory research unavailable",
+      "result.researchWarning.tip": "No statutes were retrieved for this review, so the risk ratings below are heuristic and unverified. Re-run when the research service is available.",
       "result.generatedIn": "Generated in",
       "result.notes": "Verification notes",
       "result.coverage": "Research coverage",
@@ -287,11 +289,11 @@
       "home.title": "\u4F60\u60F3\u505A\u4EC0\u9EBC\uFF1F",
       "home.lead": "\u9078\u4E00\u9805\u80FD\u529B\u3002\u5169\u689D\u6D41\u7A0B\u6B65\u9A64\u4E00\u81F4\uFF1A\u6574\u7406\u4E8B\u5BE6\u3001\u88DC\u554F\u3001\u6AA2\u7D22\u6CD5\u6E90\u3001\u5206\u6790\u3001\u7522\u51FA\u3002",
       "home.case.title": "\u6848\u4EF6\u5206\u6790",
-      "home.case.desc": "\u63CF\u8FF0\u7CFE\u7D1B \u2192 \u627E\u6CD5\u689D\u8207\u5224\u6C7A \u2192 \u9010\u8981\u4EF6\u6DB5\u652C \u2192 \u6297\u8FAF\u8A55\u4F30 \u2192 \u66F8\u72C0 \u2192 \u6CD5\u5F8B\u95DC\u4FC2\u5716\u3002",
+      "home.case.desc": "\u63CF\u8FF0\u7CFE\u7D1B \u2192 \u627E\u6CD5\u689D\u8207\u5224\u6C7A \u2192 \u9010\u8981\u4EF6\u6DB5\u651D \u2192 \u6297\u8FAF\u8A55\u4F30 \u2192 \u66F8\u72C0 \u2192 \u6CD5\u5F8B\u95DC\u4FC2\u5716\u3002",
       "home.contract.title": "\u5408\u7D04\u6CD5\u898F\u5BE9\u67E5",
       "home.contract.desc": "\u8CBC\u4E0A\u5408\u7D04\u6216\u63CF\u8FF0\u5546\u696D\u884C\u70BA \u2192 \u6CD5\u898F\u5C0D\u7167 \u2192 \u7D05\u9EC3\u7DA0\u98A8\u96AA\u689D\u6B3E \u2192 \u4FEE\u6539\u5EFA\u8B70 \u2192 \u5951\u7D04\u7FA9\u52D9\u5716\u3002",
       "home.start": "\u958B\u59CB",
-      "home.steps.case": "\u6848\u60C5 \xB7 \u88DC\u554F \xB7 \u6AA2\u7D22 \xB7 \u6DB5\u652C \xB7 \u6297\u8FAF \xB7 \u66F8\u72C0 \xB7 \u95DC\u4FC2\u5716",
+      "home.steps.case": "\u6848\u60C5 \xB7 \u88DC\u554F \xB7 \u6AA2\u7D22 \xB7 \u6DB5\u651D \xB7 \u6297\u8FAF \xB7 \u66F8\u72C0 \xB7 \u95DC\u4FC2\u5716",
       "home.steps.contract": "\u8F09\u5165 \xB7 \u88DC\u554F \xB7 \u6AA2\u7D22 \xB7 \u9010\u689D\u5BE9\u67E5 \xB7 \u6458\u8981 \xB7 \u4FEE\u8A02 \xB7 \u7FA9\u52D9\u5716",
       "home.leaveConfirm": "\u8981\u96E2\u958B\u9019\u500B\u6848\u4EF6\u56DE\u9996\u9801\u55CE\uFF1F\u5206\u6790\u7D50\u679C\u5C07\u88AB\u653E\u68C4\u3002",
       "progress.contract.LOAD": "\u8B80\u53D6\u5951\u7D04\u8207\u5207\u5206\u689D\u6B3E",
@@ -386,6 +388,8 @@
       "result.tab.analysis": "\u6CD5\u5F8B\u5206\u6790\uFF08\u6DB5\u651D\u8207\u8A55\u4F30\uFF09",
       "result.tab.research": "\u6CD5\u689D\u8207\u5224\u6C7A",
       "result.tab.brainstorm": "\u6848\u60C5\u8207\u722D\u57F7\u9EDE",
+      "result.researchWarning.title": "\u6CD5\u898F\u6AA2\u7D22\u672A\u5B8C\u6210",
+      "result.researchWarning.tip": "\u672C\u6B21\u5BE9\u67E5\u6C92\u6709\u53D6\u5F97\u4EFB\u4F55\u6CD5\u689D\uFF0C\u4EE5\u4E0B\u98A8\u96AA\u8A55\u7D1A\u50C5\u70BA\u555F\u767C\u5F0F\u5224\u65B7\u3001\u672A\u7D93\u6CD5\u6E90\u9A57\u8B49\uFF1B\u8ACB\u5F85\u6AA2\u7D22\u670D\u52D9\u6062\u5FA9\u5F8C\u91CD\u65B0\u5BE9\u67E5\u3002",
       "result.generatedIn": "\u7522\u751F\u8A9E\u7CFB",
       "result.notes": "\u9A57\u8B49\u7D00\u9304",
       "result.coverage": "\u6AA2\u7D22\u6DB5\u84CB\u72C0\u614B",
@@ -1017,11 +1021,29 @@
     const lines = (findings || []).map((f) => [f.clauseNo, f.clauseText, t("risk." + (f.risk || "medium"), locale2), (f.lawRefs || []).join("\uFF1B"), f.riskPoint, f.suggestion, (f.judgmentCitations || []).join("\uFF1B")].map(csvCell).join(","));
     return "\uFEFF" + [head, ...lines].join("\r\n");
   }
+  function researchWarning(research, locale2) {
+    const noLaws = !research || !research.laws?.length;
+    const keywordFailed = !!research?.coverage?.keywordStatus && research.coverage.keywordStatus !== "SUCCESS";
+    if (!noLaws && !keywordFailed) return "";
+    return `<div class="semantic-auth-banner research-warning" role="alert">
+    <span class="auth-icon" aria-hidden="true">${ICONS.alert}</span>
+    <div class="auth-message">
+      <strong>${esc(t("result.researchWarning.title", locale2))}</strong>
+      <span>${esc(t("result.researchWarning.tip", locale2))}</span>
+    </div>
+  </div>`;
+  }
+  function findingsNotes(notes, locale2) {
+    const rows = notes || [];
+    if (!rows.length) return "";
+    return `<details class="findings-notes"><summary>${esc(t("result.notes", locale2))}</summary><ul>${rows.map((n) => `<li>${esc(n)}</li>`).join("")}</ul></details>`;
+  }
   function summaryPanel(result, locale2) {
     const c = result.compliance || {}, b = result.contract || {};
     const h3 = (key) => `<h3>${esc(t(key, locale2))}</h3>`;
     const parties = (b.parties || []).map((p) => `${p.role}\uFF1A${p.name}`);
-    return `${h3("summary.contractType")}<p>${esc(c.contractType || b.contractType || "")}</p>
+    return `${researchWarning(result.research, locale2)}
+    ${h3("summary.contractType")}<p>${esc(c.contractType || b.contractType || "")}</p>
     ${parties.length ? h3("summary.parties") + list(parties) : ""}
     ${h3("summary.scopes")}${list(c.scopes || [], (s) => t("contract.scope." + s, locale2))}
     ${h3("summary.overall")}<p>${riskBadge(c.overallRisk, locale2)}</p>
@@ -1103,7 +1125,7 @@
       research: SECTION_HTML.research(r.research || {}, locale2),
       brainstorm: SECTION_HTML.brainstorm(r.brainstorm || {}, locale2),
       checklist: checklistTable(r.assessment?.checklist, locale2),
-      findings: findingsTable(r.compliance?.findings || r.findings?.findings, locale2, riskFilter),
+      findings: researchWarning(r.research, locale2) + findingsTable(r.compliance?.findings || r.findings?.findings, locale2, riskFilter) + findingsNotes(r.findings?.notes, locale2),
       summary: summaryPanel(r, locale2),
       laws: SECTION_HTML.research(r.research || {}, locale2)
     };
@@ -1140,7 +1162,7 @@
     case: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M5 21h14M12 6l-6 3 6-3 6 3-6-3"/><path d="M3 14a3 3 0 0 0 6 0L6 9l-3 5zM15 14a3 3 0 0 0 6 0l-3-5-3 5z"/></svg>',
     contract: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/><path d="M9.5 15.5l2 2 3.5-4"/></svg>'
   };
-  function renderHome(locale2) {
+  function renderHome(locale2, { quota = null } = {}) {
     const card = (mode) => `<article class="capability card" data-mode="${mode}" tabindex="0" role="button" aria-label="${esc(t(`home.${mode}.title`, locale2))}">
       <span class="cap-icon" aria-hidden="true">${CAP_ICONS[mode]}</span>
       <h2>${esc(t(`home.${mode}.title`, locale2))}</h2>
@@ -1150,6 +1172,7 @@
     </article>`;
     return `<section class="home"><h2 class="home-title">${esc(t("home.title", locale2))}</h2><p class="home-lead">${esc(t("home.lead", locale2))}</p>
     <div class="capabilities">${card("case")}${card("contract")}</div>
+    ${renderQuota(quota, locale2)}
     <p class="disclaimer">${ICONS.info}<span>${esc(t("disclaimer", locale2))}</span></p></section>`;
   }
   function bindHome(root, { onSelect }) {
@@ -1254,9 +1277,12 @@
       root.querySelectorAll("[data-i18n]").forEach((n) => {
         n.textContent = t(n.dataset.i18n, locale2);
       });
+      root.querySelectorAll("[data-i18n-aria]").forEach((n) => {
+        n.setAttribute?.("aria-label", t(n.dataset.i18nAria, locale2));
+      });
       switch (state.view) {
         case States.HOME:
-          mount(el, renderHome(locale2));
+          mount(el, renderHome(locale2, { quota }));
           bindHome(el, { onSelect: selectMode });
           break;
         case States.INPUT: {
@@ -1295,7 +1321,8 @@
             });
           });
           el.querySelector("#findings-export")?.addEventListener("click", () => {
-            const findings = state.last?.result?.compliance?.findings || [];
+            const all = state.last?.result?.compliance?.findings || state.last?.result?.findings?.findings || [];
+            const findings = riskFilter === "all" ? all : all.filter((f) => f.risk === riskFilter);
             downloadText(findingsCsv(findings, locale2), t("finding.file", locale2), "text/csv;charset=utf-8");
           });
           el.querySelector("#checklist-export")?.addEventListener("click", () => {

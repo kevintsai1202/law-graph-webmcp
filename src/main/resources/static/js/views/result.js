@@ -163,12 +163,36 @@ export function findingsCsv(findings, locale) {
   return '﻿' + [head, ...lines].join('\r\n');
 }
 
+/**
+ * 法源缺失警示：檢索軌完全沒回法條、或關鍵字檢索未成功時，風險評級僅為啟發式判斷，必須在報告最前方警示。
+ */
+export function researchWarning(research, locale) {
+  const noLaws = !research || !(research.laws?.length);
+  const keywordFailed = !!research?.coverage?.keywordStatus && research.coverage.keywordStatus !== 'SUCCESS';
+  if (!noLaws && !keywordFailed) return '';
+  return `<div class="semantic-auth-banner research-warning" role="alert">
+    <span class="auth-icon" aria-hidden="true">${ICONS.alert}</span>
+    <div class="auth-message">
+      <strong>${esc(t('result.researchWarning.title', locale))}</strong>
+      <span>${esc(t('result.researchWarning.tip', locale))}</span>
+    </div>
+  </div>`;
+}
+
+/** 審查備註（引用移除稽核與模型提醒）：以摺疊區塊列於風險條款表格之後。 */
+function findingsNotes(notes, locale) {
+  const rows = (notes || []);
+  if (!rows.length) return '';
+  return `<details class="findings-notes"><summary>${esc(t('result.notes', locale))}</summary><ul>${rows.map((n) => `<li>${esc(n)}</li>`).join('')}</ul></details>`;
+}
+
 /** 合規摘要面板：契約類型、當事人、審查範疇、整體風險、優先修改建議與免責聲明。 */
 function summaryPanel(result, locale) {
   const c = result.compliance || {}, b = result.contract || {};
   const h3 = (key) => `<h3>${esc(t(key, locale))}</h3>`;
   const parties = (b.parties || []).map((p) => `${p.role}：${p.name}`);
-  return `${h3('summary.contractType')}<p>${esc(c.contractType || b.contractType || '')}</p>
+  return `${researchWarning(result.research, locale)}
+    ${h3('summary.contractType')}<p>${esc(c.contractType || b.contractType || '')}</p>
     ${parties.length ? h3('summary.parties') + list(parties) : ''}
     ${h3('summary.scopes')}${list(c.scopes || [], (s) => t('contract.scope.' + s, locale))}
     ${h3('summary.overall')}<p>${riskBadge(c.overallRisk, locale)}</p>
@@ -279,7 +303,8 @@ export function renderResult({ status, activeTab = 'graph', outputs, mode = stat
     research: SECTION_HTML.research(r.research || {}, locale),
     brainstorm: SECTION_HTML.brainstorm(r.brainstorm || {}, locale),
     checklist: checklistTable(r.assessment?.checklist, locale),
-    findings: findingsTable(r.compliance?.findings || r.findings?.findings, locale, riskFilter),
+    findings: researchWarning(r.research, locale) + findingsTable(r.compliance?.findings || r.findings?.findings, locale, riskFilter)
+      + findingsNotes(r.findings?.notes, locale),
     summary: summaryPanel(r, locale),
     laws: SECTION_HTML.research(r.research || {}, locale)
   };

@@ -66,7 +66,7 @@ function renderUsageNotice(usage, locale) {
 }
 
 /** 每日案件配額：常駐顯示「今日已用 n / N 次」與限制原因；用完時改成醒目橫幅。沒有配額資料（後端不限制）就不顯示。 */
-function renderQuota(quota, locale) {
+export function renderQuota(quota, locale) {
   if (!quota || !(quota.limit > 0)) return '';
   const count = `${quota.used} / ${quota.limit}`;
   // 匿名者且登入可拿到更高上限時，附上登入提示（連到後端提供的登入路徑）

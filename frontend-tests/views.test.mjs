@@ -626,3 +626,50 @@ test('renderSections 合約模式列出契約摘要與條款數', () => {
   const html = renderSections({ contract: contractStatus.result.contract }, 'zh-TW', 'contract');
   assert.match(html, /data-section="contract"/); assert.match(html, /勞動契約/); assert.match(html, /1/);
 });
+
+/** 取出指定 tabpanel 的 HTML 內容（面板以 id="panel-x" 標示，至下一個 panel 之前）。 */
+function panelHtml(html, name) {
+  const start = html.indexOf(`id="panel-${name}"`);
+  if (start < 0) return '';
+  const rest = html.slice(start);
+  const next = rest.indexOf('<div class="panel card"', 1);
+  return next < 0 ? rest : rest.slice(0, next);
+}
+
+test('合約報告在法源缺失時於風險清單與合規摘要都顯示警示', () => {
+  const status = { locale: 'zh-TW', mode: 'contract', result: {
+    research: { laws: [], judgments: [] },
+    compliance: { contractType: '勞動契約', scopes: ['labor'], overallRisk: 'high', findings: [], priorities: [], disclaimer: 'd' }
+  } };
+  const html = renderResult({ status, mode: 'contract', outputs: [] }, 'zh-TW');
+  assert.match(panelHtml(html, 'findings'), /research-warning/);
+  assert.match(panelHtml(html, 'summary'), /research-warning/);
+  assert.match(html, /法規檢索未完成/);
+});
+
+test('法源齊備且關鍵字檢索成功時不顯示法源缺失警示', () => {
+  const status = { locale: 'zh-TW', mode: 'contract', result: {
+    research: { laws: [{ ref: '勞動基準法第24條' }], judgments: [], coverage: { keywordStatus: 'SUCCESS' } },
+    compliance: { contractType: '勞動契約', scopes: ['labor'], overallRisk: 'low', findings: [], priorities: [], disclaimer: 'd' }
+  } };
+  const html = renderResult({ status, mode: 'contract', outputs: [] }, 'zh-TW');
+  assert.doesNotMatch(html, /research-warning/);
+});
+
+test('風險清單面板在表格後列出審查備註（引用移除稽核）', () => {
+  const status = { locale: 'zh-TW', mode: 'contract', result: {
+    research: { laws: [{ ref: '民法第71條' }], coverage: { keywordStatus: 'SUCCESS' } },
+    findings: { findings: [], notes: ['已移除未經檢索的引用：勞基法第24條<x>'] },
+    compliance: { findings: [], scopes: [], priorities: [], disclaimer: 'd' }
+  } };
+  const panel = panelHtml(renderResult({ status, mode: 'contract', outputs: [] }, 'zh-TW'), 'findings');
+  assert.match(panel, /findings-notes/);
+  assert.match(panel, /已移除未經檢索的引用/);
+  assert.match(panel, /&lt;x&gt;/);
+});
+
+test('首頁顯示今日配額列', () => {
+  const html = renderHome('zh-TW', { quota: { used: 1, limit: 3, remaining: 2 } });
+  assert.match(html, /今日已分析/);
+  assert.match(html, /1 \/ 3/);
+});

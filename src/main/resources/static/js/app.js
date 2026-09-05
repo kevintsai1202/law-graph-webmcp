@@ -119,9 +119,11 @@ export function createApp({ root, client, storage, navigatorLanguage, partialCol
     const el = stage(); if (!el) return;
     clearTimeout(collapseTimer);
     root.querySelectorAll('[data-i18n]').forEach((n) => { n.textContent = t(n.dataset.i18n, locale); });
+    // [data-i18n-aria] 節點同步換 aria-label（節點假物件可能沒有 setAttribute，需防呆）
+    root.querySelectorAll('[data-i18n-aria]').forEach((n) => { n.setAttribute?.('aria-label', t(n.dataset.i18nAria, locale)); });
     switch (state.view) {
       case States.HOME:
-        mountHtml(el, renderHome(locale));
+        mountHtml(el, renderHome(locale, { quota }));
         bindHome(el, { onSelect: selectMode });
         break;
       case States.INPUT: {
@@ -158,7 +160,9 @@ export function createApp({ root, client, storage, navigatorLanguage, partialCol
           b.addEventListener('click', () => { riskFilter = b.dataset.risk || 'all'; render(); });
         });
         el.querySelector('#findings-export')?.addEventListener('click', () => {
-          const findings = state.last?.result?.compliance?.findings || [];
+          // 依目前風險篩選匯出：使用者看到什麼就匯出什麼
+          const all = state.last?.result?.compliance?.findings || state.last?.result?.findings?.findings || [];
+          const findings = riskFilter === 'all' ? all : all.filter((f) => f.risk === riskFilter);
           downloadText(findingsCsv(findings, locale), t('finding.file', locale), 'text/csv;charset=utf-8');
         });
         // 當事人準備清單：CSV 下載與列印
