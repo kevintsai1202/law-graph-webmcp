@@ -21,6 +21,11 @@ test('二十二個工具，名稱/描述長度符合 Chrome 安全預算', () =>
   assert.ok(TOOL_NAMES_BY_VIEW.QUESTIONS.includes('fillQuestions'), 'QUESTIONS 應可填入答案');
   assert.ok(TOOL_NAMES_BY_VIEW.QUESTIONS.includes('getQuestions'), 'QUESTIONS 應可讀取題目格式');
   assert.ok(!TOOL_NAMES_BY_VIEW.QUESTIONS.includes('startCase'), 'QUESTIONS 不得再啟動其他案件');
+  // getUsageStats 仍在 TOOL_DEFS，但尚未對任何頁面曝光：M3 接上後再加入
+  assert.ok(names.has('getUsageStats'), 'getUsageStats 仍保留在 TOOL_DEFS');
+  for (const [view, tools] of Object.entries(TOOL_NAMES_BY_VIEW)) {
+    assert.ok(!tools.includes('getUsageStats'), `${view} 不應曝光 getUsageStats（M3 接上後再加入）`);
+  }
 });
 test('唯讀工具帶 readOnlyHint；getAnalysis 帶 untrustedContentHint', () => {
   const byName = Object.fromEntries(TOOL_DEFS.map((d) => [d.name, d]));
@@ -279,4 +284,38 @@ test('合約 INPUT 頁呼叫 startCase 回 WRONG_CAPABILITY', async () => {
   const r = await w.execute('startCase', { caseText: '案情文字超過二十個字的測試內容案情文字' });
   assert.equal(r.ok, false); assert.equal(r.error, 'WRONG_CAPABILITY');
   assert.match(r.message, /startContractReview/);
+});
+
+test('案件 INPUT 頁呼叫 startContractReview 回 WRONG_CAPABILITY', async () => {
+  const state = { view: 'INPUT', mode: 'case', last: null };
+  const app = {
+    getState: () => state, getLocale: () => 'zh-TW', getMode: () => state.mode,
+    selectMode: async () => { throw new Error('不應靜默切換能力'); },
+    start: async () => ({ caseId: 'x' })
+  };
+  const w = createWebMcp({ app, graphView: {}, modelContext: null });
+  const r = await w.execute('startContractReview', { contractText: '合約全文超過二十個字的測試內容合約全文' });
+  assert.equal(r.ok, false); assert.equal(r.error, 'WRONG_CAPABILITY');
+  assert.match(r.message, /selectCapability/);
+});
+test('filterFindingsByRisk 只在合約結果頁可用', async () => {
+  const state = { view: 'RESULT', mode: 'case', last: null };
+  let applied = null;
+  const app = {
+    getState: () => state, getLocale: () => 'zh-TW', getMode: () => state.mode,
+    setRiskFilter: (r) => { applied = r; }
+  };
+  const w = createWebMcp({ app, graphView: {}, modelContext: null });
+  // 案件模式結果頁：不可用
+  let r = await w.execute('filterFindingsByRisk', { risk: 'high' });
+  assert.equal(r.ok, false); assert.equal(r.error, 'TOOL_UNAVAILABLE');
+  assert.equal(applied, null);
+  // 合約模式但不在結果頁：不可用
+  state.mode = 'contract'; state.view = 'RUNNING';
+  r = await w.execute('filterFindingsByRisk', { risk: 'high' });
+  assert.equal(r.error, 'TOOL_UNAVAILABLE');
+  // 合約模式結果頁：可用
+  state.view = 'RESULT';
+  r = await w.execute('filterFindingsByRisk', { risk: 'high' });
+  assert.equal(r.ok, true); assert.equal(applied, 'high');
 });

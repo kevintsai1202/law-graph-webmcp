@@ -7,7 +7,7 @@ const S = (props, required = []) => ({ type: 'object', properties: props, requir
 /** 共用的語系參數。 */
 const LOCALE = { type: 'string', enum: ['en', 'zh-TW'], description: 'Output language' };
 
-/** 十二個工具的穩定契約（不含 execute，可在 node 驗證）。phase 保留供文件與相容性使用。 */
+/** 二十二個工具的穩定契約（不含 execute，可在 node 驗證）。phase 保留供文件與相容性使用。 */
 export const TOOL_DEFS = [
   { name: 'listSampleCases', phase: 'base', annotations: { readOnlyHint: true },
     description: 'List the built-in fictional sample disputes that can be analysed with startCase.',
@@ -85,11 +85,12 @@ export const TOOL_DEFS = [
 
 /** 各頁面狀態允許 Agent 看到與呼叫的工具；QUESTIONS 只允許填入答案，不允許自動送出或換案。 */
 export const TOOL_NAMES_BY_VIEW = Object.freeze({
-  HOME: Object.freeze(['listCapabilities', 'selectCapability', 'startCase', 'startContractReview', 'listSampleCases', 'verifyCitation', 'getUsageStats']),
-  INPUT: Object.freeze(['listSampleCases', 'startCase', 'setOutputSelection', 'getOutputOptions', 'getInputForm', 'verifyCitation', 'listCapabilities', 'selectCapability', 'startContractReview', 'getUsageStats']),
+  // getUsageStats 保留在 TOOL_DEFS，但 M3 接上實際用量前不對任何頁面曝光
+  HOME: Object.freeze(['listCapabilities', 'selectCapability', 'startCase', 'startContractReview', 'listSampleCases', 'verifyCitation']),
+  INPUT: Object.freeze(['listSampleCases', 'startCase', 'setOutputSelection', 'getOutputOptions', 'getInputForm', 'verifyCitation', 'listCapabilities', 'selectCapability', 'startContractReview']),
   RUNNING: Object.freeze(['getCaseStatus', 'resetCase']),
   QUESTIONS: Object.freeze(['getCaseStatus', 'getQuestions', 'fillQuestions', 'resetCase']),
-  RESULT: Object.freeze(['getCaseStatus', 'getResultTabs', 'getAnalysis', 'getGraphSummary', 'focusNode', 'filterGraph', 'explainEdge', 'verifyCitation', 'resetCase', 'getComplianceReport', 'filterFindingsByRisk', 'getUsageStats']),
+  RESULT: Object.freeze(['getCaseStatus', 'getResultTabs', 'getAnalysis', 'getGraphSummary', 'focusNode', 'filterGraph', 'explainEdge', 'verifyCitation', 'resetCase', 'getComplianceReport', 'filterFindingsByRisk']),
   FAILED: Object.freeze(['getCaseStatus', 'resetCase'])
 });
 
@@ -325,6 +326,10 @@ export function createWebMcp({ app, graphView, modelContext, ready = Promise.res
     /** 啟動一次合約合規審查；必要時先切換到合約能力。 */
     startContractReview: async ({ contractText, sampleId, party, scopes, outputs, locale }) => {
       if (!['HOME', 'INPUT'].includes(currentView())) { const c = pageStatus(); return { ok: false, error: 'CASE_IN_PROGRESS', current: c, nextAction: c.nextAction }; }
+      // 案件分析表單開著時不靜默切換能力，要求 Agent 明確選擇（與 startCase 的守衛對稱）
+      if (app.getMode?.() === 'case' && currentView() === 'INPUT') {
+        return { ok: false, error: 'WRONG_CAPABILITY', message: 'The case analysis form is open. Use startCase, or selectCapability("contract") first.' };
+      }
       if (locale && locale !== app.getLocale()) await app.setLocale(locale);
       if (app.getMode?.() !== 'contract') await app.selectMode('contract');
       const extra = { party: party || 'unknown', scopes: Array.isArray(scopes) ? scopes : [] };
@@ -338,7 +343,13 @@ export function createWebMcp({ app, graphView, modelContext, ready = Promise.res
       return truncate({ ...c, findings: (c.findings || []).filter((f) => risk === 'all' || f.risk === risk) }, 4000);
     },
     /** 依風險等級過濾結果頁上顯示的 findings 清單。 */
-    filterFindingsByRisk: async ({ risk }) => { app.setRiskFilter(risk); return { ok: true, risk }; },
+    filterFindingsByRisk: async ({ risk }) => {
+      // 只有合約模式的完成結果頁才有風險清單可篩選
+      if (currentView() !== 'RESULT' || app.getMode?.() !== 'contract') {
+        return { ok: false, error: 'TOOL_UNAVAILABLE', message: 'Risk filter applies to a completed contract review only.' };
+      }
+      app.setRiskFilter?.(risk); return { ok: true, risk };
+    },
     /** 使用量統計於下一個里程碑接上，本版先明確回不可用。 */
     getUsageStats: async () => ({ ok: false, error: 'NOT_AVAILABLE', message: 'Usage statistics arrive in the next release.' })
   };

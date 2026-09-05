@@ -80,16 +80,16 @@ await modelContext.registerTool({ name, description, inputSchema, annotations,
 | `focusNode` | `RESULT` | | Fly the camera to a node by id or label text; returns neighbours |
 | `filterGraph` | `RESULT` | | Show only some groups / one family; `reset` |
 | `explainEdge` | `RESULT` | ✓ | Label, relation type and note of one edge |
-| `listCapabilities` | `HOME` | ✓ | List the two capability cards (case analysis / contract review) |
-| `selectCapability` | `HOME` | | Navigate to `#/case` or `#/contract` |
-| `startContractReview` | `HOME` | | Start a contract review directly from `#/`（`caseText`／`sampleId`／`party`／`scopes`／`documents`） |
+| `listCapabilities` | `HOME`, `INPUT` | ✓ | List the two capability cards (case analysis / contract review) |
+| `selectCapability` | `HOME`, `INPUT` | | 切換能力（開啟該模式的輸入頁），不啟動分析 |
+| `startContractReview` | `HOME`, `INPUT` | | Start a contract review（`contractText`／`sampleId`／`party`／`scopes`／`outputs`／`locale`）；案件分析表單開著時回 `WRONG_CAPABILITY` |
 | `getComplianceReport` | `RESULT`（contract） | ✓（untrusted content） | Contract mode findings, priorities, overall risk |
 | `filterFindingsByRisk` | `RESULT`（contract） | | Filter the findings table by risk level |
-| `getUsageStats` | `HOME` | ✓ | Daily token/case usage (stubbed pending M3) |
+| `getUsageStats` | 暫不曝光（M3） | ✓ | Daily token/case usage：定義保留於 `TOOL_DEFS`，接上實際用量前不註冊到任何頁面 |
 
 `RESULT` in contract mode additionally exposes the合約義務關係圖 (`getGraphSummary`／`focusNode`／`filterGraph`／`explainEdge`, same tools as case mode) and, when `documents` included `"revised"`, the `doc-revised` tab in the rendered page (no dedicated tool — read via `getResultTabs`/`getAnalysis`).
 
-Environment notes: in **Chrome 149+** enable `chrome://flags/#enable-webmcp-testing`, then `await document.modelContext.getTools()` returns the tools for the current view (6 / 2 / 4 / 9 / 2 for `INPUT` / `RUNNING` / `QUESTIONS` / `RESULT` / `FAILED` in case mode; `HOME` additionally exposes `listCapabilities` / `selectCapability` / `startContractReview` / `getUsageStats`; 22 tool definitions total across all views and both modes; the WebMCP layer ships as a separate `js/webmcp-bundle.js` loaded synchronously in `<head>` so tools are registered before the app bundle runs). In the **ChatGPT desktop app**, the address-bar *Site tools* list is page-scoped and should be refreshed after a state transition. The declarative (`<form>`-based) WebMCP API is not used.
+Environment notes: in **Chrome 149+** enable `chrome://flags/#enable-webmcp-testing`, then `await document.modelContext.getTools()` returns the tools for the current view (`HOME` / `INPUT` / `RUNNING` / `QUESTIONS` / `RESULT` / `FAILED` = 6 / 9 / 2 / 4 / 11 / 2 tools; 22 tool definitions total in `TOOL_DEFS`，其中 `getUsageStats` 於 M3 接上前不曝光； the WebMCP layer ships as a separate `js/webmcp-bundle.js` loaded synchronously in `<head>` so tools are registered before the app bundle runs). In the **ChatGPT desktop app**, the address-bar *Site tools* list is page-scoped and should be refreshed after a state transition. The declarative (`<form>`-based) WebMCP API is not used.
 
 ## UI design system
 

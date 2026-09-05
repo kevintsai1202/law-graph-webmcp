@@ -235,3 +235,17 @@ test('完成頁把 hash 改回 #/ 會回首頁並清除案件記錄', async () =
     globalThis.addEventListener = originalAdd;
   }
 });
+
+test('合約模式 RESULT 預設分頁為 findings（即使結果帶圖）', async () => {
+  const client = { samples: async () => [], poll: () => () => {}, usage: async () => null, quota: async () => null, authStatus: async () => null };
+  const storage = fakeStorage();
+  const app = createApp({ root: mountRoot(), client, storage, navigatorLanguage: 'zh-TW', locationLike: { hash: '', pathname: '/', search: '' } });
+  await app.mount();
+  await app.selectMode('contract');
+  // 不經 start()，直接派送完成狀態：模組預設的 graph 仍須改回 findings
+  app.dispatch({ type: 'START', caseId: 'c7', mode: 'contract' });
+  app.dispatch({ type: 'STATUS', status: { caseId: 'c7', status: 'COMPLETED', step: 'GRAPH', mode: 'contract',
+    result: { graph: { nodes: [], edges: [] }, compliance: { overallRisk: 'high', findings: [] } } } });
+  assert.equal(app.getState().view, 'RESULT');
+  assert.equal(app.getResultTabs().activeTab, 'findings');
+});

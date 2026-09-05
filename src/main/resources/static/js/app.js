@@ -42,6 +42,8 @@ export function createApp({ root, client, storage, navigatorLanguage, partialCol
   let startRequestId = 0;
   /** 結果頁目前分頁。 */
   let activeTab = 'graph';
+  /** 使用者是否在本案件中主動點過結果分頁；未點過時合約模式一律回到 findings（規格 §4.5 分頁順序）。 */
+  let tabChosenByUser = false;
   /** 合約模式風險清單的風險等級篩選（all／high／medium／low）。 */
   let riskFilter = 'all';
   /** 目前能力模式；尚未選擇時視為案件分析。 */
@@ -153,8 +155,11 @@ export function createApp({ root, client, storage, navigatorLanguage, partialCol
         scheduleCollapse(el);
         break;
       case States.RESULT:
+        // 合約模式預設分頁為 findings：不論 RESULT 由何種路徑進入（含直接派送 STATUS COMPLETED），
+        // 只要使用者本案件尚未主動點過分頁，就把模組預設的 graph 改回 findings。
+        if (mode() === 'contract' && !tabChosenByUser && activeTab === 'graph') activeTab = 'findings';
         mountHtml(el, renderResult({ status: state.last, activeTab, outputs: selectedOutputs, mode: mode(), riskFilter }, locale));
-        bindResult(el, { onTab: (k) => { activeTab = k; render(); }, onNewCase: reset });
+        bindResult(el, { onTab: (k) => { tabChosenByUser = true; activeTab = k; render(); }, onNewCase: reset });
         // 合約模式風險清單：風險等級篩選與 CSV 匯出
         el.querySelector('#findings-filter')?.querySelectorAll?.('button[data-risk]')?.forEach?.((b) => {
           b.addEventListener('click', () => { riskFilter = b.dataset.risk || 'all'; render(); });
@@ -255,6 +260,7 @@ export function createApp({ root, client, storage, navigatorLanguage, partialCol
     /** 本次送出的模式；dispatch START 之後 state.mode 才會固定，先取一份避免競態。 */
     const m = mode();
     selectedOutputs = normalizeOutputs(outputs, m);
+    tabChosenByUser = false;
     activeTab = m === 'contract' ? 'findings'
       : selectedOutputs.includes('graph') ? 'graph' : 'doc-' + selectedOutputs[0];
 
@@ -578,6 +584,7 @@ export function createApp({ root, client, storage, navigatorLanguage, partialCol
     storage.removeItem('outputs');
     storage.removeItem('mode');
     activeTab = 'graph';
+    tabChosenByUser = false;
     selectedOutputs = ['graph'];
     riskFilter = 'all';
     authRedirected = false;
@@ -618,6 +625,7 @@ export function createApp({ root, client, storage, navigatorLanguage, partialCol
       } catch {
         selectedOutputs = normalizeOutputs([], savedMode);
       }
+      tabChosenByUser = false;
       activeTab = savedMode === 'contract' ? 'findings'
         : selectedOutputs.includes('graph') ? 'graph' : 'doc-' + selectedOutputs[0];
       dispatch({ type: 'START', caseId: saved, mode: savedMode });
