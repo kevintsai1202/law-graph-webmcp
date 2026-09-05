@@ -1,6 +1,7 @@
 package tw.lawgraph.domain;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
@@ -8,10 +9,27 @@ import java.util.Optional;
 public final class ContractGraphRules {
     private ContractGraphRules() {}
 
-    /** 找出 clauseNo 對應的節點：id 相同或 label 包含 clauseNo。 */
+    /**
+     * 邊界感知的條款比對：id 完全相同、label 完全相同，或 label 以 clauseNo 為前綴且下一字元不是
+     * 數字或「之」（用以排除「第1條之1」誤配「第1條」，但允許「第1條第2項」歸屬「第1條」）。
+     * 純 contains 會讓「第1條」誤配「第1條之1」，故不可採用。
+     */
+    private static boolean matchesClause(String clauseNo, GraphNode node) {
+        if (clauseNo.equals(node.id())) return true;
+        String label = node.label();
+        if (label == null) return false;
+        if (clauseNo.equals(label)) return true;
+        if (!label.startsWith(clauseNo)) return false;
+        if (label.length() == clauseNo.length()) return true;
+        char next = label.charAt(clauseNo.length());
+        return !Character.isDigit(next) && next != '之';
+    }
+
+    /** 找出 clauseNo 對應節點的審查結果；多筆匹配時優先取 clauseNo 較長（較specific）者。 */
     private static Optional<ClauseFinding> match(GraphNode node, List<ClauseFinding> findings) {
-        return findings.stream().filter(f -> !f.clauseNo().isBlank()
-                && (f.clauseNo().equals(node.id()) || (node.label() != null && node.label().contains(f.clauseNo())))).findFirst();
+        return findings.stream().filter(f -> !f.clauseNo().isBlank() && matchesClause(f.clauseNo(), node))
+                .sorted(Comparator.comparingInt((ClauseFinding f) -> f.clauseNo().length()).reversed())
+                .findFirst();
     }
 
     /** 「條款原文／風險點／修改建議」三段描述。 */
