@@ -1,0 +1,1432 @@
+{
+  "caseId": "happy_jepsen",
+  "status": "COMPLETED",
+  "step": "GRAPH",
+  "locale": "zh-TW",
+  "result": {
+    "research": {
+      "laws": [
+        {
+          "ref": "民法第71條",
+          "title": "民法",
+          "articleText": "法律行為，違反強制或禁止之規定者，無效。但其規定並不以之為無效者，不在此限。",
+          "source": "https://law.moj.gov.tw/LawClass/LawSingle.aspx?pcode=B0000001&flno=71"
+        },
+        {
+          "ref": "民法第247條之1",
+          "title": "民法",
+          "articleText": "依照當事人一方預定用於同類契約之條款而訂定之契約，為左列各款之約定，按其情形顯失公平者，該部分約定無效：一、免除或減輕預定契約條款之當事人之責任者。二、加重他方當事人之責任者。三、使他方當事人拋棄權利或限制其行使權利者。四、其他於他方當事人有重大不利益者。",
+          "source": "https://law.moj.gov.tw/LawClass/LawSingle.aspx?pcode=B0000001&flno=247-1"
+        },
+        {
+          "ref": "勞動基準法第24條",
+          "title": "勞動基準法",
+          "articleText": "雇主延長勞工工作時間者，其延長工作時間之工資，依下列標準加給：一、延長工作時間在二小時以內者，按平日每小時工資額加給三分之一以上。二、再延長工作時間在二小時以內者，按平日每小時工資額加給三分之二以上。三、依第三十二條第四項規定，延長工作時間者，按平日每小時工資額加倍發給。雇主使勞工於第三十六條所定休息日工作，工作時間在二小時以內者，其工資按平日每小時工資額另再加給一又三分之一以上；工作二小時後再繼續工作者，按平日每小時工資額另再加給一又三分之二以上。",
+          "source": "https://law.moj.gov.tw/LawClass/LawSingle.aspx?pcode=N0030001&flno=24"
+        },
+        {
+          "ref": "勞動基準法第9條之1",
+          "title": "勞動基準法",
+          "articleText": "未符合下列規定者，雇主不得與勞工為離職後競業禁止之約定：一、雇主有應受保護之正當營業利益。二、勞工擔任之職位或職務，能接觸或使用雇主之營業秘密。三、競業禁止之期間、區域、職業活動之範圍及就業對象，未逾合理範疇。四、雇主對勞工因不從事競業行為所受損失有合理補償。前項第四款所定合理補償，不包括勞工於工作期間所受領之給付。違反第一項各款規定之一者，其約定無效。離職後競業禁止之期間，最長不得逾二年。逾二年者，縮短為二年。",
+          "source": "https://law.moj.gov.tw/LawClass/LawSingle.aspx?pcode=N0030001&flno=9-1"
+        },
+        {
+          "ref": "勞動基準法第15條之1",
+          "title": "勞動基準法",
+          "articleText": "未符合下列規定之一，雇主不得與勞工為最低服務年限之約定：一、雇主為勞工進行專業技術培訓，並提供該項培訓費用者。二、雇主為使勞工遵守最低服務年限之約定，提供其合理補償者。前項最低服務年限之約定，應就下列事項綜合考量，不得逾合理範圍：一、雇主為勞工進行專業技術培訓之期間及成本。二、從事相同或類似職務之勞工，其人力替補可能性。三、雇主提供勞工補償之額度及範圍。四、其他影響最低服務年限合理性之事項。違反前二項規定者，其約定無效。勞動契約因不可歸責於勞工之事由而於最低服務年限屆滿前終止者，勞工不負違反最低服務年限約定或返還訓練費用之責任。",
+          "source": "https://law.moj.gov.tw/LawClass/LawSingle.aspx?pcode=N0030001&flno=15-1"
+        },
+        {
+          "ref": "勞動基準法第21條",
+          "title": "勞動基準法",
+          "articleText": "工資由勞雇雙方議定之。但不得低於基本工資。前項基本工資，由中央主管機關設基本工資審議委員會擬訂後，報請行政院核定之。前項基本工資審議委員會之組織及其審議程序等事項，由中央主管機關另以辦法定之。",
+          "source": "https://law.moj.gov.tw/LawClass/LawSingle.aspx?pcode=N0030001&flno=21"
+        },
+        {
+          "ref": "勞動基準法第84條之1",
+          "title": "勞動基準法",
+          "articleText": "經中央主管機關核定公告之下列工作者，得由勞雇雙方另行約定，工作時間、例假、休假、女性夜間工作，並報請當地主管機關核備，不受第三十條、第三十二條、第三十六條、第三十七條、第四十九條規定之限制。一、監督、管理人員或責任制專業人員。二、監視性或間歇性之工作。三、其他性質特殊之工作。前項約定應以書面為之，並應參考本法所定之基準且不得損及勞工之健康及福祉。",
+          "source": "https://law.moj.gov.tw/LawClass/LawSingle.aspx?pcode=N0030001&flno=84-1"
+        },
+        {
+          "ref": "勞動基準法第30條",
+          "title": "勞動基準法",
+          "articleText": "勞工正常工作時間，每日不得超過八小時，每週不得超過四十小時。前項正常工作時間，雇主經工會同意，如事業單位無工會者，經勞資會議同意後，得將其二週內二日之正常工作時數，分配於其他工作日。其分配於其他工作日之時數，每日不得超過二小時。但每週工作總時數不得超過四十八小時。第一項正常工作時間，雇主經工會同意，如事業單位無工會者，經勞資會議同意後，得將八週內之正常工作時數加以分配。但每日正常工作時間不得超過八小時，每週工作總時數不得超過四十八小時。前二項規定，僅適用於經中央主管機關指定之行業。雇主應置備勞工出勤紀錄，並保存五年。前項出勤紀錄，應逐日記載勞工出勤情形至分鐘為止。勞工向雇主申請其出勤紀錄副本或影本時，雇主不得拒絕。雇主不得以第一項正常工作時間之修正，作為減少勞工工資之事由。第一項至第三項及第三十條之一之正常工作時間，雇主得視勞工照顧家庭成員需要，允許勞工於不變更每日正常工作時數下，在一小時範圍內，彈性調整工作開始及終止之時間。",
+          "source": "https://law.moj.gov.tw/LawClass/LawSingle.aspx?pcode=N0030001&flno=30"
+        },
+        {
+          "ref": "勞動基準法第32條",
+          "title": "勞動基準法",
+          "articleText": "雇主有使勞工在正常工作時間以外工作之必要者，雇主經工會同意，如事業單位無工會者，經勞資會議同意後，得將工作時間延長之。前項雇主延長勞工之工作時間連同正常工作時間，一日不得超過十二小時；延長之工作時間，一個月不得超過四十六小時，但雇主經工會同意，如事業單位無工會者，經勞資會議同意後，延長之工作時間，一個月不得超過五十四小時，每三個月不得超過一百三十八小時。雇主僱用勞工人數在三十人以上，依前項但書規定延長勞工工作時間者，應報當地主管機關備查。因天災、事變或突發事件，雇主有使勞工在正常工作時間以外工作之必要者，得將工作時間延長之。但應於延長開始後二十四小時內通知工會；無工會組織者，應報當地主管機關備查。延長之工作時間，雇主應於事後補給勞工以適當之休息。在坑內工作之勞工，其工作時間不得延長。但以監視為主之工作，或有前項所定之情形者，不在此限。",
+          "source": "https://law.moj.gov.tw/LawClass/LawSingle.aspx?pcode=N0030001&flno=32"
+        },
+        {
+          "ref": "勞動基準法第26條",
+          "title": "勞動基準法",
+          "articleText": "雇主不得預扣勞工工資作為違約金或賠償費用。",
+          "source": "https://law.moj.gov.tw/LawClass/LawSingle.aspx?pcode=N0030001&flno=26"
+        },
+        {
+          "ref": "勞動基準法第10條之1",
+          "title": "勞動基準法",
+          "articleText": "雇主調動勞工工作，不得違反勞動契約之約定，並應符合下列原則：一、基於企業經營上所必須，且不得有不當動機及目的。但法律另有規定者，從其規定。二、對勞工之工資及其他勞動條件，未作不利之變更。三、調動後工作為勞工體能及技術可勝任。四、調動工作地點過遠，雇主應予以必要之協助。五、考量勞工及其家庭之生活利益。",
+          "source": "https://law.moj.gov.tw/LawClass/LawSingle.aspx?pcode=N0030001&flno=10-1"
+        },
+        {
+          "ref": "勞動基準法第70條",
+          "title": "勞動基準法",
+          "articleText": "雇主僱用勞工人數在三十人以上者，應依其事業性質，就左列事項訂立工作規則，報請主管機關核備後並公開揭示之：一、工作時間、休息、休假、國定紀念日、特別休假及繼續性工作之輪班方法。二、工資之標準、計算方法及發放日期。三、延長工作時間。四、津貼及獎金。五、應遵守之紀律。六、考勤、請假、獎懲及升遷。七、受僱、解僱、資遣、離職及退休。八、災害傷病補償及撫卹。九、福利措施。十、勞雇雙方應遵守勞工安全衛生規定。十一、勞雇雙方溝通意見加強合作之方法。十二、其他。",
+          "source": "https://law.moj.gov.tw/LawClass/LawSingle.aspx?pcode=N0030001&flno=70"
+        },
+        {
+          "ref": "勞動基準法第15條",
+          "title": "勞動基準法",
+          "articleText": "特定性定期契約期限逾三年者，於屆滿三年後，勞工得終止契約。但應於三十日前預告雇主。不定期契約，勞工終止契約時，應準用第十六條第一項規定期間預告雇主。",
+          "source": "https://law.moj.gov.tw/LawClass/LawSingle.aspx?pcode=N0030001&flno=15"
+        },
+        {
+          "ref": "民法第252條",
+          "title": "民法",
+          "articleText": "約定之違約金額過高者，法院得減至相當之數額。",
+          "source": "https://law.moj.gov.tw/LawClass/LawSingle.aspx?pcode=B0000001&flno=252"
+        }
+      ],
+      "judgments": [
+        {
+          "jid": "CHDV,115,勞簡,14,20260617,1",
+          "citation": "臺灣彰化地方法院 115 年度 勞簡 字第 14 號民事判決",
+          "court": "臺灣彰化地方法院",
+          "date": "115-06-17",
+          "summary": "...原告給付被告久任獎金之方式要求被告任職滿一定期間，而未見有何提供專業技術培訓之約定，核屬勞基法第15條之1第1項第2款規定之補償型最低服務年限條款。⑵承前所述，系爭同意書所約定之久任獎金具盈餘分配之性質，並非最低服務期限之補償。故原告針對系爭同意書之久任條款，並未有合理補...",
+          "url": "https://judgment.judicial.gov.tw/FJUD/data.aspx?ty=JD&id=CHDV%2c115%2c%e5%8b%9e%e7%b0%a1%2c14%2c20260617%2c1&ot=in"
+        },
+        {
+          "jid": "CTDV,114,勞簡,43,20251127,1",
+          "citation": "臺灣橋頭地方法院 114 年度 勞簡 字第 43 號民事判決",
+          "court": "臺灣橋頭地方法院",
+          "date": "114-11-27",
+          "summary": "...不可歸責於勞工之事由而於最低服務年限屆滿前終止者，勞工不負違反最低服務年限約定或返還訓練費用之責任，勞基法第15條之1定有明文。而最低服務年限約款適法性之判斷，應從該約款存在之「必要性」與「合理性」觀之。所謂「必要性」，係指雇主有以該約款保障其預期利益之必要性，如企業支出...",
+          "url": "https://judgment.judicial.gov.tw/FJUD/data.aspx?ty=JD&id=CTDV%2c114%2c%e5%8b%9e%e7%b0%a1%2c43%2c20251127%2c1&ot=in"
+        },
+        {
+          "jid": "KMDV,113,訴,40,20241217,1",
+          "citation": "福建金門地方法院 113 年度 訴 字第 40 號民事判決",
+          "court": "福建金門地方法院",
+          "date": "113-12-17",
+          "summary": "...有最高法院89年度台上字第1301號、104年度台上字第1294號判決意旨可資參照。而勞動契約，未符合下列規定者，雇主不得與勞工為離職後競業禁止之約定：⑴雇主有應受保護之正當營業利益。⑵勞工擔任之職位或職務，能接觸或使用雇主之營業秘密。⑶競業禁止之期間、區域、職業活動之範圍...",
+          "url": "https://judgment.judicial.gov.tw/FJUD/data.aspx?ty=JD&id=KMDV%2c113%2c%e8%a8%b4%2c40%2c20241217%2c1&ot=in"
+        },
+        {
+          "jid": "KMDV,113,訴,40,20241217,2",
+          "citation": "福建金門地方法院 113 年度 訴 字第 40 號民事判決",
+          "court": "福建金門地方法院",
+          "date": "113-12-17",
+          "summary": "...有最高法院89年度台上字第1301號、104年度台上字第1294號判決意旨可資參照。而勞動契約，未符合下列規定者，雇主不得與勞工為離職後競業禁止之約定：⑴雇主有應受保護之正當營業利益。⑵勞工擔任之職位或職務，能接觸或使用雇主之營業秘密。⑶競業禁止之期間、區域、職業活動之範圍...",
+          "url": "https://judgment.judicial.gov.tw/FJUD/data.aspx?ty=JD&id=KMDV%2c113%2c%e8%a8%b4%2c40%2c20241217%2c2&ot=in"
+        },
+        {
+          "jid": "KSDV,102,勞訴,116,20140811,2",
+          "citation": "臺灣高雄地方法院 102 年度 勞訴 字第 116 號民事判決",
+          "court": "臺灣高雄地方法院",
+          "date": "103-08-11",
+          "summary": "...基本工資，依勞動基準法規定，先計算工資之最低標準，再與兩造約定之固定工資作比較，約定工資如有不足，該差額即為原告2 人得訴請加發之延長工時工資，且兩造工資之約定既係以月計，是以各月份予以論計，僅就原告2 人之請求，自97年8 月1 日起至勞動契約終止時止，原告2 人請求各...",
+          "url": "https://judgment.judicial.gov.tw/FJUD/data.aspx?ty=JD&id=KSDV%2c102%2c%e5%8b%9e%e8%a8%b4%2c116%2c20140811%2c2&ot=in"
+        },
+        {
+          "jid": "KSDV,108,勞訴,123,20200804,1",
+          "citation": "臺灣高雄地方法院 108 年度 勞訴 字第 123 號民事判決",
+          "court": "臺灣高雄地方法院",
+          "date": "109-08-04",
+          "summary": "...56,679元。又原告受僱於被告期間，每日工作12小時，每月工作20日，每月工時240小時，等同於工作日每日加班4小時，被告應給付延長工時工資629,282元，扣除被告已給付之加班費31,459元，尚應給付597,823元。原告自受僱被告第5年時應有特別休假9日，第6年至...",
+          "url": "https://judgment.judicial.gov.tw/FJUD/data.aspx?ty=JD&id=KSDV%2c108%2c%e5%8b%9e%e8%a8%b4%2c123%2c20200804%2c1&ot=in"
+        },
+        {
+          "jid": "PCDV,113,勞簡,118,20251229,4",
+          "citation": "臺灣新北地方法院 113 年度 勞簡 字第 118 號民事判決",
+          "court": "臺灣新北地方法院",
+          "date": "114-12-29",
+          "summary": "...1項第4款所定之合理補償，應就下列事項綜合考量：一、每月補償金額不低於勞工離職時一個月平均工資百分之五十。二、補償金額足以維持勞工離職後競業禁止期間之生活所需。三、補償金額與勞工遵守競業禁止之期間、區域、職業活動範圍及就業對象之範疇所受損失相當。四、其他與判斷補償基準合理性...",
+          "url": "https://judgment.judicial.gov.tw/FJUD/data.aspx?ty=JD&id=PCDV%2c113%2c%e5%8b%9e%e7%b0%a1%2c118%2c20251229%2c4&ot=in"
+        },
+        {
+          "jid": "PCDV,113,重勞訴,12,20250509,3",
+          "citation": "臺灣新北地方法院 113 年度 重勞訴 字第 12 號民事判決",
+          "court": "臺灣新北地方法院",
+          "date": "114-05-09",
+          "summary": "...其行使權利者。其他於他方當事人有重大不利益者。民法第247-1條定有明文，依系爭契約約定動輒以百萬元作為限制被告等人離職，又兩造最低服務年限卻未約定提供任何合理補償，又該契約又是訂約之一方及原告單方所為，依照民法第247-1條規定，顯然是過度限制被告等人基於憲法保障之工...",
+          "url": "https://judgment.judicial.gov.tw/FJUD/data.aspx?ty=JD&id=PCDV%2c113%2c%e9%87%8d%e5%8b%9e%e8%a8%b4%2c12%2c20250509%2c3&ot=in"
+        },
+        {
+          "jid": "PCDV,114,勞簡,4,20250507,1",
+          "citation": "臺灣新北地方法院 114 年度 勞簡 字第 4 號民事判決",
+          "court": "臺灣新北地方法院",
+          "date": "114-05-07",
+          "summary": "...限約定，業已違反勞基法第15條之1第1項規定，依同條第3項規定，此約定應為無效。從而，原告依據系爭同意書第5條約定請求被告給付違反最低服務年限之違約金及補助金，即非有據。五、綜上所述，原告依系爭同意書第5條之約定，請求被告應給付原告30萬元，及自支付命令送達之翌日起至清償...",
+          "url": "https://judgment.judicial.gov.tw/FJUD/data.aspx?ty=JD&id=PCDV%2c114%2c%e5%8b%9e%e7%b0%a1%2c4%2c20250507%2c1&ot=in"
+        },
+        {
+          "jid": "PCDV,114,勞簡,42,20250917,1",
+          "citation": "臺灣新北地方法院 114 年度 勞簡 字第 42 號民事判決",
+          "court": "臺灣新北地方法院",
+          "date": "114-09-17",
+          "summary": "...1項第4款所定之合理補償，應就下列事項綜合考量：一、每月補償金額不低於勞工離職時一個月平均工資百分之五十。二、補償金額足以維持勞工離職後競業禁止期間之生活所需。三、補償金額與勞工遵守競業禁止之期間、區域、職業活動範圍及就業對象之範疇所受損失相當。四、其他與判斷補償基準合理性...",
+          "url": "https://judgment.judicial.gov.tw/FJUD/data.aspx?ty=JD&id=PCDV%2c114%2c%e5%8b%9e%e7%b0%a1%2c42%2c20250917%2c1&ot=in"
+        }
+      ],
+      "notes": [
+        "semantic track disabled"
+      ],
+      "coverage": {
+        "keywordStatus": "SUCCESS",
+        "semanticStatus": "DISABLED",
+        "keywordCandidateCount": 15,
+        "semanticCandidateCount": 0,
+        "mergedCount": 10,
+        "droppedCount": 0,
+        "truncatedCount": 5,
+        "authorizationRequired": false
+      },
+      "evidence": [
+        {
+          "judgment": {
+            "jid": "CHDV,115,勞簡,14,20260617,1",
+            "citation": "臺灣彰化地方法院 115 年度 勞簡 字第 14 號民事判決",
+            "court": "臺灣彰化地方法院",
+            "date": "115-06-17",
+            "summary": "...原告給付被告久任獎金之方式要求被告任職滿一定期間，而未見有何提供專業技術培訓之約定，核屬勞基法第15條之1第1項第2款規定之補償型最低服務年限條款。⑵承前所述，系爭同意書所約定之久任獎金具盈餘分配之性質，並非最低服務期限之補償。故原告針對系爭同意書之久任條款，並未有合理補...",
+            "url": "https://judgment.judicial.gov.tw/FJUD/data.aspx?ty=JD&id=CHDV%2c115%2c%e5%8b%9e%e7%b0%a1%2c14%2c20260617%2c1&ot=in"
+          },
+          "sources": [
+            "KEYWORD"
+          ],
+          "citationId": null,
+          "fullTextVerified": false
+        },
+        {
+          "judgment": {
+            "jid": "CTDV,114,勞簡,43,20251127,1",
+            "citation": "臺灣橋頭地方法院 114 年度 勞簡 字第 43 號民事判決",
+            "court": "臺灣橋頭地方法院",
+            "date": "114-11-27",
+            "summary": "...不可歸責於勞工之事由而於最低服務年限屆滿前終止者，勞工不負違反最低服務年限約定或返還訓練費用之責任，勞基法第15條之1定有明文。而最低服務年限約款適法性之判斷，應從該約款存在之「必要性」與「合理性」觀之。所謂「必要性」，係指雇主有以該約款保障其預期利益之必要性，如企業支出...",
+            "url": "https://judgment.judicial.gov.tw/FJUD/data.aspx?ty=JD&id=CTDV%2c114%2c%e5%8b%9e%e7%b0%a1%2c43%2c20251127%2c1&ot=in"
+          },
+          "sources": [
+            "KEYWORD"
+          ],
+          "citationId": null,
+          "fullTextVerified": false
+        },
+        {
+          "judgment": {
+            "jid": "KMDV,113,訴,40,20241217,1",
+            "citation": "福建金門地方法院 113 年度 訴 字第 40 號民事判決",
+            "court": "福建金門地方法院",
+            "date": "113-12-17",
+            "summary": "...有最高法院89年度台上字第1301號、104年度台上字第1294號判決意旨可資參照。而勞動契約，未符合下列規定者，雇主不得與勞工為離職後競業禁止之約定：⑴雇主有應受保護之正當營業利益。⑵勞工擔任之職位或職務，能接觸或使用雇主之營業秘密。⑶競業禁止之期間、區域、職業活動之範圍...",
+            "url": "https://judgment.judicial.gov.tw/FJUD/data.aspx?ty=JD&id=KMDV%2c113%2c%e8%a8%b4%2c40%2c20241217%2c1&ot=in"
+          },
+          "sources": [
+            "KEYWORD"
+          ],
+          "citationId": null,
+          "fullTextVerified": false
+        },
+        {
+          "judgment": {
+            "jid": "KMDV,113,訴,40,20241217,2",
+            "citation": "福建金門地方法院 113 年度 訴 字第 40 號民事判決",
+            "court": "福建金門地方法院",
+            "date": "113-12-17",
+            "summary": "...有最高法院89年度台上字第1301號、104年度台上字第1294號判決意旨可資參照。而勞動契約，未符合下列規定者，雇主不得與勞工為離職後競業禁止之約定：⑴雇主有應受保護之正當營業利益。⑵勞工擔任之職位或職務，能接觸或使用雇主之營業秘密。⑶競業禁止之期間、區域、職業活動之範圍...",
+            "url": "https://judgment.judicial.gov.tw/FJUD/data.aspx?ty=JD&id=KMDV%2c113%2c%e8%a8%b4%2c40%2c20241217%2c2&ot=in"
+          },
+          "sources": [
+            "KEYWORD"
+          ],
+          "citationId": null,
+          "fullTextVerified": false
+        },
+        {
+          "judgment": {
+            "jid": "KSDV,102,勞訴,116,20140811,2",
+            "citation": "臺灣高雄地方法院 102 年度 勞訴 字第 116 號民事判決",
+            "court": "臺灣高雄地方法院",
+            "date": "103-08-11",
+            "summary": "...基本工資，依勞動基準法規定，先計算工資之最低標準，再與兩造約定之固定工資作比較，約定工資如有不足，該差額即為原告2 人得訴請加發之延長工時工資，且兩造工資之約定既係以月計，是以各月份予以論計，僅就原告2 人之請求，自97年8 月1 日起至勞動契約終止時止，原告2 人請求各...",
+            "url": "https://judgment.judicial.gov.tw/FJUD/data.aspx?ty=JD&id=KSDV%2c102%2c%e5%8b%9e%e8%a8%b4%2c116%2c20140811%2c2&ot=in"
+          },
+          "sources": [
+            "KEYWORD"
+          ],
+          "citationId": null,
+          "fullTextVerified": false
+        },
+        {
+          "judgment": {
+            "jid": "KSDV,108,勞訴,123,20200804,1",
+            "citation": "臺灣高雄地方法院 108 年度 勞訴 字第 123 號民事判決",
+            "court": "臺灣高雄地方法院",
+            "date": "109-08-04",
+            "summary": "...56,679元。又原告受僱於被告期間，每日工作12小時，每月工作20日，每月工時240小時，等同於工作日每日加班4小時，被告應給付延長工時工資629,282元，扣除被告已給付之加班費31,459元，尚應給付597,823元。原告自受僱被告第5年時應有特別休假9日，第6年至...",
+            "url": "https://judgment.judicial.gov.tw/FJUD/data.aspx?ty=JD&id=KSDV%2c108%2c%e5%8b%9e%e8%a8%b4%2c123%2c20200804%2c1&ot=in"
+          },
+          "sources": [
+            "KEYWORD"
+          ],
+          "citationId": null,
+          "fullTextVerified": false
+        },
+        {
+          "judgment": {
+            "jid": "PCDV,113,勞簡,118,20251229,4",
+            "citation": "臺灣新北地方法院 113 年度 勞簡 字第 118 號民事判決",
+            "court": "臺灣新北地方法院",
+            "date": "114-12-29",
+            "summary": "...1項第4款所定之合理補償，應就下列事項綜合考量：一、每月補償金額不低於勞工離職時一個月平均工資百分之五十。二、補償金額足以維持勞工離職後競業禁止期間之生活所需。三、補償金額與勞工遵守競業禁止之期間、區域、職業活動範圍及就業對象之範疇所受損失相當。四、其他與判斷補償基準合理性...",
+            "url": "https://judgment.judicial.gov.tw/FJUD/data.aspx?ty=JD&id=PCDV%2c113%2c%e5%8b%9e%e7%b0%a1%2c118%2c20251229%2c4&ot=in"
+          },
+          "sources": [
+            "KEYWORD"
+          ],
+          "citationId": null,
+          "fullTextVerified": false
+        },
+        {
+          "judgment": {
+            "jid": "PCDV,113,重勞訴,12,20250509,3",
+            "citation": "臺灣新北地方法院 113 年度 重勞訴 字第 12 號民事判決",
+            "court": "臺灣新北地方法院",
+            "date": "114-05-09",
+            "summary": "...其行使權利者。其他於他方當事人有重大不利益者。民法第247-1條定有明文，依系爭契約約定動輒以百萬元作為限制被告等人離職，又兩造最低服務年限卻未約定提供任何合理補償，又該契約又是訂約之一方及原告單方所為，依照民法第247-1條規定，顯然是過度限制被告等人基於憲法保障之工...",
+            "url": "https://judgment.judicial.gov.tw/FJUD/data.aspx?ty=JD&id=PCDV%2c113%2c%e9%87%8d%e5%8b%9e%e8%a8%b4%2c12%2c20250509%2c3&ot=in"
+          },
+          "sources": [
+            "KEYWORD"
+          ],
+          "citationId": null,
+          "fullTextVerified": false
+        },
+        {
+          "judgment": {
+            "jid": "PCDV,114,勞簡,4,20250507,1",
+            "citation": "臺灣新北地方法院 114 年度 勞簡 字第 4 號民事判決",
+            "court": "臺灣新北地方法院",
+            "date": "114-05-07",
+            "summary": "...限約定，業已違反勞基法第15條之1第1項規定，依同條第3項規定，此約定應為無效。從而，原告依據系爭同意書第5條約定請求被告給付違反最低服務年限之違約金及補助金，即非有據。五、綜上所述，原告依系爭同意書第5條之約定，請求被告應給付原告30萬元，及自支付命令送達之翌日起至清償...",
+            "url": "https://judgment.judicial.gov.tw/FJUD/data.aspx?ty=JD&id=PCDV%2c114%2c%e5%8b%9e%e7%b0%a1%2c4%2c20250507%2c1&ot=in"
+          },
+          "sources": [
+            "KEYWORD"
+          ],
+          "citationId": null,
+          "fullTextVerified": false
+        },
+        {
+          "judgment": {
+            "jid": "PCDV,114,勞簡,42,20250917,1",
+            "citation": "臺灣新北地方法院 114 年度 勞簡 字第 42 號民事判決",
+            "court": "臺灣新北地方法院",
+            "date": "114-09-17",
+            "summary": "...1項第4款所定之合理補償，應就下列事項綜合考量：一、每月補償金額不低於勞工離職時一個月平均工資百分之五十。二、補償金額足以維持勞工離職後競業禁止期間之生活所需。三、補償金額與勞工遵守競業禁止之期間、區域、職業活動範圍及就業對象之範疇所受損失相當。四、其他與判斷補償基準合理性...",
+            "url": "https://judgment.judicial.gov.tw/FJUD/data.aspx?ty=JD&id=PCDV%2c114%2c%e5%8b%9e%e7%b0%a1%2c42%2c20250917%2c1&ot=in"
+          },
+          "sources": [
+            "KEYWORD"
+          ],
+          "citationId": null,
+          "fullTextVerified": false
+        }
+      ]
+    },
+    "graph": {
+      "nodes": [
+        {
+          "id": "c1",
+          "group": "contract",
+          "label": "勞動契約"
+        },
+        {
+          "id": "p_a",
+          "group": "party",
+          "label": "甲方（○○科技股份有限公司）",
+          "role": "雇主"
+        },
+        {
+          "id": "p_b",
+          "group": "party",
+          "label": "乙方",
+          "role": "勞工（我方）"
+        },
+        {
+          "id": "cl1",
+          "group": "clause",
+          "label": "第一條 職務及薪資",
+          "description": "條款原文：第一條 甲方（○○科技股份有限公司）僱用乙方擔任軟體工程師，月薪新臺幣四萬五千元。\n風險分析：本條月薪新臺幣四萬五千元由兩造議定，未低於基本工資，合於勞動基準法第21條最低標準，對乙方無不利。\n修改建議：建議增訂工資項目、計算方式及發放日期，並載明工資之給付悉依勞動基準法相關規定辦理，以杜爭議。",
+          "family": "勞動契約",
+          "risk": "low"
+        },
+        {
+          "id": "cl2",
+          "group": "clause",
+          "label": "第二條 責任制無加班費",
+          "description": "條款原文：第二條 乙方同意採責任制，不論實際工作時數，甲方均不另發給延長工時工資。\n風險分析：乙方非經核定公告之勞動基準法第84條之1工作者，仍受勞動基準法第30條、第32條工時限制及同法第24條延長工時工資強行規定拘束，本條預先拋棄延長工時工資，依民法第71條無效。\n修改建議：刪除本條，修正為：乙方之工作時間及延長工時工資，悉依勞動基準法第30條、第32條及第24條規定辦理，甲方應置備出勤紀錄至分鐘為止並保存五年。",
+          "family": "勞動契約",
+          "risk": "high"
+        },
+        {
+          "id": "cl3",
+          "group": "clause",
+          "label": "第三條 最低服務年限違約金",
+          "description": "條款原文：第三條 乙方於到職後二年內離職者，應賠償甲方三個月薪資作為培訓費用及違約金。\n風險分析：甲方未舉證為乙方進行專業技術培訓並支出費用，亦未提供合理補償，本條二年最低服務年限併計三個月薪資之培訓費用及違約金已逾合理範圍，違反勞動基準法第15條之1，依同條及民法第71條無效。\n修改建議：刪除本條；如確有專案培訓，應另訂培訓協議，明列培訓期間、費用單據、服務年限計算方式、合理補償及按已服務期間比例扣減之違約金額，並載明因不可歸責於乙方之事由提前終止者不負賠償責任。",
+          "family": "勞動契約",
+          "risk": "high"
+        },
+        {
+          "id": "cl4",
+          "group": "clause",
+          "label": "第四條 競業禁止及違約金",
+          "description": "條款原文：第四條 乙方離職後二年內不得至同業任職，違反者應賠償一百萬元。\n風險分析：甲方未給付合理補償，且未限定正當營業利益、接觸營業秘密之職務、區域及職業活動範圍，違反勞動基準法第9條之1第1項各款，依同條約定無效，乙方並暴露於新臺幣一百萬元索賠之訟累風險。\n修改建議：刪除本條；如確有保護必要，應另訂離職後競業禁止協議，明定正當營業利益、秘密範圍、期間區域職業範疇、按月不低於離職時平均工資百分之五十之補償及其給付方式，並將違約金降至相當數額且明定法院得依民法第252條酌減。",
+          "family": "勞動契約",
+          "risk": "high"
+        },
+        {
+          "id": "cl5",
+          "group": "clause",
+          "label": "第五條 片面調動",
+          "description": "條款原文：第五條 甲方得視營運需要隨時調整乙方工作地點與職務內容，乙方不得異議。\n風險分析：本條賦予甲方隨時片面調動工作地點及職務內容之權利，並預先剝奪乙方異議權，違反勞動基準法第10條之1調動五原則及勞動契約約定拘束，並有構成民法第247條之1顯失公平而無效之虞。\n修改建議：刪除本條，修正為：甲方調動乙方工作，須符合勞動契約約定及勞動基準法第10條之1五原則，經與乙方協商同意後為之，調動地點過遠者甲方應提供必要協助並考量乙方及其家庭生活利益。",
+          "family": "勞動契約",
+          "risk": "high"
+        },
+        {
+          "id": "cl6",
+          "group": "clause",
+          "label": "第六條 工作規則補充",
+          "description": "條款原文：第六條 本契約未約定事項，依甲方工作規則辦理。\n風險分析：本條概括委由甲方單方訂定之工作規則補充契約空白，若該規則未依勞動基準法第70條報請主管機關核備並公開揭示，對乙方不生效力，且單方不利變更另有違反民法第247條之1之爭議。\n修改建議：修正為：本契約未約定事項，依勞動基準法及相關法令辦理；甲方工作規則經報請主管機關核備並公開揭示者，始構成契約之一部，不利變更非經乙方同意不生效力。",
+          "family": "勞動契約",
+          "risk": "medium"
+        },
+        {
+          "id": "cl7",
+          "group": "clause",
+          "label": "段落1 事實前提",
+          "description": "條款原文：（乙方為一般工程師，非勞基法第84條之1核定之工作者；甲方未提供競業補償。）\n風險分析：本段為事實前提，確認乙方非勞動基準法第84條之1人員且未受領競業補償，足以支撐第二條及第四條無效之抗辯，對乙方有利而無合規風險。\n修改建議：建議保留職務說明書、適用核定公告名單及薪資給付紀錄，證明未具勞動基準法第84條之1身分及未受領競業補償，以備爭訟之證據方法使用。",
+          "family": "勞動契約",
+          "risk": "low"
+        },
+        {
+          "id": "o1a",
+          "group": "obligation",
+          "label": "給付月薪四萬五千元",
+          "duty": "main"
+        },
+        {
+          "id": "o1b",
+          "group": "obligation",
+          "label": "提供軟體工程師勞務",
+          "duty": "main"
+        },
+        {
+          "id": "o2",
+          "group": "obligation",
+          "label": "延長工時提供勞務",
+          "duty": "main"
+        },
+        {
+          "id": "o3a",
+          "group": "obligation",
+          "label": "二年最低服務留任",
+          "duty": "collateral"
+        },
+        {
+          "id": "o3b",
+          "group": "obligation",
+          "label": "給付三個月薪資違約金",
+          "duty": "collateral"
+        },
+        {
+          "id": "o4a",
+          "group": "obligation",
+          "label": "離職後二年不至同業任職",
+          "duty": "collateral"
+        },
+        {
+          "id": "o4b",
+          "group": "obligation",
+          "label": "給付一百萬元違約金",
+          "duty": "collateral"
+        },
+        {
+          "id": "o5",
+          "group": "obligation",
+          "label": "服從調動不得異議",
+          "duty": "incidental"
+        },
+        {
+          "id": "o6",
+          "group": "obligation",
+          "label": "依工作規則履行",
+          "duty": "incidental"
+        },
+        {
+          "id": "l21",
+          "group": "law",
+          "label": "勞動基準法第21條",
+          "ref": "勞動基準法第21條"
+        },
+        {
+          "id": "l24",
+          "group": "law",
+          "label": "勞動基準法第24條",
+          "ref": "勞動基準法第24條"
+        },
+        {
+          "id": "l30",
+          "group": "law",
+          "label": "勞動基準法第30條",
+          "ref": "勞動基準法第30條"
+        },
+        {
+          "id": "l32",
+          "group": "law",
+          "label": "勞動基準法第32條",
+          "ref": "勞動基準法第32條"
+        },
+        {
+          "id": "l84_1",
+          "group": "law",
+          "label": "勞動基準法第84條之1",
+          "ref": "勞動基準法第84條之1"
+        },
+        {
+          "id": "l15_1",
+          "group": "law",
+          "label": "勞動基準法第15條之1",
+          "ref": "勞動基準法第15條之1"
+        },
+        {
+          "id": "l9_1",
+          "group": "law",
+          "label": "勞動基準法第9條之1",
+          "ref": "勞動基準法第9條之1"
+        },
+        {
+          "id": "l10_1",
+          "group": "law",
+          "label": "勞動基準法第10條之1",
+          "ref": "勞動基準法第10條之1"
+        },
+        {
+          "id": "l70",
+          "group": "law",
+          "label": "勞動基準法第70條",
+          "ref": "勞動基準法第70條"
+        },
+        {
+          "id": "l26",
+          "group": "law",
+          "label": "勞動基準法第26條",
+          "ref": "勞動基準法第26條"
+        },
+        {
+          "id": "l71",
+          "group": "law",
+          "label": "民法第71條",
+          "ref": "民法第71條"
+        },
+        {
+          "id": "l247_1",
+          "group": "law",
+          "label": "民法第247條之1",
+          "ref": "民法第247條之1"
+        },
+        {
+          "id": "l252",
+          "group": "law",
+          "label": "民法第252條",
+          "ref": "民法第252條"
+        },
+        {
+          "id": "j_ksdv108",
+          "group": "judgment",
+          "label": "臺灣高雄地方法院 108 年度 勞訴 字第 123 號民事判決",
+          "jid": "KSDV,108,勞訴,123,20200804,1",
+          "url": "https://judgment.judicial.gov.tw/FJUD/data.aspx?ty=JD&id=KSDV%2c108%2c%e5%8b%9e%e8%a8%b4%2c123%2c20200804%2c1&ot=in"
+        },
+        {
+          "id": "j_ksdv102",
+          "group": "judgment",
+          "label": "臺灣高雄地方法院 102 年度 勞訴 字第 116 號民事判決",
+          "jid": "KSDV,102,勞訴,116,20140811,2",
+          "url": "https://judgment.judicial.gov.tw/FJUD/data.aspx?ty=JD&id=KSDV%2c102%2c%e5%8b%9e%e8%a8%b4%2c116%2c20140811%2c2&ot=in"
+        },
+        {
+          "id": "j_chdv115",
+          "group": "judgment",
+          "label": "臺灣彰化地方法院 115 年度 勞簡 字第 14 號民事判決",
+          "jid": "CHDV,115,勞簡,14,20260617,1",
+          "url": "https://judgment.judicial.gov.tw/FJUD/data.aspx?ty=JD&id=CHDV%2c115%2c%e5%8b%9e%e7%b0%a1%2c14%2c20260617%2c1&ot=in"
+        },
+        {
+          "id": "j_ctdv114",
+          "group": "judgment",
+          "label": "臺灣橋頭地方法院 114 年度 勞簡 字第 43 號民事判決",
+          "jid": "CTDV,114,勞簡,43,20251127,1",
+          "url": "https://judgment.judicial.gov.tw/FJUD/data.aspx?ty=JD&id=CTDV%2c114%2c%e5%8b%9e%e7%b0%a1%2c43%2c20251127%2c1&ot=in"
+        },
+        {
+          "id": "j_pcdv114_4",
+          "group": "judgment",
+          "label": "臺灣新北地方法院 114 年度 勞簡 字第 4 號民事判決",
+          "jid": "PCDV,114,勞簡,4,20250507,1",
+          "url": "https://judgment.judicial.gov.tw/FJUD/data.aspx?ty=JD&id=PCDV%2c114%2c%e5%8b%9e%e7%b0%a1%2c4%2c20250507%2c1&ot=in"
+        },
+        {
+          "id": "j_pcdv113_12",
+          "group": "judgment",
+          "label": "臺灣新北地方法院 113 年度 重勞訴 字第 12 號民事判決",
+          "jid": "PCDV,113,重勞訴,12,20250509,3",
+          "url": "https://judgment.judicial.gov.tw/FJUD/data.aspx?ty=JD&id=PCDV%2c113%2c%e9%87%8d%e5%8b%9e%e8%a8%b4%2c12%2c20250509%2c3&ot=in"
+        },
+        {
+          "id": "j_kmdv113",
+          "group": "judgment",
+          "label": "福建金門地方法院 113 年度 訴 字第 40 號民事判決",
+          "jid": "KMDV,113,訴,40,20241217,1",
+          "url": "https://judgment.judicial.gov.tw/FJUD/data.aspx?ty=JD&id=KMDV%2c113%2c%e8%a8%b4%2c40%2c20241217%2c1&ot=in"
+        },
+        {
+          "id": "j_pcdv113_118",
+          "group": "judgment",
+          "label": "臺灣新北地方法院 113 年度 勞簡 字第 118 號民事判決",
+          "jid": "PCDV,113,勞簡,118,20251229,4",
+          "url": "https://judgment.judicial.gov.tw/FJUD/data.aspx?ty=JD&id=PCDV%2c113%2c%e5%8b%9e%e7%b0%a1%2c118%2c20251229%2c4&ot=in"
+        },
+        {
+          "id": "j_pcdv114_42",
+          "group": "judgment",
+          "label": "臺灣新北地方法院 114 年度 勞簡 字第 42 號民事判決",
+          "jid": "PCDV,114,勞簡,42,20250917,1",
+          "url": "https://judgment.judicial.gov.tw/FJUD/data.aspx?ty=JD&id=PCDV%2c114%2c%e5%8b%9e%e7%b0%a1%2c42%2c20250917%2c1&ot=in"
+        }
+      ],
+      "edges": [
+        {
+          "from": "p_a",
+          "to": "c1",
+          "label": "當事人",
+          "title": null,
+          "rel": null
+        },
+        {
+          "from": "p_b",
+          "to": "c1",
+          "label": "當事人",
+          "title": null,
+          "rel": null
+        },
+        {
+          "from": "c1",
+          "to": "cl1",
+          "label": "包含",
+          "title": null,
+          "rel": null
+        },
+        {
+          "from": "c1",
+          "to": "cl2",
+          "label": "包含",
+          "title": null,
+          "rel": null
+        },
+        {
+          "from": "c1",
+          "to": "cl3",
+          "label": "包含",
+          "title": null,
+          "rel": null
+        },
+        {
+          "from": "c1",
+          "to": "cl4",
+          "label": "包含",
+          "title": null,
+          "rel": null
+        },
+        {
+          "from": "c1",
+          "to": "cl5",
+          "label": "包含",
+          "title": null,
+          "rel": null
+        },
+        {
+          "from": "c1",
+          "to": "cl6",
+          "label": "包含",
+          "title": null,
+          "rel": null
+        },
+        {
+          "from": "c1",
+          "to": "cl7",
+          "label": "包含",
+          "title": null,
+          "rel": null
+        },
+        {
+          "from": "cl1",
+          "to": "o1a",
+          "label": "課予",
+          "title": null,
+          "rel": null
+        },
+        {
+          "from": "cl1",
+          "to": "o1b",
+          "label": "課予",
+          "title": null,
+          "rel": null
+        },
+        {
+          "from": "cl2",
+          "to": "o2",
+          "label": "課予",
+          "title": null,
+          "rel": null
+        },
+        {
+          "from": "cl3",
+          "to": "o3a",
+          "label": "課予",
+          "title": null,
+          "rel": null
+        },
+        {
+          "from": "cl3",
+          "to": "o3b",
+          "label": "課予",
+          "title": null,
+          "rel": null
+        },
+        {
+          "from": "cl4",
+          "to": "o4a",
+          "label": "課予",
+          "title": null,
+          "rel": null
+        },
+        {
+          "from": "cl4",
+          "to": "o4b",
+          "label": "課予",
+          "title": null,
+          "rel": null
+        },
+        {
+          "from": "cl5",
+          "to": "o5",
+          "label": "課予",
+          "title": null,
+          "rel": null
+        },
+        {
+          "from": "cl6",
+          "to": "o6",
+          "label": "課予",
+          "title": null,
+          "rel": null
+        },
+        {
+          "from": "p_a",
+          "to": "o1a",
+          "label": "負擔",
+          "title": null,
+          "rel": null
+        },
+        {
+          "from": "p_b",
+          "to": "o1b",
+          "label": "負擔",
+          "title": null,
+          "rel": null
+        },
+        {
+          "from": "p_b",
+          "to": "o2",
+          "label": "負擔",
+          "title": null,
+          "rel": null
+        },
+        {
+          "from": "p_b",
+          "to": "o3a",
+          "label": "負擔",
+          "title": null,
+          "rel": null
+        },
+        {
+          "from": "p_b",
+          "to": "o3b",
+          "label": "負擔",
+          "title": null,
+          "rel": null
+        },
+        {
+          "from": "p_b",
+          "to": "o4a",
+          "label": "負擔",
+          "title": null,
+          "rel": null
+        },
+        {
+          "from": "p_b",
+          "to": "o4b",
+          "label": "負擔",
+          "title": null,
+          "rel": null
+        },
+        {
+          "from": "p_b",
+          "to": "o5",
+          "label": "負擔",
+          "title": null,
+          "rel": null
+        },
+        {
+          "from": "p_b",
+          "to": "o6",
+          "label": "負擔",
+          "title": null,
+          "rel": null
+        },
+        {
+          "from": "o1a",
+          "to": "p_b",
+          "label": "得請求",
+          "title": null,
+          "rel": null
+        },
+        {
+          "from": "o1b",
+          "to": "p_a",
+          "label": "得請求",
+          "title": null,
+          "rel": null
+        },
+        {
+          "from": "o2",
+          "to": "p_a",
+          "label": "得請求",
+          "title": null,
+          "rel": null
+        },
+        {
+          "from": "o3a",
+          "to": "p_a",
+          "label": "得請求",
+          "title": null,
+          "rel": null
+        },
+        {
+          "from": "o3b",
+          "to": "p_a",
+          "label": "得請求",
+          "title": null,
+          "rel": null
+        },
+        {
+          "from": "o4a",
+          "to": "p_a",
+          "label": "得請求",
+          "title": null,
+          "rel": null
+        },
+        {
+          "from": "o4b",
+          "to": "p_a",
+          "label": "得請求",
+          "title": null,
+          "rel": null
+        },
+        {
+          "from": "o5",
+          "to": "p_a",
+          "label": "得請求",
+          "title": null,
+          "rel": null
+        },
+        {
+          "from": "o6",
+          "to": "p_a",
+          "label": "得請求",
+          "title": null,
+          "rel": null
+        },
+        {
+          "from": "o1a",
+          "to": "o1b",
+          "label": "對價",
+          "title": null,
+          "rel": null
+        },
+        {
+          "from": "cl3",
+          "to": "o3a",
+          "label": "違約效果",
+          "title": null,
+          "rel": null
+        },
+        {
+          "from": "cl4",
+          "to": "o4a",
+          "label": "違約效果",
+          "title": null,
+          "rel": null
+        },
+        {
+          "from": "cl1",
+          "to": "l21",
+          "label": "適用",
+          "title": null,
+          "rel": null
+        },
+        {
+          "from": "cl2",
+          "to": "l24",
+          "label": "適用",
+          "title": null,
+          "rel": null
+        },
+        {
+          "from": "cl2",
+          "to": "l30",
+          "label": "適用",
+          "title": null,
+          "rel": null
+        },
+        {
+          "from": "cl2",
+          "to": "l32",
+          "label": "適用",
+          "title": null,
+          "rel": null
+        },
+        {
+          "from": "cl2",
+          "to": "l84_1",
+          "label": "適用",
+          "title": null,
+          "rel": null
+        },
+        {
+          "from": "cl2",
+          "to": "l71",
+          "label": "適用",
+          "title": null,
+          "rel": null
+        },
+        {
+          "from": "cl3",
+          "to": "l15_1",
+          "label": "適用",
+          "title": null,
+          "rel": null
+        },
+        {
+          "from": "cl3",
+          "to": "l26",
+          "label": "適用",
+          "title": null,
+          "rel": null
+        },
+        {
+          "from": "cl3",
+          "to": "l71",
+          "label": "適用",
+          "title": null,
+          "rel": null
+        },
+        {
+          "from": "cl3",
+          "to": "l247_1",
+          "label": "適用",
+          "title": null,
+          "rel": null
+        },
+        {
+          "from": "cl3",
+          "to": "l252",
+          "label": "適用",
+          "title": null,
+          "rel": null
+        },
+        {
+          "from": "cl4",
+          "to": "l9_1",
+          "label": "適用",
+          "title": null,
+          "rel": null
+        },
+        {
+          "from": "cl4",
+          "to": "l71",
+          "label": "適用",
+          "title": null,
+          "rel": null
+        },
+        {
+          "from": "cl4",
+          "to": "l247_1",
+          "label": "適用",
+          "title": null,
+          "rel": null
+        },
+        {
+          "from": "cl4",
+          "to": "l252",
+          "label": "適用",
+          "title": null,
+          "rel": null
+        },
+        {
+          "from": "cl5",
+          "to": "l10_1",
+          "label": "適用",
+          "title": null,
+          "rel": null
+        },
+        {
+          "from": "cl5",
+          "to": "l247_1",
+          "label": "適用",
+          "title": null,
+          "rel": null
+        },
+        {
+          "from": "cl6",
+          "to": "l70",
+          "label": "適用",
+          "title": null,
+          "rel": null
+        },
+        {
+          "from": "cl6",
+          "to": "l247_1",
+          "label": "適用",
+          "title": null,
+          "rel": null
+        },
+        {
+          "from": "cl7",
+          "to": "l84_1",
+          "label": "適用",
+          "title": null,
+          "rel": null
+        },
+        {
+          "from": "cl7",
+          "to": "l9_1",
+          "label": "適用",
+          "title": null,
+          "rel": null
+        },
+        {
+          "from": "cl2",
+          "to": "j_ksdv108",
+          "label": "引用",
+          "title": null,
+          "rel": null
+        },
+        {
+          "from": "cl2",
+          "to": "j_ksdv102",
+          "label": "引用",
+          "title": null,
+          "rel": null
+        },
+        {
+          "from": "cl3",
+          "to": "j_chdv115",
+          "label": "引用",
+          "title": null,
+          "rel": null
+        },
+        {
+          "from": "cl3",
+          "to": "j_ctdv114",
+          "label": "引用",
+          "title": null,
+          "rel": null
+        },
+        {
+          "from": "cl3",
+          "to": "j_pcdv114_4",
+          "label": "引用",
+          "title": null,
+          "rel": null
+        },
+        {
+          "from": "cl3",
+          "to": "j_pcdv113_12",
+          "label": "引用",
+          "title": null,
+          "rel": null
+        },
+        {
+          "from": "cl4",
+          "to": "j_kmdv113",
+          "label": "引用",
+          "title": null,
+          "rel": null
+        },
+        {
+          "from": "cl4",
+          "to": "j_pcdv113_118",
+          "label": "引用",
+          "title": null,
+          "rel": null
+        },
+        {
+          "from": "cl4",
+          "to": "j_pcdv114_42",
+          "label": "引用",
+          "title": null,
+          "rel": null
+        }
+      ]
+    },
+    "contract": {
+      "contractType": "勞動契約",
+      "scopes": [
+        "labor"
+      ],
+      "parties": [
+        {
+          "name": "甲方（○○科技股份有限公司）",
+          "role": "雇主"
+        },
+        {
+          "name": "乙方",
+          "role": "勞工（我方）"
+        }
+      ],
+      "clauses": [
+        {
+          "clauseNo": "第一條",
+          "text": "第一條 甲方（○○科技股份有限公司）僱用乙方擔任軟體工程師，月薪新臺幣四萬五千元。"
+        },
+        {
+          "clauseNo": "第二條",
+          "text": "第二條 乙方同意採責任制，不論實際工作時數，甲方均不另發給延長工時工資。"
+        },
+        {
+          "clauseNo": "第三條",
+          "text": "第三條 乙方於到職後二年內離職者，應賠償甲方三個月薪資作為培訓費用及違約金。"
+        },
+        {
+          "clauseNo": "第四條",
+          "text": "第四條 乙方離職後二年內不得至同業任職，違反者應賠償一百萬元。"
+        },
+        {
+          "clauseNo": "第五條",
+          "text": "第五條 甲方得視營運需要隨時調整乙方工作地點與職務內容，乙方不得異議。"
+        },
+        {
+          "clauseNo": "第六條",
+          "text": "第六條 本契約未約定事項，依甲方工作規則辦理。"
+        },
+        {
+          "clauseNo": "段落1",
+          "text": "（乙方為一般工程師，非勞基法第84條之1核定之工作者；甲方未提供競業補償。）"
+        }
+      ],
+      "questions": [
+        {
+          "id": "q1",
+          "text": "公司有把工作規則拿給你看嗎？有貼在公司讓大家看得到嗎？有送給政府審查（核備程序）嗎？",
+          "why": "要判斷第六條叫你照公司規則走是否有效（工作規則效力）。少了這個就無法認定。"
+        },
+        {
+          "id": "q2",
+          "text": "公司真的有花錢讓你去上課受訓嗎？花了多少錢？有收據嗎？（培訓費用）",
+          "why": "要判斷第三條要你賠三個月薪水是否合理（最低服務年限及違約金）。沒有真的花錢就不能要你賠。"
+        },
+        {
+          "id": "q3",
+          "text": "公司說要調動你時，會把你調到很遠的地方嗎？薪水和工作內容會變差嗎？（調動五原則）",
+          "why": "要判斷第五條老闆隨時調你是否合法（雇主調動權）。沒有實際調動情形就無法認定。"
+        }
+      ],
+      "summary": "甲方聘乙方為軟體工程師，月薪四萬五千元，約定責任制不給加班費、提前離職賠三個月薪資、離職後二年競業禁止賠一百萬元、雇主可隨時調動職務地點及以工作規則補充。"
+    },
+    "findings": {
+      "findings": [
+        {
+          "clauseNo": "第一條",
+          "clauseText": "第一條 甲方（○○科技股份有限公司）僱用乙方擔任軟體工程師，月薪新臺幣四萬五千元。",
+          "risk": "low",
+          "lawRefs": [
+            "勞動基準法第21條"
+          ],
+          "riskPoint": "本條月薪新臺幣四萬五千元由兩造議定，未低於基本工資，合於勞動基準法第21條最低標準，對乙方無不利。",
+          "suggestion": "建議增訂工資項目、計算方式及發放日期，並載明工資之給付悉依勞動基準法相關規定辦理，以杜爭議。",
+          "judgmentCitations": []
+        },
+        {
+          "clauseNo": "第二條",
+          "clauseText": "第二條 乙方同意採責任制，不論實際工作時數，甲方均不另發給延長工時工資。",
+          "risk": "high",
+          "lawRefs": [
+            "勞動基準法第24條",
+            "勞動基準法第30條",
+            "勞動基準法第32條",
+            "勞動基準法第84條之1",
+            "民法第71條"
+          ],
+          "riskPoint": "乙方非經核定公告之勞動基準法第84條之1工作者，仍受勞動基準法第30條、第32條工時限制及同法第24條延長工時工資強行規定拘束，本條預先拋棄延長工時工資，依民法第71條無效。",
+          "suggestion": "刪除本條，修正為：乙方之工作時間及延長工時工資，悉依勞動基準法第30條、第32條及第24條規定辦理，甲方應置備出勤紀錄至分鐘為止並保存五年。",
+          "judgmentCitations": [
+            "臺灣高雄地方法院 108 年度 勞訴 字第 123 號民事判決",
+            "臺灣高雄地方法院 102 年度 勞訴 字第 116 號民事判決"
+          ]
+        },
+        {
+          "clauseNo": "第三條",
+          "clauseText": "第三條 乙方於到職後二年內離職者，應賠償甲方三個月薪資作為培訓費用及違約金。",
+          "risk": "high",
+          "lawRefs": [
+            "勞動基準法第15條之1",
+            "勞動基準法第26條",
+            "民法第71條",
+            "民法第247條之1",
+            "民法第252條"
+          ],
+          "riskPoint": "甲方未舉證為乙方進行專業技術培訓並支出費用，亦未提供合理補償，本條二年最低服務年限併計三個月薪資之培訓費用及違約金已逾合理範圍，違反勞動基準法第15條之1，依同條及民法第71條無效。",
+          "suggestion": "刪除本條；如確有專案培訓，應另訂培訓協議，明列培訓期間、費用單據、服務年限計算方式、合理補償及按已服務期間比例扣減之違約金額，並載明因不可歸責於乙方之事由提前終止者不負賠償責任。",
+          "judgmentCitations": [
+            "臺灣彰化地方法院 115 年度 勞簡 字第 14 號民事判決",
+            "臺灣橋頭地方法院 114 年度 勞簡 字第 43 號民事判決",
+            "臺灣新北地方法院 114 年度 勞簡 字第 4 號民事判決",
+            "臺灣新北地方法院 113 年度 重勞訴 字第 12 號民事判決"
+          ]
+        },
+        {
+          "clauseNo": "第四條",
+          "clauseText": "第四條 乙方離職後二年內不得至同業任職，違反者應賠償一百萬元。",
+          "risk": "high",
+          "lawRefs": [
+            "勞動基準法第9條之1",
+            "民法第71條",
+            "民法第247條之1",
+            "民法第252條"
+          ],
+          "riskPoint": "甲方未給付合理補償，且未限定正當營業利益、接觸營業秘密之職務、區域及職業活動範圍，違反勞動基準法第9條之1第1項各款，依同條約定無效，乙方並暴露於新臺幣一百萬元索賠之訟累風險。",
+          "suggestion": "刪除本條；如確有保護必要，應另訂離職後競業禁止協議，明定正當營業利益、秘密範圍、期間區域職業範疇、按月不低於離職時平均工資百分之五十之補償及其給付方式，並將違約金降至相當數額且明定法院得依民法第252條酌減。",
+          "judgmentCitations": [
+            "福建金門地方法院 113 年度 訴 字第 40 號民事判決",
+            "臺灣新北地方法院 113 年度 勞簡 字第 118 號民事判決",
+            "臺灣新北地方法院 114 年度 勞簡 字第 42 號民事判決"
+          ]
+        },
+        {
+          "clauseNo": "第五條",
+          "clauseText": "第五條 甲方得視營運需要隨時調整乙方工作地點與職務內容，乙方不得異議。",
+          "risk": "high",
+          "lawRefs": [
+            "勞動基準法第10條之1",
+            "民法第247條之1",
+            "民法第71條"
+          ],
+          "riskPoint": "本條賦予甲方隨時片面調動工作地點及職務內容之權利，並預先剝奪乙方異議權，違反勞動基準法第10條之1調動五原則及勞動契約約定拘束，並有構成民法第247條之1顯失公平而無效之虞。",
+          "suggestion": "刪除本條，修正為：甲方調動乙方工作，須符合勞動契約約定及勞動基準法第10條之1五原則，經與乙方協商同意後為之，調動地點過遠者甲方應提供必要協助並考量乙方及其家庭生活利益。",
+          "judgmentCitations": []
+        },
+        {
+          "clauseNo": "第六條",
+          "clauseText": "第六條 本契約未約定事項，依甲方工作規則辦理。",
+          "risk": "medium",
+          "lawRefs": [
+            "勞動基準法第70條",
+            "民法第247條之1"
+          ],
+          "riskPoint": "本條概括委由甲方單方訂定之工作規則補充契約空白，若該規則未依勞動基準法第70條報請主管機關核備並公開揭示，對乙方不生效力，且單方不利變更另有違反民法第247條之1之爭議。",
+          "suggestion": "修正為：本契約未約定事項，依勞動基準法及相關法令辦理；甲方工作規則經報請主管機關核備並公開揭示者，始構成契約之一部，不利變更非經乙方同意不生效力。",
+          "judgmentCitations": []
+        },
+        {
+          "clauseNo": "段落1",
+          "clauseText": "（乙方為一般工程師，非勞基法第84條之1核定之工作者；甲方未提供競業補償。）",
+          "risk": "low",
+          "lawRefs": [
+            "勞動基準法第84條之1",
+            "勞動基準法第9條之1"
+          ],
+          "riskPoint": "本段為事實前提，確認乙方非勞動基準法第84條之1人員且未受領競業補償，足以支撐第二條及第四條無效之抗辯，對乙方有利而無合規風險。",
+          "suggestion": "建議保留職務說明書、適用核定公告名單及薪資給付紀錄，證明未具勞動基準法第84條之1身分及未受領競業補償，以備爭訟之證據方法使用。",
+          "judgmentCitations": []
+        }
+      ],
+      "notes": [
+        "本批為關鍵字檢索，無語意軌，確定性較低。",
+        "培訓費用單據之有無、工作規則是否核備揭示、是否已有調動事實等三項不明，均已依不利於資方認定之假設評價第三條、第六條、第五條。"
+      ]
+    },
+    "compliance": {
+      "contractType": "勞動契約",
+      "scopes": [
+        "labor"
+      ],
+      "overallRisk": "high",
+      "findings": [
+        {
+          "clauseNo": "第一條",
+          "clauseText": "第一條 甲方（○○科技股份有限公司）僱用乙方擔任軟體工程師，月薪新臺幣四萬五千元。",
+          "risk": "low",
+          "lawRefs": [
+            "勞動基準法第21條"
+          ],
+          "riskPoint": "本條月薪新臺幣四萬五千元由兩造議定，未低於基本工資，合於勞動基準法第21條最低標準，對乙方無不利。",
+          "suggestion": "建議增訂工資項目、計算方式及發放日期，並載明工資之給付悉依勞動基準法相關規定辦理，以杜爭議。",
+          "judgmentCitations": []
+        },
+        {
+          "clauseNo": "第二條",
+          "clauseText": "第二條 乙方同意採責任制，不論實際工作時數，甲方均不另發給延長工時工資。",
+          "risk": "high",
+          "lawRefs": [
+            "勞動基準法第24條",
+            "勞動基準法第30條",
+            "勞動基準法第32條",
+            "勞動基準法第84條之1",
+            "民法第71條"
+          ],
+          "riskPoint": "乙方非經核定公告之勞動基準法第84條之1工作者，仍受勞動基準法第30條、第32條工時限制及同法第24條延長工時工資強行規定拘束，本條預先拋棄延長工時工資，依民法第71條無效。",
+          "suggestion": "刪除本條，修正為：乙方之工作時間及延長工時工資，悉依勞動基準法第30條、第32條及第24條規定辦理，甲方應置備出勤紀錄至分鐘為止並保存五年。",
+          "judgmentCitations": [
+            "臺灣高雄地方法院 108 年度 勞訴 字第 123 號民事判決",
+            "臺灣高雄地方法院 102 年度 勞訴 字第 116 號民事判決"
+          ]
+        },
+        {
+          "clauseNo": "第三條",
+          "clauseText": "第三條 乙方於到職後二年內離職者，應賠償甲方三個月薪資作為培訓費用及違約金。",
+          "risk": "high",
+          "lawRefs": [
+            "勞動基準法第15條之1",
+            "勞動基準法第26條",
+            "民法第71條",
+            "民法第247條之1",
+            "民法第252條"
+          ],
+          "riskPoint": "甲方未舉證為乙方進行專業技術培訓並支出費用，亦未提供合理補償，本條二年最低服務年限併計三個月薪資之培訓費用及違約金已逾合理範圍，違反勞動基準法第15條之1，依同條及民法第71條無效。",
+          "suggestion": "刪除本條；如確有專案培訓，應另訂培訓協議，明列培訓期間、費用單據、服務年限計算方式、合理補償及按已服務期間比例扣減之違約金額，並載明因不可歸責於乙方之事由提前終止者不負賠償責任。",
+          "judgmentCitations": [
+            "臺灣彰化地方法院 115 年度 勞簡 字第 14 號民事判決",
+            "臺灣橋頭地方法院 114 年度 勞簡 字第 43 號民事判決",
+            "臺灣新北地方法院 114 年度 勞簡 字第 4 號民事判決",
+            "臺灣新北地方法院 113 年度 重勞訴 字第 12 號民事判決"
+          ]
+        },
+        {
+          "clauseNo": "第四條",
+          "clauseText": "第四條 乙方離職後二年內不得至同業任職，違反者應賠償一百萬元。",
+          "risk": "high",
+          "lawRefs": [
+            "勞動基準法第9條之1",
+            "民法第71條",
+            "民法第247條之1",
+            "民法第252條"
+          ],
+          "riskPoint": "甲方未給付合理補償，且未限定正當營業利益、接觸營業秘密之職務、區域及職業活動範圍，違反勞動基準法第9條之1第1項各款，依同條約定無效，乙方並暴露於新臺幣一百萬元索賠之訟累風險。",
+          "suggestion": "刪除本條；如確有保護必要，應另訂離職後競業禁止協議，明定正當營業利益、秘密範圍、期間區域職業範疇、按月不低於離職時平均工資百分之五十之補償及其給付方式，並將違約金降至相當數額且明定法院得依民法第252條酌減。",
+          "judgmentCitations": [
+            "福建金門地方法院 113 年度 訴 字第 40 號民事判決",
+            "臺灣新北地方法院 113 年度 勞簡 字第 118 號民事判決",
+            "臺灣新北地方法院 114 年度 勞簡 字第 42 號民事判決"
+          ]
+        },
+        {
+          "clauseNo": "第五條",
+          "clauseText": "第五條 甲方得視營運需要隨時調整乙方工作地點與職務內容，乙方不得異議。",
+          "risk": "high",
+          "lawRefs": [
+            "勞動基準法第10條之1",
+            "民法第247條之1",
+            "民法第71條"
+          ],
+          "riskPoint": "本條賦予甲方隨時片面調動工作地點及職務內容之權利，並預先剝奪乙方異議權，違反勞動基準法第10條之1調動五原則及勞動契約約定拘束，並有構成民法第247條之1顯失公平而無效之虞。",
+          "suggestion": "刪除本條，修正為：甲方調動乙方工作，須符合勞動契約約定及勞動基準法第10條之1五原則，經與乙方協商同意後為之，調動地點過遠者甲方應提供必要協助並考量乙方及其家庭生活利益。",
+          "judgmentCitations": []
+        },
+        {
+          "clauseNo": "第六條",
+          "clauseText": "第六條 本契約未約定事項，依甲方工作規則辦理。",
+          "risk": "medium",
+          "lawRefs": [
+            "勞動基準法第70條",
+            "民法第247條之1"
+          ],
+          "riskPoint": "本條概括委由甲方單方訂定之工作規則補充契約空白，若該規則未依勞動基準法第70條報請主管機關核備並公開揭示，對乙方不生效力，且單方不利變更另有違反民法第247條之1之爭議。",
+          "suggestion": "修正為：本契約未約定事項，依勞動基準法及相關法令辦理；甲方工作規則經報請主管機關核備並公開揭示者，始構成契約之一部，不利變更非經乙方同意不生效力。",
+          "judgmentCitations": []
+        },
+        {
+          "clauseNo": "段落1",
+          "clauseText": "（乙方為一般工程師，非勞基法第84條之1核定之工作者；甲方未提供競業補償。）",
+          "risk": "low",
+          "lawRefs": [
+            "勞動基準法第84條之1",
+            "勞動基準法第9條之1"
+          ],
+          "riskPoint": "本段為事實前提，確認乙方非勞動基準法第84條之1人員且未受領競業補償，足以支撐第二條及第四條無效之抗辯，對乙方有利而無合規風險。",
+          "suggestion": "建議保留職務說明書、適用核定公告名單及薪資給付紀錄，證明未具勞動基準法第84條之1身分及未受領競業補償，以備爭訟之證據方法使用。",
+          "judgmentCitations": []
+        }
+      ],
+      "priorities": [
+        "第二條說不用給加班費要最先改（違反強行規定）。這句是無效的，你加班還是可以要加班費。",
+        "第三條做不滿兩年要賠三個月薪水要最先改（最低服務年限及違約金）。公司沒花錢培訓就不能叫你賠。",
+        "第四條離職後兩年不能去同業還要賠一百萬要最先改（離職後競業禁止及補償金）。公司沒按月給你補償金就不能限制你。",
+        "第五條說公司可隨時把你調去別的地方要最先改（雇主調動五原則）。調動要跟你談好，不能叫你不能有意見。",
+        "第六條說沒寫的都照公司規定要接著修（工作規則效力）。要公司拿出有送政府看過又有公開的版本才算數。"
+      ],
+      "disclaimer": "本報告為自動化審查結果，僅供參考，不構成法律意見，請洽合格律師確認。"
+    },
+    "revised": {
+      "items": [
+        {
+          "clauseNo": "第二條",
+          "original": "第二條 乙方同意採責任制，不論實際工作時數，甲方均不另發給延長工時工資。",
+          "revised": "第二條 乙方之工作時間、休息、休假及延長工時，悉依勞動基準法第30條、第32條及第24條規定辦理，甲方非經乙方同意不得命乙方為延長工時，甲方應置備乙方出勤紀錄至分鐘為止並保存五年，延長工時工資依法計給。",
+          "rationale": "原條文違反勞動基準法第24條、勞動基準法第30條、勞動基準法第32條及勞動基準法第84條之1，依民法第71條無效，故修正為依法辦理以保障乙方之延長工時工資請求權。"
+        },
+        {
+          "clauseNo": "第三條",
+          "original": "第三條 乙方於到職後二年內離職者，應賠償甲方三個月薪資作為培訓費用及違約金。",
+          "revised": "第三條 甲方如為乙方辦理專業技術培訓並實際支出費用者，應另以書面約定培訓期間、費用明細、服務年限、合理補償及按已服務期間比例扣減之違約金額，因不可歸責於乙方之事由提前終止契約者，乙方不負賠償責任，未另為書面約定者，乙方不負最低服務年限及違約金責任。",
+          "rationale": "原條文違反勞動基準法第15條之1及勞動基準法第26條，依民法第71條、民法第247條之1及民法第252條無效或過高，故修正為以另行書面約定及比例扣減保障乙方權益。"
+        },
+        {
+          "clauseNo": "第四條",
+          "original": "第四條 乙方離職後二年內不得至同業任職，違反者應賠償一百萬元。",
+          "revised": "第四條 甲方如認有保護正當營業利益之必要，應於乙方離職時另以書面約定離職後競業禁止之期間、區域、職業活動範圍及營業秘密範圍，並按月給付不低於乙方離職時平均工資百分之五十之補償，未另為書面約定並按月給付補償者，乙方不受離職後競業禁止之拘束，亦不負違約金責任，另行約定之違約金過高者，兩造同意法院得酌減之。",
+          "rationale": "原條文違反勞動基準法第9條之1，依民法第71條、民法第247條之1及民法第252條無效或過高，故修正為以另行書面約定及按月補償保障乙方之工作權。"
+        },
+        {
+          "clauseNo": "第五條",
+          "original": "第五條 甲方得視營運需要隨時調整乙方工作地點與職務內容，乙方不得異議。",
+          "revised": "第五條 甲方調動乙方之工作地點及職務內容，應符合勞動契約約定及勞動基準法第10條之1所定原則，經與乙方協商同意後為之，並考量乙方及其家庭生活之利益，調動地點過遠者，甲方應提供必要之協助，未經乙方同意者，乙方得拒絕調動。",
+          "rationale": "原條文違反勞動基準法第10條之1，並有構成民法第247條之1及民法第71條無效之虞，故修正為經協商同意始得調動以保障乙方權益。"
+        },
+        {
+          "clauseNo": "第六條",
+          "original": "第六條 本契約未約定事項，依甲方工作規則辦理。",
+          "revised": "第六條 本契約未約定事項，依勞動基準法及相關法令辦理，甲方工作規則經報請主管機關核備並公開揭示者，始構成契約之一部，其後之不利變更，非經乙方同意不生效力。",
+          "rationale": "原概括委由工作規則補充契約之約定，須受勞動基準法第70條及民法第247條之1檢驗，故修正為以核備揭示及經同意始生效力保障乙方權益。"
+        }
+      ]
+    }
+  },
+  "mode": "contract"
+}
