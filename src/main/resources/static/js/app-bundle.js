@@ -1143,7 +1143,18 @@
       return smp ? start(smp.text, outputs) : null;
     }
     async function answer(answers) {
-      const s = await client.answer(state.caseId, answers);
+      let s;
+      try {
+        s = await client.answer(state.caseId, answers);
+      } catch (error) {
+        dispatch({ type: "STATUS", status: {
+          status: "FAILED",
+          step: "QUESTIONS",
+          locale: locale2,
+          error: { code: error.code || "ANSWER_FAILED", message: error.message || "Unable to submit answers." }
+        } });
+        throw error;
+      }
       dispatch({ type: "STATUS", status: s });
       beginPolling(state.caseId);
       return s;

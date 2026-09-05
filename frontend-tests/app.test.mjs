@@ -125,3 +125,22 @@ test('createApp 啟動案件時完整轉交輸出選擇與附件', async () => {
   assert.equal(typeof app.getInputForm, 'function');
   assert.equal(typeof app.getResultTabs, 'function');
 });
+
+test('回答提交失敗（例如服務重啟後案件不存在）要顯示失敗頁，不能沒有反應', async () => {
+  const client = {
+    async samples() { return []; },
+    async authStatus() { return { enabled: false }; },
+    async answer() { const e = new Error('case not found: lost_case'); e.status = 404; e.code = 'CASE_NOT_FOUND'; throw e; },
+    poll() { return () => {}; },
+    verify() {}
+  };
+  const app = createApp({ root: mountRoot(), client, storage: fakeStorage(), navigatorLanguage: 'zh-TW' });
+  await app.mount();
+  app.dispatch({ type: 'START', caseId: 'lost_case' });
+  app.dispatch({ type: 'STATUS', status: { caseId: 'lost_case', status: 'WAITING', step: 'QUESTIONS', questions: [{ id: 'q1', text: '?', why: 'w' }] } });
+  assert.equal(app.getState().view, 'QUESTIONS');
+  await assert.rejects(() => app.answer([{ questionId: 'q1', answer: 'x' }]));
+  assert.equal(app.getState().view, 'FAILED');
+  assert.equal(app.getState().last.error.code, 'CASE_NOT_FOUND');
+  assert.match(app.getState().last.error.message, /lost_case/);
+});

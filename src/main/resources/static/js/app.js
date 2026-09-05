@@ -268,8 +268,18 @@ export function createApp({ root, client, storage, navigatorLanguage, partialCol
   }
 
   /** 送出回答並續接輪詢。 */
+  /** 送出人工回答並續接輪詢；失敗（例如服務重啟後案件已不存在）要顯示失敗頁，不能按了沒反應。 */
   async function answer(answers) {
-    const s = await client.answer(state.caseId, answers);
+    let s;
+    try {
+      s = await client.answer(state.caseId, answers);
+    } catch (error) {
+      dispatch({ type: 'STATUS', status: {
+        status: 'FAILED', step: 'QUESTIONS', locale,
+        error: { code: error.code || 'ANSWER_FAILED', message: error.message || 'Unable to submit answers.' }
+      } });
+      throw error;
+    }
     dispatch({ type: 'STATUS', status: s });
     beginPolling(state.caseId);
     return s;
