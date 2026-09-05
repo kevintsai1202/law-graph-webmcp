@@ -34,5 +34,19 @@
     "title": "Dismissal after probation",
     "summary": "An employee challenges termination at the end of a probation period.",
     "text": "Employee E joined Company C under a contract describing a three-month probation period. Near the end of month three, a manager said performance was below expectations and employment would end immediately. E had received informal coaching but no written warning or improvement plan. C says probation allowed simple termination; E seeks wages, severance and a declaration that dismissal was unlawful. The exact notice given and payroll treatment remain unclear."
+  },
+  {
+    "id": "labor-contract",
+    "mode": "contract",
+    "title": "Employment contract: waived overtime and resignation penalty",
+    "summary": "A new hire's contract waives overtime pay and imposes a three-month-salary penalty; review from the employee's (party B) side.",
+    "text": "勞動契約書（節錄）\n第一條 甲方（○○科技股份有限公司）僱用乙方擔任軟體工程師，月薪新臺幣四萬五千元。\n第二條 乙方同意採責任制，不論實際工作時數，甲方均不另發給延長工時工資。\n第三條 乙方於到職後二年內離職者，應賠償甲方三個月薪資作為培訓費用及違約金。\n第四條 乙方離職後二年內不得至同業任職，違反者應賠償一百萬元。\n第五條 甲方得視營運需要隨時調整乙方工作地點與職務內容，乙方不得異議。\n第六條 本契約未約定事項，依甲方工作規則辦理。\n（乙方為一般工程師，非勞基法第84條之1核定之工作者；甲方未提供競業補償。）"
+  },
+  {
+    "id": "software-dev-contract",
+    "mode": "contract",
+    "title": "Software development agreement: acceptance, IP and uncapped damages",
+    "summary": "A vendor (party B) receives the client's draft with one-sided acceptance and unlimited liability clauses.",
+    "text": "軟體開發委託契約（節錄）\n第一條 甲方委託乙方開發客戶管理系統，總價新臺幣一百二十萬元，分三期給付。\n第二條 乙方應於合理時間內完成交付，逾期每日按總價百分之一計罰，且甲方得逕行解約。\n第三條 系統經甲方驗收合格後始得請款；甲方對驗收結果有最終決定權，得不附理由退回。\n第四條 乙方因本契約產生之一切成果（含乙方既有之函式庫與工具）之智慧財產權均歸甲方所有。\n第五條 乙方應賠償甲方因系統瑕疵所受之一切損失，不以契約總價為限。\n第六條 甲方得隨時終止本契約，已付款項不予退還，尚未給付者亦免付。\n第七條 本契約以甲方所在地法院為專屬管轄法院。"
   }
 ]

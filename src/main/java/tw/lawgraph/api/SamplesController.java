@@ -23,9 +23,10 @@ public class SamplesController {
         zhTw = List.of(mapper.readValue(new ClassPathResource("samples/zh-TW.json").getInputStream(), SampleCase[].class));
     }
 
-    /** 未知語系使用英文資料。 */
+    /** 未知語系用英文；依 mode 過濾（預設案件示範）。 */
     @GetMapping("/api/samples")
-    public List<SampleCase> samples(@RequestParam(required = false) String locale) {
-        return Locale.fromCode(locale) == Locale.ZH_TW ? zhTw : en;
+    public List<SampleCase> samples(@RequestParam(required = false) String locale, @RequestParam(required = false) String mode) {
+        String wanted = CaseMode.normalize(mode);
+        return (Locale.fromCode(locale) == Locale.ZH_TW ? zhTw : en).stream().filter(s -> wanted.equals(s.mode())).toList();
     }
 }
