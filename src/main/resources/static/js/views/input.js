@@ -1,7 +1,7 @@
 import { t } from '../i18n.js';
 import { esc } from './util.js';
 import { ICONS } from './icons.js';
-import { OUTPUT_OPTIONS, outputOptionsFor } from '../documents.js';
+import { outputOptionsFor } from '../documents.js';
 import { CONTRACT_PARTIES, CONTRACT_SCOPES } from '../contract.js';
 
 /** 案情最少字數：與 webmcp.js startCase 的 caseText.minLength 一致，送出鈕在達標前停用。 */

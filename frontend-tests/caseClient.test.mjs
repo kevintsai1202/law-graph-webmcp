@@ -126,3 +126,20 @@ test('start 帶 extra.mode／party／scopes 時放進 JSON，samples 帶 mode', 
   await client.start('A hit B', 'en', [], []);
   assert.equal(JSON.parse(calls[2].init.body).mode, undefined);
 });
+
+test('start 於 multipart（有附件）分支帶 extra.mode 時附上 mode／party／scopes，不設 Content-Type；case 模式無 mode 欄位', async () => {
+  const calls = [];
+  const client = createCaseClient(async (url, init) => { calls.push({ url, init }); return { ok: true, json: async () => ({}) }; });
+  const fakeFile = new File(['x'], 'c.md');
+  await client.start('合約', 'zh-TW', ['revised'], [fakeFile], '', { mode: 'contract', party: 'partyA', scopes: ['labor', 'privacy'] });
+  const { init } = calls[0];
+  assert.ok(init.body instanceof FormData, 'multipart 分支應送出 FormData');
+  assert.equal(init.body.get('mode'), 'contract');
+  assert.equal(init.body.get('party'), 'partyA');
+  assert.deepEqual(init.body.getAll('scopes'), ['labor', 'privacy']);
+  assert.deepEqual(init.body.getAll('documents'), ['revised']);
+  assert.equal(init.headers, undefined, 'FormData 由瀏覽器自帶正確 multipart boundary，不應手動設 Content-Type');
+  // case 模式（無 extra）也走 multipart 分支時，不應出現 mode 欄位
+  await client.start('A hit B', 'en', [], [fakeFile]);
+  assert.equal(calls[1].init.body.get('mode'), null);
+});
