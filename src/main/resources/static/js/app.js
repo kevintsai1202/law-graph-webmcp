@@ -5,8 +5,10 @@ import { ICONS } from './views/icons.js';
 import { renderInput, bindInput, MIN_CHARS, LAW_POWERS_URL } from './views/input.js';
 import { renderProgress, renderCancel } from './views/progress.js';
 import { renderQuestions, bindQuestions } from './views/questions.js';
-import { renderResult, bindResult, renderSections, tabsFor, tabLabel, checklistCsv } from './views/result.js';
-import { normalizeOutputs, OUTPUT_OPTIONS } from './documents.js';
+import { renderResult, bindResult, renderSections, tabsFor, tabLabel, checklistCsv, findingsCsv } from './views/result.js';
+import { renderHome, bindHome } from './views/home.js';
+import { parseHash, hashFor } from './router.js';
+import { normalizeOutputs, OUTPUT_OPTIONS, outputOptionsFor } from './documents.js';
 
 /** 語意檢索回報需要授權時，產生保留目前頁面的 OAuth 啟動路徑。 */
 export function semanticAuthPath(status, locationLike = globalThis.location) {
@@ -27,7 +29,7 @@ function downloadText(text, filename, mime) {
 }
 
 /** 應用程式核心：持有狀態、驅動輪詢、切換 view；WebMCP 由 webmcp.js 透過 onChange 掛上。 */
-export function createApp({ root, client, storage, navigatorLanguage, partialCollapseMs = 5000 }) {
+export function createApp({ root, client, storage, navigatorLanguage, partialCollapseMs = 5000, locationLike = globalThis.location }) {
   /** 目前頁面狀態（state.js 的 reduce 產生）。 */
   let state = { ...initialState };
   /** 目前語系；使用者選過的存於 storage。 */
@@ -40,6 +42,12 @@ export function createApp({ root, client, storage, navigatorLanguage, partialCol
   let startRequestId = 0;
   /** 結果頁目前分頁。 */
   let activeTab = 'graph';
+  /** 合約模式風險清單的風險等級篩選（all／high／medium／low）。 */
+  let riskFilter = 'all';
+  /** 目前能力模式；尚未選擇時視為案件分析。 */
+  const mode = () => state.mode || 'case';
+  /** hashchange 只在 mount 時註冊一次。 */
+  let hashListenerBound = false;
   /** 此案件選擇的輸出；需跨輪詢與重新整理保留，才能呈現正確結果分頁。 */
   let selectedOutputs = ['graph'];
   /** QUESTIONS 頁的答案草稿；AI 填入後仍由人檢查並送出。 */
@@ -99,6 +107,9 @@ export function createApp({ root, client, storage, navigatorLanguage, partialCol
       authRedirected = true;
       globalThis.location.assign(authPath);
     }
+    // 同步網址 hash：讓上一頁／分享網址能回到同一條流程（首頁為 #/）
+    const nextHash = hashFor(state);
+    if (locationLike && (locationLike.hash || '#/') !== nextHash) locationLike.hash = nextHash;
     render();
     listeners.forEach((l) => l(state, 'STATE'));
   }
@@ -109,12 +120,16 @@ export function createApp({ root, client, storage, navigatorLanguage, partialCol
     clearTimeout(collapseTimer);
     root.querySelectorAll('[data-i18n]').forEach((n) => { n.textContent = t(n.dataset.i18n, locale); });
     switch (state.view) {
+      case States.HOME:
+        mountHtml(el, renderHome(locale));
+        bindHome(el, { onSelect: selectMode });
+        break;
       case States.INPUT: {
         // 重繪輸入頁前先保住使用者已輸入的案情：mount 載完示範案例／配額後會再 render 一次，
         // 若使用者已開始打字，不能把文字洗掉（2026-09-05 e2e 實測會清空）。
         const typed = el.querySelector?.('#case-text')?.value ?? '';
-        mountHtml(el, renderInput({ samples, semanticAuth, usage, quota }, locale));
-        bindInput(el, { onSubmit: start, onSample: startSample }, locale);
+        mountHtml(el, renderInput({ samples, semanticAuth, usage, quota, mode: mode() }, locale));
+        bindInput(el, { onSubmit: start, onSample: startSample }, locale, mode());
         if (typed) {
           const ta = el.querySelector('#case-text');
           if (ta) { ta.value = typed; ta.dispatchEvent?.(new globalThis.Event('input', { bubbles: true })); }
@@ -123,21 +138,29 @@ export function createApp({ root, client, storage, navigatorLanguage, partialCol
       }
       case States.RUNNING:
         // 放棄按鈕緊接進度列，捲動前就看得到
-        mountHtml(el, renderProgress({ step: state.last?.step || 'BRAINSTORM' }, locale) + renderCancel(locale)
-          + renderSections(state.last?.result, locale));
+        mountHtml(el, renderProgress({ step: state.last?.step || firstStep(), mode: mode() }, locale) + renderCancel(locale)
+          + renderSections(state.last?.result, locale, mode()));
         bindCancel(el);
         break;
       case States.QUESTIONS:
         // 頭腦風暴成果放在提問之前（先看脈絡再回答），數秒後自動收折讓問題浮上來
-        mountHtml(el, renderProgress({ step: 'QUESTIONS', busy: false }, locale) + renderCancel(locale) + renderSections(state.last.result, locale)
+        mountHtml(el, renderProgress({ step: 'QUESTIONS', busy: false, mode: mode() }, locale) + renderCancel(locale) + renderSections(state.last.result, locale, mode())
           + renderQuestions({ questions: state.last.questions, answers: questionDraft, notice: questionFillNotice }, locale));
         bindQuestions(el, { onSubmit: answer });
         bindCancel(el);
         scheduleCollapse(el);
         break;
       case States.RESULT:
-        mountHtml(el, renderResult({ status: state.last, activeTab, outputs: selectedOutputs }, locale));
+        mountHtml(el, renderResult({ status: state.last, activeTab, outputs: selectedOutputs, mode: mode(), riskFilter }, locale));
         bindResult(el, { onTab: (k) => { activeTab = k; render(); }, onNewCase: reset });
+        // 合約模式風險清單：風險等級篩選與 CSV 匯出
+        el.querySelector('#findings-filter')?.querySelectorAll?.('button[data-risk]')?.forEach?.((b) => {
+          b.addEventListener('click', () => { riskFilter = b.dataset.risk || 'all'; render(); });
+        });
+        el.querySelector('#findings-export')?.addEventListener('click', () => {
+          const findings = state.last?.result?.compliance?.findings || [];
+          downloadText(findingsCsv(findings, locale), t('finding.file', locale), 'text/csv;charset=utf-8');
+        });
         // 當事人準備清單：CSV 下載與列印
         el.querySelector('#checklist-export')?.addEventListener('click', () => {
           const items = state.last?.result?.assessment?.checklist || [];
@@ -175,6 +198,23 @@ export function createApp({ root, client, storage, navigatorLanguage, partialCol
     }, partialCollapseMs);
   }
 
+  /** 目前模式流程的第一個步驟代碼（合約審查為 LOAD，案件分析為 BRAINSTORM）。 */
+  function firstStep() {
+    return mode() === 'contract' ? 'LOAD' : 'BRAINSTORM';
+  }
+
+  /** 首頁選能力：記下 mode、載入該模式的示範案例，並進入輸入頁。 */
+  async function selectMode(next) {
+    dispatch({ type: 'SELECT_MODE', mode: next });
+    samples = await Promise.resolve().then(() => client.samples(locale, mode())).catch(() => []);
+    render();
+  }
+
+  /** 回首頁（不清除案件記錄；要捨棄案件請用 reset）。 */
+  function goHome() {
+    dispatch({ type: 'GO_HOME' });
+  }
+
   /** 進行中／等待回答頁的「放棄此案」按鈕：停止輪詢並回輸入頁。 */
   function bindCancel(el) {
     el.querySelector('#cancel-case')?.addEventListener('click', reset);
@@ -205,19 +245,29 @@ export function createApp({ root, client, storage, navigatorLanguage, partialCol
   }
 
   /** 啟動新案件；回傳 CaseStatus（空白文字回 null）。 */
-  async function start(text, outputs, files = [], motionRequest = '') {
+  async function start(text, outputs, files = [], motionRequest = '', extra = {}) {
     if ((!text || !text.trim()) && (!Array.isArray(files) || !files.length)) return null;
 
-    selectedOutputs = normalizeOutputs(outputs);
-    activeTab = selectedOutputs.includes('graph') ? 'graph' : 'doc-' + selectedOutputs[0];
+    /** 本次送出的模式；dispatch START 之後 state.mode 才會固定，先取一份避免競態。 */
+    const m = mode();
+    selectedOutputs = normalizeOutputs(outputs, m);
+    activeTab = m === 'contract' ? 'findings'
+      : selectedOutputs.includes('graph') ? 'graph' : 'doc-' + selectedOutputs[0];
 
     // WebMCP 呼叫可能因網路或 Agent host 延遲；先切換進度頁，讓使用者立即看到案件已進入啟動流程。
     const requestId = ++startRequestId;
-    dispatch({ type: 'START', caseId: null });
+    dispatch({ type: 'START', caseId: null, mode: m });
+
+    // 合約模式才附上 mode／party／scopes；案件模式維持既有五參數契約
+    const payloadExtra = m === 'contract'
+      ? [{ mode: 'contract', party: extra?.party || 'unknown', scopes: extra?.scopes || [] }]
+      : [];
+    // 合約模式的 documents 就是勾選的輸出（可為空）；案件模式的關聯圖不是書狀，要濾掉
+    const documents = m === 'contract' ? selectedOutputs : selectedOutputs.filter((o) => o !== 'graph');
 
     let s;
     try {
-      s = await client.start((text || '').trim(), locale, selectedOutputs.filter((o) => o !== 'graph'), files, motionRequest);
+      s = await client.start((text || '').trim(), locale, documents, files, motionRequest, ...payloadExtra);
       refreshUsage().catch(() => {});
     } catch (error) {
       // 已取消或已被另一個請求取代時，不讓過期錯誤覆蓋目前畫面。
@@ -226,7 +276,7 @@ export function createApp({ root, client, storage, navigatorLanguage, partialCol
           type: 'STATUS',
           status: {
             status: 'FAILED',
-            step: 'BRAINSTORM',
+            step: m === 'contract' ? 'LOAD' : 'BRAINSTORM',
             locale,
             error: { code: error.code || 'START_FAILED', message: error.message || 'Unable to start case.' }
           }
@@ -239,23 +289,24 @@ export function createApp({ root, client, storage, navigatorLanguage, partialCol
     if (requestId !== startRequestId) return null;
     storage.setItem('caseId', s.caseId);
     storage.setItem('outputs', JSON.stringify(selectedOutputs));
-    dispatch({ type: 'START', caseId: s.caseId });
+    storage.setItem('mode', m);
+    dispatch({ type: 'START', caseId: s.caseId, mode: m });
     beginPolling(s.caseId);
     return s;
   }
 
   /** 以示範案例 id 啟動；找不到回 null。 */
-  async function startSample(id, outputs) {
+  async function startSample(id, outputs, extra = {}) {
     // Agent 通常會使用 listSampleCases 的 id；也接受畫面上的標題，降低自然語言呼叫的脆弱性。
     const value = String(id || '').trim();
     let smp = samples.find((x) => x.id === value || x.title === value);
     // WebMCP 工具可能在首次 mount 的載入競速中被呼叫，這裡再補一次資料載入作為安全網。
     if (!smp && value) {
-      const loaded = await client.samples(locale).catch(() => []);
+      const loaded = await client.samples(locale, mode()).catch(() => []);
       if (loaded.length) samples = loaded;
       smp = samples.find((x) => x.id === value || x.title === value);
     }
-    return smp ? start(smp.text, outputs) : null;
+    return smp ? start(smp.text, outputs, [], '', extra) : null;
   }
 
   /** 送出回答並續接輪詢。 */
@@ -426,12 +477,14 @@ export function createApp({ root, client, storage, navigatorLanguage, partialCol
   function getOutputOptions() {
     const boxes = state.view === States.INPUT ? [...root.querySelectorAll('input[name="outputs"]')] : [];
     const checkedSet = new Set(boxes.length ? boxes.filter((box) => box.checked).map((box) => box.value) : selectedOutputs);
-    const options = OUTPUT_OPTIONS.map((code) => ({
+    // 合約模式的選項清單只有修訂本，且不預設勾選、也不強制至少勾一項
+    const contract = mode() === 'contract';
+    const options = outputOptionsFor(mode()).map((code) => ({
       code,
       label: outputLabel(code),
       kind: code === 'graph' ? 'graph' : 'document',
       checked: checkedSet.has(code),
-      isDefault: code === 'graph'
+      isDefault: !contract && code === 'graph'
     }));
     return {
       ok: true,
@@ -439,7 +492,8 @@ export function createApp({ root, client, storage, navigatorLanguage, partialCol
       rendered: boxes.length > 0,
       count: options.length,
       checkedCount: options.filter((option) => option.checked).length,
-      minRequired: 1,
+      minRequired: contract ? 0 : 1,
+      mode: mode(),
       options,
       nextAction: state.view === States.INPUT
         ? 'Use setOutputSelection to tick outputs, or pass documents to startCase.'
@@ -464,6 +518,12 @@ export function createApp({ root, client, storage, navigatorLanguage, partialCol
       charCount: fullText.trim().length,
       minChars: MIN_CHARS,
       canSubmit: Boolean(submit) && !submit.disabled,
+      mode: mode(),
+      // 合約模式專屬欄位：我方立場與審查範疇的目前勾選狀態
+      contract: mode() === 'contract' ? {
+        party: root.querySelector('input[name="party"]:checked')?.value || 'unknown',
+        scopes: [...root.querySelectorAll('input[name="scopes"]:checked')].map((c) => c.value)
+      } : undefined,
       outputs: getOutputOptions(),
       sampleCount: samples.length,
       samples: samples.map(({ id, title }) => ({ id, title }))
@@ -476,18 +536,25 @@ export function createApp({ root, client, storage, navigatorLanguage, partialCol
       return { ok: false, error: 'RESULT_NOT_VISIBLE', view: state.view, message: 'Result tabs are only visible after the case is completed.' };
     }
     const result = state.last?.result || {};
-    const tabs = tabsFor(selectedOutputs).map((id) => {
+    const tabs = tabsFor(selectedOutputs, !!result.assessment?.checklist?.length, mode(), result).map((id) => {
       const available = id === 'graph'
         ? Boolean(result.graph)
-        : id.startsWith('doc-')
-          ? (result.documents || []).some((document) => document.type === id.slice(4))
-          : Boolean(result[id]);
+        : id === 'findings'
+          ? Boolean(result.compliance?.findings?.length)
+          : id === 'summary'
+            ? Boolean(result.compliance)
+            : id === 'laws'
+              ? Boolean(result.research)
+              : id.startsWith('doc-')
+                ? (result.documents || []).some((document) => document.type === id.slice(4))
+                : Boolean(result[id]);
       return { id, label: tabLabel(id, locale), active: id === activeTab, available };
     });
     return {
       ok: true,
       view: state.view,
       generatedLocale: state.last?.locale || locale,
+      mode: mode(),
       outputs: [...selectedOutputs],
       count: tabs.length,
       activeTab,
@@ -503,8 +570,10 @@ export function createApp({ root, client, storage, navigatorLanguage, partialCol
     stopPolling = null;
     storage.removeItem('caseId');
     storage.removeItem('outputs');
+    storage.removeItem('mode');
     activeTab = 'graph';
     selectedOutputs = ['graph'];
+    riskFilter = 'all';
     authRedirected = false;
     await refreshAuthStatus();
     dispatch({ type: 'RESET' });
@@ -514,7 +583,7 @@ export function createApp({ root, client, storage, navigatorLanguage, partialCol
   async function setLocale(code) {
     locale = code in DICT ? code : 'en';
     storage.setItem('locale', locale);
-    samples = await client.samples(locale);
+    samples = await client.samples(locale, mode());
     const sel = root.querySelector('#lang-select'); if (sel) sel.value = locale;
     listeners.forEach((l) => l(state, 'LOCALE'));
     render();
@@ -525,19 +594,41 @@ export function createApp({ root, client, storage, navigatorLanguage, partialCol
     // 語系選單已自頁首移除（語系改由瀏覽器語言決定）；保留相容：若頁面仍有選單就綁定。
     const sel = root.querySelector('#lang-select');
     if (sel) { sel.value = locale; sel.addEventListener('change', () => setLocale(sel.value)); }
-    const [, loadedSamples] = await Promise.all([refreshAuthStatus(), client.samples(locale).catch(() => [])]);
+    // 初次載入依網址 hash 決定要進哪一條流程；未指定時停在首頁
+    const initial = parseHash(locationLike?.hash);
+    bindHashChange();
+    const [, loadedSamples] = await Promise.all([
+      refreshAuthStatus(),
+      Promise.resolve().then(() => client.samples(locale, initial.mode || 'case')).catch(() => [])
+    ]);
     samples = loadedSamples;
     const saved = storage.getItem('caseId');
     if (saved) {
+      // 續接進行中的案件：模式與輸出選擇都要沿用上次送出的值，結果分頁才會正確
+      const savedMode = storage.getItem('mode') || 'case';
       try {
-        selectedOutputs = normalizeOutputs(JSON.parse(storage.getItem('outputs')));
+        selectedOutputs = normalizeOutputs(JSON.parse(storage.getItem('outputs')), savedMode);
       } catch {
-        selectedOutputs = ['graph'];
+        selectedOutputs = normalizeOutputs([], savedMode);
       }
-      activeTab = selectedOutputs.includes('graph') ? 'graph' : 'doc-' + selectedOutputs[0];
-      dispatch({ type: 'START', caseId: saved });
+      activeTab = savedMode === 'contract' ? 'findings'
+        : selectedOutputs.includes('graph') ? 'graph' : 'doc-' + selectedOutputs[0];
+      dispatch({ type: 'START', caseId: saved, mode: savedMode });
       beginPolling(saved, { resumed: true });
+    } else if (initial.view === 'INPUT') {
+      await selectMode(initial.mode);
     } else render();
+  }
+
+  /** 監聽瀏覽器上一頁／下一頁的 hash 變動，在首頁與輸入頁之間同步切換。 */
+  function bindHashChange() {
+    if (hashListenerBound) return;
+    hashListenerBound = true;
+    globalThis.addEventListener?.('hashchange', () => {
+      const parsed = parseHash(locationLike?.hash);
+      if (state.view === States.HOME && parsed.view === 'INPUT') selectMode(parsed.mode);
+      else if (parsed.view === 'HOME' && state.view === States.INPUT) goHome();
+    });
   }
 
   return {
@@ -545,7 +636,8 @@ export function createApp({ root, client, storage, navigatorLanguage, partialCol
     getAuthStatus: () => semanticAuth, refreshAuthStatus, getUsage: () => usage, refreshUsage,
     /** 呼叫端今日配額（含 loggedIn／memberLimit）與 REST client，供右上角登入區使用。 */
     getQuota: () => quota, client,
-    setLocale, start, startSample, answer, fillQuestions, getQuestionProgress,
+    setLocale, selectMode, goHome, getMode: mode, setRiskFilter: (r) => { riskFilter = r; render(); },
+    start, startSample, answer, fillQuestions, getQuestionProgress,
     setOutputs, getOutputOptions, getInputForm, getResultTabs, reset,
     verify: (ref) => client.verify(ref),
     onChange: (l) => listeners.add(l)

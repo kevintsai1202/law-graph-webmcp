@@ -1,4 +1,9 @@
 (() => {
+  // src/main/resources/static/js/contract.js
+  var CONTRACT_PARTIES = Object.freeze(["partyA", "partyB", "unknown"]);
+  var CONTRACT_SCOPES = Object.freeze(["commercial", "labor", "privacy", "corporate"]);
+  var CONTRACT_OUTPUTS = Object.freeze(["revised"]);
+
   // src/main/resources/static/js/documents.js
   var DOC_TYPES = Object.freeze([
     "complaint",

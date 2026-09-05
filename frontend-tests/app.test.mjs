@@ -56,7 +56,7 @@ function mountRoot() {
   };
 }
 
-test('mount 續接的案件已不存在（例如服務重啟）時清除記錄並回到輸入頁，而不是顯示分析失敗', async () => {
+test('mount 續接的案件已不存在（例如服務重啟）時清除記錄並回到首頁，而不是顯示分析失敗', async () => {
   const client = {
     async samples() { return []; },
     async authStatus() { return { enabled: false }; },
@@ -73,7 +73,8 @@ test('mount 續接的案件已不存在（例如服務重啟）時清除記錄�
 
   await app.mount();
 
-  assert.equal(app.getState().view, 'INPUT');
+  // 案件記錄清空後回到能力入口首頁（HOME），使用者可重新選擇案件分析或合約審查
+  assert.equal(app.getState().view, 'HOME');
   assert.equal(storage.getItem('caseId'), null);
   assert.equal(storage.getItem('outputs'), null);
 });
@@ -143,4 +144,38 @@ test('回答提交失敗（例如服務重啟後案件不存在）要顯示失�
   assert.equal(app.getState().view, 'FAILED');
   assert.equal(app.getState().last.error.code, 'CASE_NOT_FOUND');
   assert.match(app.getState().last.error.message, /lost_case/);
+});
+
+test('selectMode 進入輸入頁並寫 hash；start 帶 mode 給 client 且存 storage', async () => {
+  const calls = [];
+  const client = {
+    samples: async (locale, mode) => { calls.push(['samples', mode]); return []; },
+    start: async (text, locale, documents, files, motion, extra) => { calls.push(['start', documents, extra]); return { caseId: 'c1', status: 'RUNNING', step: 'LOAD', mode: 'contract' }; },
+    poll: () => () => {}, usage: async () => null, quota: async () => null, authStatus: async () => null
+  };
+  const storage = fakeStorage();
+  const loc = { hash: '', pathname: '/', search: '', assign() {} };
+  const app = createApp({ root: mountRoot(), client, storage, navigatorLanguage: 'zh-TW', locationLike: loc });
+  await app.mount();
+  assert.equal(app.getState().view, 'HOME');
+  await app.selectMode('contract');
+  assert.equal(app.getState().view, 'INPUT'); assert.equal(app.getMode(), 'contract'); assert.equal(loc.hash, '#/contract');
+  assert.ok(calls.some(([k, m]) => k === 'samples' && m === 'contract'));
+  await app.start('合約全文超過二十個字的測試內容合約全文', ['revised'], [], '', { party: 'partyB', scopes: ['labor'] });
+  const startCall = calls.find(([k]) => k === 'start');
+  assert.deepEqual(startCall[1], ['revised']);
+  assert.equal(startCall[2].mode, 'contract'); assert.equal(startCall[2].party, 'partyB');
+  assert.equal(storage.getItem('mode'), 'contract'); assert.equal(storage.getItem('caseId'), 'c1');
+});
+
+test('mount 依 hash 進入對應模式輸入頁；續接時讀 storage.mode', async () => {
+  const client = { samples: async () => [], poll: (id, cb) => { cb({ caseId: id, status: 'RUNNING', step: 'REVIEW', mode: 'contract' }); return () => {}; }, usage: async () => null, quota: async () => null, authStatus: async () => null };
+  const storage = fakeStorage();
+  const byHash = createApp({ root: mountRoot(), client, storage, navigatorLanguage: 'en', locationLike: { hash: '#/case', pathname: '/', search: '' } });
+  await byHash.mount();
+  assert.equal(byHash.getState().view, 'INPUT'); assert.equal(byHash.getMode(), 'case');
+  storage.setItem('caseId', 'c9'); storage.setItem('mode', 'contract'); storage.setItem('outputs', '[]');
+  const resumed = createApp({ root: mountRoot(), client, storage, navigatorLanguage: 'en', locationLike: { hash: '', pathname: '/', search: '' } });
+  await resumed.mount();
+  assert.equal(resumed.getMode(), 'contract'); assert.equal(resumed.getState().view, 'RUNNING');
 });

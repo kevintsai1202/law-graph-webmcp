@@ -26,15 +26,72 @@
       "input.filesEmpty": "No files selected.",
       "input.filesSelected": "{count} file(s) selected.",
       "input.filesTooMany": "Too many files: {count}. Select no more than 5.",
-      "progress.BRAINSTORM": "Facts & issues",
-      "progress.QUESTIONS": "Clarifying questions",
-      "progress.RESEARCH": "Legal basis & case-law research",
-      "progress.ANALYSIS": "Element subsumption",
-      "progress.ASSESSMENT": "Defenses & burden of proof",
-      "progress.DOCUMENTS": "Drafting documents",
-      "progress.GRAPH": "Relationship graph",
+      "progress.case.BRAINSTORM": "Facts & issues",
+      "progress.case.QUESTIONS": "Clarifying questions",
+      "progress.case.RESEARCH": "Legal basis & case-law research",
+      "progress.case.ANALYSIS": "Element subsumption",
+      "progress.case.ASSESSMENT": "Defenses & burden of proof",
+      "progress.case.DOCUMENTS": "Drafting documents",
+      "progress.case.GRAPH": "Relationship graph",
       "progress.cancel": "Cancel and start over",
       "progress.partial": "Results so far",
+      "nav.home": "Home",
+      "home.title": "What do you want to do?",
+      "home.lead": "Pick a capability. Each runs its own agent workflow with the same steps: facts, questions, research, analysis, output.",
+      "home.case.title": "Case analysis",
+      "home.case.desc": "Describe a dispute \u2192 statutes & judgments \u2192 element subsumption \u2192 defenses \u2192 pleadings \u2192 relationship graph.",
+      "home.contract.title": "Contract compliance review",
+      "home.contract.desc": "Paste a contract or describe a business activity \u2192 statutory comparison \u2192 red/yellow/green clause risks \u2192 fixes \u2192 obligation graph.",
+      "home.start": "Start",
+      "home.steps.case": "Facts \xB7 Questions \xB7 Research \xB7 Subsumption \xB7 Defenses \xB7 Documents \xB7 Graph",
+      "home.steps.contract": "Load \xB7 Questions \xB7 Research \xB7 Clause review \xB7 Summary \xB7 Revision \xB7 Graph",
+      "progress.contract.LOAD": "Reading the contract",
+      "progress.contract.QUESTIONS": "Clarifying questions",
+      "progress.contract.RESEARCH": "Statute & case-law research",
+      "progress.contract.REVIEW": "Clause-by-clause review",
+      "progress.contract.SUMMARY": "Compliance summary",
+      "progress.contract.REVISE": "Revised clauses",
+      "progress.contract.GRAPH": "Obligation graph",
+      "contract.label": "Paste the contract or describe the business activity",
+      "contract.placeholder": "Paste the clauses, or describe what you plan to do (e.g. an online raffle collecting names and phone numbers).",
+      "contract.hint": "At least 20 characters, or attach the contract as PDF/DOCX/MD.",
+      "contract.party": "Our side",
+      "contract.party.partyA": "Party A\uFF08\u7532\u65B9\uFF09",
+      "contract.party.partyB": "Party B\uFF08\u4E59\u65B9\uFF09",
+      "contract.party.unknown": "Not sure",
+      "contract.scopes": "Review scopes (optional)",
+      "contract.scopesHint": "Leave empty to let the agent decide.",
+      "contract.scope.commercial": "Commercial contract (Civil Code)",
+      "contract.scope.labor": "Employment (Labor Standards Act)",
+      "contract.scope.privacy": "Marketing & personal data (PDPA)",
+      "contract.scope.corporate": "Corporate governance (Company Act)",
+      "contract.outputs": "Optional outputs",
+      "contract.outputsHint": "Risk list, summary and graph are always produced.",
+      "doc.revised": "Revised clauses\uFF08\u4FEE\u8A02\u7248\u689D\u6B3E\uFF09",
+      "input.submitContract": "Review contract",
+      "input.samplesContract": "Or start from a sample contract",
+      "result.tab.findings": "Clause risks",
+      "result.tab.summary": "Compliance summary",
+      "result.tab.laws": "Statutes & judgments",
+      "finding.clauseNo": "Clause",
+      "finding.clauseText": "Clause text",
+      "finding.risk": "Risk",
+      "finding.lawRefs": "Legal basis",
+      "finding.riskPoint": "Risk point",
+      "finding.suggestion": "Suggested change",
+      "finding.judgments": "Supporting judgments",
+      "finding.filter.all": "All",
+      "finding.export": "Export CSV",
+      "finding.file": "clause-risks.csv",
+      "finding.none": "No clause findings.",
+      "summary.contractType": "Contract type",
+      "summary.scopes": "Scopes reviewed",
+      "summary.overall": "Overall risk",
+      "summary.priorities": "Fix these first",
+      "summary.parties": "Parties",
+      "revised.original": "Original clause",
+      "revised.revised": "Revised clause",
+      "revised.rationale": "Why",
       "input.outputs": "Outputs to generate",
       "input.outputsHint": "Pick at least one output.",
       "output.graph": "Relationship graph\uFF08\u95DC\u806F\u5716\uFF09",
@@ -216,15 +273,72 @@
       "input.filesEmpty": "\u5C1A\u672A\u9078\u64C7\u6A94\u6848\u3002",
       "input.filesSelected": "\u5DF2\u9078\u64C7 {count} \u4EFD\u6A94\u6848\u3002",
       "input.filesTooMany": "\u6A94\u6848\u904E\u591A\uFF1A{count} \u4EFD\uFF0C\u6700\u591A\u53EA\u80FD\u9078 5 \u4EFD\u3002",
-      "progress.BRAINSTORM": "\u6574\u7406\u6848\u60C5\u8207\u722D\u57F7\u9EDE\uFF08\u4E8B\u5BE6\u8207\u722D\u9EDE\u6574\u7406\uFF09",
-      "progress.QUESTIONS": "\u88DC\u5145\u6848\u60C5\uFF08\u7B49\u5F85\u4F60\u7684\u56DE\u7B54\uFF09",
-      "progress.RESEARCH": "\u627E\u6CD5\u689D\u8207\u5224\u6C7A\uFF08\u8ACB\u6C42\u6B0A\u57FA\u790E\u8207\u5BE6\u52D9\u898B\u89E3\u6AA2\u7D22\uFF09",
-      "progress.ANALYSIS": "\u9010\u689D\u6AA2\u67E5\u662F\u5426\u7B26\u5408\u6CD5\u5F8B\u8981\u4EF6\uFF08\u69CB\u6210\u8981\u4EF6\u6DB5\u651D\uFF09",
-      "progress.ASSESSMENT": "\u5C0D\u65B9\u6703\u600E\u9EBC\u53CD\u99C1\u3001\u8AB0\u8981\u8CA0\u8CAC\u8B49\u660E\uFF08\u6297\u8FAF\u8A55\u4F30\u8207\u8209\u8B49\u8CAC\u4EFB\uFF09",
-      "progress.DOCUMENTS": "\u64B0\u5BEB\u6CD5\u9662\u6587\u4EF6\uFF08\u66F8\u72C0\u8D77\u8349\uFF09",
-      "progress.GRAPH": "\u756B\u51FA\u6CD5\u5F8B\u95DC\u4FC2\u5716",
+      "progress.case.BRAINSTORM": "\u6574\u7406\u6848\u60C5\u8207\u722D\u57F7\u9EDE\uFF08\u4E8B\u5BE6\u8207\u722D\u9EDE\u6574\u7406\uFF09",
+      "progress.case.QUESTIONS": "\u88DC\u5145\u6848\u60C5\uFF08\u7B49\u5F85\u4F60\u7684\u56DE\u7B54\uFF09",
+      "progress.case.RESEARCH": "\u627E\u6CD5\u689D\u8207\u5224\u6C7A\uFF08\u8ACB\u6C42\u6B0A\u57FA\u790E\u8207\u5BE6\u52D9\u898B\u89E3\u6AA2\u7D22\uFF09",
+      "progress.case.ANALYSIS": "\u9010\u689D\u6AA2\u67E5\u662F\u5426\u7B26\u5408\u6CD5\u5F8B\u8981\u4EF6\uFF08\u69CB\u6210\u8981\u4EF6\u6DB5\u651D\uFF09",
+      "progress.case.ASSESSMENT": "\u5C0D\u65B9\u6703\u600E\u9EBC\u53CD\u99C1\u3001\u8AB0\u8981\u8CA0\u8CAC\u8B49\u660E\uFF08\u6297\u8FAF\u8A55\u4F30\u8207\u8209\u8B49\u8CAC\u4EFB\uFF09",
+      "progress.case.DOCUMENTS": "\u64B0\u5BEB\u6CD5\u9662\u6587\u4EF6\uFF08\u66F8\u72C0\u8D77\u8349\uFF09",
+      "progress.case.GRAPH": "\u756B\u51FA\u6CD5\u5F8B\u95DC\u4FC2\u5716",
       "progress.cancel": "\u653E\u68C4\u6B64\u6848\uFF0C\u91CD\u65B0\u958B\u59CB",
       "progress.partial": "\u76EE\u524D\u5DF2\u5B8C\u6210\u7684\u6210\u679C",
+      "nav.home": "\u9996\u9801",
+      "home.title": "\u4F60\u60F3\u505A\u4EC0\u9EBC\uFF1F",
+      "home.lead": "\u9078\u4E00\u9805\u80FD\u529B\u3002\u5169\u689D\u6D41\u7A0B\u6B65\u9A64\u4E00\u81F4\uFF1A\u6574\u7406\u4E8B\u5BE6\u3001\u88DC\u554F\u3001\u6AA2\u7D22\u6CD5\u6E90\u3001\u5206\u6790\u3001\u7522\u51FA\u3002",
+      "home.case.title": "\u6848\u4EF6\u5206\u6790",
+      "home.case.desc": "\u63CF\u8FF0\u7CFE\u7D1B \u2192 \u627E\u6CD5\u689D\u8207\u5224\u6C7A \u2192 \u9010\u8981\u4EF6\u6DB5\u652C \u2192 \u6297\u8FAF\u8A55\u4F30 \u2192 \u66F8\u72C0 \u2192 \u6CD5\u5F8B\u95DC\u4FC2\u5716\u3002",
+      "home.contract.title": "\u5408\u7D04\u6CD5\u898F\u5BE9\u67E5",
+      "home.contract.desc": "\u8CBC\u4E0A\u5408\u7D04\u6216\u63CF\u8FF0\u5546\u696D\u884C\u70BA \u2192 \u6CD5\u898F\u5C0D\u7167 \u2192 \u7D05\u9EC3\u7DA0\u98A8\u96AA\u689D\u6B3E \u2192 \u4FEE\u6539\u5EFA\u8B70 \u2192 \u5951\u7D04\u7FA9\u52D9\u5716\u3002",
+      "home.start": "\u958B\u59CB",
+      "home.steps.case": "\u6848\u60C5 \xB7 \u88DC\u554F \xB7 \u6AA2\u7D22 \xB7 \u6DB5\u652C \xB7 \u6297\u8FAF \xB7 \u66F8\u72C0 \xB7 \u95DC\u4FC2\u5716",
+      "home.steps.contract": "\u8F09\u5165 \xB7 \u88DC\u554F \xB7 \u6AA2\u7D22 \xB7 \u9010\u689D\u5BE9\u67E5 \xB7 \u6458\u8981 \xB7 \u4FEE\u8A02 \xB7 \u7FA9\u52D9\u5716",
+      "progress.contract.LOAD": "\u8B80\u53D6\u5951\u7D04\u8207\u5207\u5206\u689D\u6B3E",
+      "progress.contract.QUESTIONS": "\u88DC\u5145\u8CC7\u8A0A\uFF08\u7B49\u5F85\u4F60\u7684\u56DE\u7B54\uFF09",
+      "progress.contract.RESEARCH": "\u627E\u6CD5\u689D\u8207\u5224\u6C7A\uFF08\u5F37\u884C\u898F\u5B9A\u8207\u5BE6\u52D9\u898B\u89E3\u6AA2\u7D22\uFF09",
+      "progress.contract.REVIEW": "\u9010\u689D\u6AA2\u67E5\u662F\u5426\u9055\u6CD5\u6216\u4E0D\u516C\u5E73\uFF08\u6CD5\u898F\u5C0D\u7167\uFF09",
+      "progress.contract.SUMMARY": "\u6574\u9AD4\u98A8\u96AA\u8207\u512A\u5148\u4FEE\u6539\u9806\u5E8F\uFF08\u5408\u898F\u6458\u8981\uFF09",
+      "progress.contract.REVISE": "\u7522\u51FA\u4FEE\u8A02\u7248\u689D\u6B3E",
+      "progress.contract.GRAPH": "\u756B\u51FA\u5951\u7D04\u7FA9\u52D9\u95DC\u4FC2\u5716",
+      "contract.label": "\u8CBC\u4E0A\u5408\u7D04\u539F\u6587\uFF0C\u6216\u63CF\u8FF0\u4F60\u8981\u9032\u884C\u7684\u5546\u696D\u884C\u70BA",
+      "contract.placeholder": "\u8CBC\u4E0A\u689D\u6B3E\u5168\u6587\uFF1B\u6216\u63CF\u8FF0\u4F60\u6253\u7B97\u505A\u7684\u4E8B\uFF08\u4F8B\u5982\uFF1A\u7DDA\u4E0A\u62BD\u734E\u6D3B\u52D5\u8981\u6536\u96C6\u53C3\u52A0\u8005\u59D3\u540D\u8207\u96FB\u8A71\uFF09\u3002",
+      "contract.hint": "\u81F3\u5C11 20 \u5B57\uFF0C\u6216\u76F4\u63A5\u9644\u4E0A\u5408\u7D04 PDF\uFF0FDOCX\uFF0FMD\u3002",
+      "contract.party": "\u6211\u65B9\u7ACB\u5834",
+      "contract.party.partyA": "\u7532\u65B9",
+      "contract.party.partyB": "\u4E59\u65B9",
+      "contract.party.unknown": "\u4E0D\u78BA\u5B9A",
+      "contract.scopes": "\u5BE9\u67E5\u7BC4\u7587\uFF08\u53EF\u4E0D\u9078\uFF09",
+      "contract.scopesHint": "\u4E0D\u9078\u7531 Agent \u4F9D\u5951\u7D04\u5167\u5BB9\u5224\u5B9A\u3002",
+      "contract.scope.commercial": "\u4E00\u822C\u5546\u52D9\u5951\u7D04\uFF08\u6C11\u6CD5\u50B5\u7DE8\uFF09",
+      "contract.scope.labor": "\u52DE\u52D5\u5951\u7D04\uFF08\u52DE\u57FA\u6CD5\uFF09",
+      "contract.scope.privacy": "\u884C\u92B7\u8207\u500B\u8CC7\uFF08\u500B\u8CC7\u6CD5\uFF09",
+      "contract.scope.corporate": "\u516C\u53F8\u6CBB\u7406\uFF08\u516C\u53F8\u6CD5\uFF09",
+      "contract.outputs": "\u984D\u5916\u7522\u51FA",
+      "contract.outputsHint": "\u98A8\u96AA\u6E05\u55AE\u3001\u5408\u898F\u6458\u8981\u8207\u95DC\u4FC2\u5716\u4E00\u5B9A\u6703\u7522\u51FA\u3002",
+      "doc.revised": "\u4FEE\u8A02\u7248\u689D\u6B3E",
+      "input.submitContract": "\u958B\u59CB\u5BE9\u67E5",
+      "input.samplesContract": "\u6216\u5F9E\u793A\u7BC4\u5408\u7D04\u958B\u59CB",
+      "result.tab.findings": "\u98A8\u96AA\u689D\u6B3E\u6E05\u55AE",
+      "result.tab.summary": "\u5408\u898F\u6458\u8981",
+      "result.tab.laws": "\u6CD5\u689D\u8207\u5224\u6C7A",
+      "finding.clauseNo": "\u689D\u6B3E",
+      "finding.clauseText": "\u689D\u6B3E\u539F\u6587",
+      "finding.risk": "\u98A8\u96AA",
+      "finding.lawRefs": "\u6CD5\u898F\u4F9D\u64DA",
+      "finding.riskPoint": "\u98A8\u96AA\u9EDE",
+      "finding.suggestion": "\u4FEE\u6539\u5EFA\u8B70",
+      "finding.judgments": "\u4F50\u8B49\u5224\u6C7A",
+      "finding.filter.all": "\u5168\u90E8",
+      "finding.export": "\u532F\u51FA CSV",
+      "finding.file": "\u98A8\u96AA\u689D\u6B3E\u6E05\u55AE.csv",
+      "finding.none": "\u6C92\u6709\u689D\u6B3E\u5BE9\u67E5\u7D50\u679C\u3002",
+      "summary.contractType": "\u5951\u7D04\u985E\u578B",
+      "summary.scopes": "\u5BE9\u67E5\u7BC4\u7587",
+      "summary.overall": "\u6574\u9AD4\u98A8\u96AA",
+      "summary.priorities": "\u5EFA\u8B70\u512A\u5148\u4FEE\u6539",
+      "summary.parties": "\u7576\u4E8B\u4EBA",
+      "revised.original": "\u539F\u689D\u6B3E",
+      "revised.revised": "\u4FEE\u8A02\u5F8C",
+      "revised.rationale": "\u4FEE\u6539\u7406\u7531",
       "input.outputs": "\u8981\u7522\u51FA\u7684\u9805\u76EE",
       "input.outputsHint": "\u81F3\u5C11\u52FE\u9078\u4E00\u9805\u3002",
       "output.graph": "\u95DC\u806F\u5716",
@@ -397,15 +511,25 @@
   }
 
   // src/main/resources/static/js/state.js
-  var States = Object.freeze({ INPUT: "INPUT", RUNNING: "RUNNING", QUESTIONS: "QUESTIONS", RESULT: "RESULT", FAILED: "FAILED" });
+  var States = Object.freeze({ HOME: "HOME", INPUT: "INPUT", RUNNING: "RUNNING", QUESTIONS: "QUESTIONS", RESULT: "RESULT", FAILED: "FAILED" });
   var VIEW_BY_STATUS = { RUNNING: States.RUNNING, WAITING: States.QUESTIONS, COMPLETED: States.RESULT, FAILED: States.FAILED };
-  var initialState = Object.freeze({ view: States.INPUT, caseId: null, last: null });
+  var normalizeMode = (mode) => mode === "contract" ? "contract" : "case";
+  var initialState = Object.freeze({ view: States.HOME, caseId: null, last: null, mode: null });
   function reduce(state, event) {
     switch (event.type) {
+      case "SELECT_MODE":
+        return { view: States.INPUT, caseId: null, last: null, mode: normalizeMode(event.mode) };
+      case "GO_HOME":
+        return { ...initialState };
       case "START":
-        return { view: States.RUNNING, caseId: event.caseId, last: null };
+        return { view: States.RUNNING, caseId: event.caseId, last: null, mode: normalizeMode(event.mode ?? state.mode) };
       case "STATUS":
-        return { ...state, view: VIEW_BY_STATUS[event.status.status] || state.view, last: event.status };
+        return {
+          ...state,
+          view: VIEW_BY_STATUS[event.status.status] || state.view,
+          last: event.status,
+          mode: event.status.mode ? normalizeMode(event.status.mode) : state.mode
+        };
       case "RESET":
         return { ...initialState };
       default:
@@ -445,6 +569,11 @@
     refresh: wrap('<path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 3v6h-6"/>')
   };
 
+  // src/main/resources/static/js/contract.js
+  var CONTRACT_PARTIES = Object.freeze(["partyA", "partyB", "unknown"]);
+  var CONTRACT_SCOPES = Object.freeze(["commercial", "labor", "privacy", "corporate"]);
+  var CONTRACT_OUTPUTS = Object.freeze(["revised"]);
+
   // src/main/resources/static/js/documents.js
   var DOC_TYPES = Object.freeze([
     "complaint",
@@ -457,8 +586,12 @@
     "motion"
   ]);
   var OUTPUT_OPTIONS = Object.freeze(["graph", ...DOC_TYPES]);
-  function normalizeOutputs(outputs) {
+  function outputOptionsFor(mode = "case") {
+    return mode === "contract" ? [...CONTRACT_OUTPUTS] : [...OUTPUT_OPTIONS];
+  }
+  function normalizeOutputs(outputs, mode = "case") {
     const requested = new Set(Array.isArray(outputs) ? outputs : []);
+    if (mode === "contract") return CONTRACT_OUTPUTS.filter((o) => requested.has(o));
     const ordered = OUTPUT_OPTIONS.filter((o) => requested.has(o));
     return ordered.length ? ordered : ["graph"];
   }
@@ -466,16 +599,28 @@
   // src/main/resources/static/js/views/input.js
   var MIN_CHARS = 20;
   var MAX_FILES = 5;
-  function renderOutputs(locale2) {
-    const items = OUTPUT_OPTIONS.map((option) => {
-      const label = option === "graph" ? t("output.graph", locale2) : t("doc." + option, locale2);
-      return `<label class="output-item"><input type="checkbox" name="outputs" value="${option}"${option === "graph" ? " checked" : ""}><span>${esc(label)}</span></label>`;
+  function renderOutputs(locale2, mode = "case") {
+    const contract = mode === "contract";
+    const options = outputOptionsFor(mode);
+    const items = options.map((option) => {
+      const label = contract ? t("doc.revised", locale2) : option === "graph" ? t("output.graph", locale2) : t("doc." + option, locale2);
+      return `<label class="output-item"><input type="checkbox" name="outputs" value="${option}"${!contract && option === "graph" ? " checked" : ""}><span>${esc(label)}</span></label>`;
     }).join("");
     return `<fieldset class="outputs" id="output-box">
-      <legend>${esc(t("input.outputs", locale2))}</legend>
+      <legend>${esc(t(contract ? "contract.outputs" : "input.outputs", locale2))}</legend>
       <div class="output-grid">${items}</div>
-      <p class="field-hint">${esc(t("input.outputsHint", locale2))}</p>
+      <p class="field-hint">${esc(t(contract ? "contract.outputsHint" : "input.outputsHint", locale2))}</p>
     </fieldset>`;
+  }
+  function renderContractFields(locale2) {
+    const parties = CONTRACT_PARTIES.map(
+      (p) => `<label class="output-item"><input type="radio" name="party" value="${p}"${p === "unknown" ? " checked" : ""}><span>${esc(t("contract.party." + p, locale2))}</span></label>`
+    ).join("");
+    const scopes = CONTRACT_SCOPES.map(
+      (s) => `<label class="output-item"><input type="checkbox" name="scopes" value="${s}"><span>${esc(t("contract.scope." + s, locale2))}</span></label>`
+    ).join("");
+    return `<fieldset class="outputs" id="contract-party"><legend>${esc(t("contract.party", locale2))}</legend><div class="output-grid">${parties}</div></fieldset>
+    <fieldset class="outputs" id="contract-scopes"><legend>${esc(t("contract.scopes", locale2))}</legend><div class="output-grid">${scopes}</div><p class="field-hint">${esc(t("contract.scopesHint", locale2))}</p></fieldset>`;
   }
   function renderSemanticAuthNotice(auth, locale2) {
     if (!auth || !auth.enabled || auth.authorized) return "";
@@ -516,7 +661,8 @@
     }
     return `<p class="field-hint quota-note" aria-live="polite"><strong>${esc(t("quota.count", locale2))} ${esc(count)}</strong> <span>${esc(t("quota.reason", locale2).replace("{limit}", quota.limit))}${loginTip}</span></p>`;
   }
-  function renderInput({ samples = [], semanticAuth = null, usage = null, quota = null }, locale2) {
+  function renderInput({ samples = [], semanticAuth = null, usage = null, quota = null, mode = "case" }, locale2) {
+    const contract = mode === "contract";
     const cards = samples.map((s) => `<button type="button" class="sample" data-sample-id="${esc(s.id)}"><b>${esc(s.title)}</b><span>${esc(s.summary)}</span>${ICONS.arrowRight}</button>`).join("");
     const authNotice = renderSemanticAuthNotice(semanticAuth, locale2);
     const usageNotice = renderUsageNotice(usage, locale2);
@@ -526,11 +672,11 @@
       ${usageNotice}
       ${quotaNotice}
       ${authNotice}
-      <label class="field-label" for="case-text">${esc(t("input.label", locale2))}</label>
-      <textarea id="case-text" rows="3" aria-describedby="case-hint" placeholder="${esc(t("input.placeholder", locale2))}"></textarea>
+      <label class="field-label" for="case-text">${esc(t(contract ? "contract.label" : "input.label", locale2))}</label>
+      <textarea id="case-text" rows="3" aria-describedby="case-hint" placeholder="${esc(t(contract ? "contract.placeholder" : "input.placeholder", locale2))}"></textarea>
       <!-- \u5931\u7126\u4E14\u5DF2\u6709\u5167\u5BB9\u6642\uFF0C\u4EE5\u4E09\u884C\u9810\u89BD\u53D6\u4EE3\u8F38\u5165\u6846\uFF08\u8D85\u9577\u4EE5 \u2026 \u6536\u5C3E\uFF09\uFF1B\u9EDE\u9810\u89BD\u5373\u56DE\u5230\u8F38\u5165\u6846\u4E26\u653E\u5927 -->
       <button type="button" class="case-preview" id="case-preview" hidden aria-label="${esc(t("input.previewAria", locale2))}"></button>
-      <div class="field-hint" id="case-hint"><span id="case-hint-text">${esc(t("input.hint", locale2))}</span><span class="count" id="case-count" aria-live="polite">0 / ${MIN_CHARS}</span></div>
+      <div class="field-hint" id="case-hint"><span id="case-hint-text">${esc(t(contract ? "contract.hint" : "input.hint", locale2))}</span><span class="count" id="case-count" aria-live="polite">0 / ${MIN_CHARS}</span></div>
       <div class="upload-field">
         <label class="field-label" for="case-files">${esc(t("input.files", locale2))}</label>
         <input class="upload-input" id="case-files" type="file" accept=".pdf,.md,.markdown,.docx" multiple aria-describedby="file-hint file-status">
@@ -543,15 +689,16 @@
         <div class="field-hint" id="file-hint">${esc(t("input.filesHint", locale2))}</div>
         <p class="file-status" id="file-status" aria-live="polite">${esc(t("input.filesEmpty", locale2))}</p>
       </div>
-      ${renderOutputs(locale2)}
-      <div class="motion-field" id="motion-field" hidden>
+      ${contract ? renderContractFields(locale2) : ""}
+      ${renderOutputs(locale2, mode)}
+      ${contract ? "" : `<div class="motion-field" id="motion-field" hidden>
         <label class="field-label" for="motion-request">${esc(t("input.motionRequest", locale2))}</label>
         <input id="motion-request" type="text" maxlength="200" placeholder="${esc(t("input.motionRequestPlaceholder", locale2))}">
-      </div>
-      <div class="input-actions"><button id="case-submit" class="primary" type="button" disabled>${esc(t("input.submit", locale2))}</button></div>
+      </div>`}
+      <div class="input-actions"><button id="case-submit" class="primary" type="button" disabled>${esc(t(contract ? "input.submitContract" : "input.submit", locale2))}</button></div>
     </div>
     <aside class="input-side">
-      <h3>${esc(t("input.samples", locale2))}</h3><div class="samples">${cards}</div>
+      <h3>${esc(t(contract ? "input.samplesContract" : "input.samples", locale2))}</h3><div class="samples">${cards}</div>
       <p class="disclaimer">${ICONS.info}<span>${esc(t("disclaimer", locale2))}</span></p>
       <p class="disclaimer lawpowers-note">${ICONS.info}<span>${esc(t("input.lawPowers", locale2))} <a href="${LAW_POWERS_URL}" target="_blank" rel="noopener">${esc(t("input.lawPowersAction", locale2))} \u2197</a></span></p>
     </aside></section>`;
@@ -597,7 +744,7 @@
       container.append(item);
     });
   }
-  function bindInput(root, { onSubmit, onSample }, locale2 = "en") {
+  function bindInput(root, { onSubmit, onSample }, locale2 = "en", mode = "case") {
     const ta = root.querySelector("#case-text"), files = root.querySelector("#case-files");
     const btn = root.querySelector("#case-submit"), count = root.querySelector("#case-count");
     const dropzone = root.querySelector("#file-dropzone"), fileList = root.querySelector("#file-list");
@@ -622,7 +769,7 @@
       count.classList.toggle("ok", hasFiles || n >= MIN_CHARS);
       if (hintText) hintText.textContent = t(hasFiles ? "input.hintWithFiles" : "input.hint", locale2);
       const hasInput = n >= MIN_CHARS || hasFiles;
-      btn.disabled = !hasInput || checked().length === 0 || selectedFiles.length > MAX_FILES;
+      btn.disabled = !hasInput || mode !== "contract" && checked().length === 0 || selectedFiles.length > MAX_FILES;
     };
     ta.addEventListener("input", sync);
     const preview = root.querySelector("#case-preview");
@@ -692,26 +839,37 @@
     syncFiles();
     syncMotion();
     sync();
+    const extra = () => mode === "contract" ? {
+      party: root.querySelector('input[name="party"]:checked')?.value || "unknown",
+      scopes: [...root.querySelectorAll('input[name="scopes"]:checked')].map((c) => c.value)
+    } : {};
     btn.addEventListener("click", () => onSubmit(
       ta.value,
       checked(),
       [...selectedFiles],
-      checked().includes("motion") && motionInput ? (motionInput.value || "").trim() : ""
+      mode !== "contract" && checked().includes("motion") && motionInput ? (motionInput.value || "").trim() : "",
+      extra()
     ));
-    root.querySelectorAll(".sample").forEach((b) => b.addEventListener("click", () => onSample(b.dataset.sampleId, checked())));
+    root.querySelectorAll(".sample").forEach((b) => b.addEventListener("click", () => onSample(b.dataset.sampleId, checked(), extra())));
   }
 
   // src/main/resources/static/js/views/progress.js
-  var STEPS = ["BRAINSTORM", "QUESTIONS", "RESEARCH", "ANALYSIS", "ASSESSMENT", "DOCUMENTS", "GRAPH"];
+  var STEPS_BY_MODE = Object.freeze({
+    case: Object.freeze(["BRAINSTORM", "QUESTIONS", "RESEARCH", "ANALYSIS", "ASSESSMENT", "DOCUMENTS", "GRAPH"]),
+    contract: Object.freeze(["LOAD", "QUESTIONS", "RESEARCH", "REVIEW", "SUMMARY", "REVISE", "GRAPH"])
+  });
+  var STEPS = STEPS_BY_MODE.case;
   function renderCancel(locale2) {
     return `<div class="cancel-row"><button id="cancel-case" type="button" class="ghost">${esc(t("progress.cancel", locale2))}</button></div>`;
   }
-  function renderProgress({ step, busy = true }, locale2) {
-    const idx = STEPS.indexOf(step);
-    return `<ol class="progress" aria-label="${esc(t("progress.aria", locale2))}">${STEPS.map((s, i) => {
+  function renderProgress({ step, busy = true, mode = "case" }, locale2) {
+    const steps = STEPS_BY_MODE[mode] || STEPS_BY_MODE.case;
+    const modeKey = mode === "contract" ? "contract" : "case";
+    const idx = steps.indexOf(step);
+    return `<ol class="progress" aria-label="${esc(t("progress.aria", locale2))}">${steps.map((s, i) => {
       const cls = i < idx ? "step done" : i === idx ? "step active" : "step";
       const current2 = i === idx ? ` aria-current="step"${busy ? " data-busy" : ""}` : "";
-      return `<li class="${cls}" data-step="${s}"${current2}><span class="step-no" aria-hidden="true">${i + 1}</span><span class="step-label">${esc(t("progress." + s, locale2))}</span></li>`;
+      return `<li class="${cls}" data-step="${s}"${current2}><span class="step-no" aria-hidden="true">${i + 1}</span><span class="step-label">${esc(t(`progress.${modeKey}.${s}`, locale2))}</span></li>`;
     }).join("")}</ol>`;
   }
 
@@ -733,7 +891,11 @@
 
   // src/main/resources/static/js/views/result.js
   var AUX_TABS = ["analysis", "research", "brainstorm"];
-  function tabsFor(outputs, hasChecklist = false) {
+  function tabsFor(outputs, hasChecklist = false, mode = "case", result = null) {
+    if (mode === "contract") {
+      const selected2 = normalizeOutputs(outputs, "contract");
+      return ["findings", "summary", ...selected2.includes("revised") ? ["doc-revised"] : [], ...result?.graph ? ["graph"] : [], "laws"];
+    }
     const selected = normalizeOutputs(outputs);
     const front = ["graph", ...DOC_TYPES].filter((o) => selected.includes(o)).map((o) => o === "graph" ? "graph" : "doc-" + o);
     return [...front, ...hasChecklist ? ["checklist"] : [], ...AUX_TABS];
@@ -837,6 +999,35 @@
       <p class="disclaimer">${ICONS.info}<span>${esc(a.disclaimer)}</span></p>`;
     }
   };
+  var riskBadge = (risk, locale2) => `<span class="risk risk-${esc(risk || "medium")}">${risk === "high" ? "\u{1F534}" : risk === "low" ? "\u{1F7E2}" : "\u{1F7E1}"} ${esc(t("risk." + (risk || "medium"), locale2))}</span>`;
+  function findingsTable(findings, locale2, riskFilter = "all") {
+    const rows = (findings || []).filter((f) => riskFilter === "all" || f.risk === riskFilter);
+    const filters = ["all", "high", "medium", "low"].map((r) => `<button type="button" class="chip ${r === riskFilter ? "active" : ""}" data-risk="${r}" aria-pressed="${r === riskFilter}">${esc(r === "all" ? t("finding.filter.all", locale2) : t("risk." + r, locale2))}</button>`).join("");
+    const head = ["clauseNo", "clauseText", "risk", "lawRefs", "riskPoint", "suggestion", "judgments"].map((k) => `<th scope="col">${esc(t("finding." + k, locale2))}</th>`).join("");
+    const body = rows.map((f) => `<tr data-risk="${esc(f.risk || "medium")}"><td>${esc(f.clauseNo)}</td><td class="clause-text">${esc(f.clauseText)}</td><td>${riskBadge(f.risk, locale2)}</td>
+    <td>${list(f.lawRefs)}</td><td>${esc(f.riskPoint)}</td><td>${esc(f.suggestion)}</td><td>${list(f.judgmentCitations)}</td></tr>`).join("");
+    const table = rows.length ? `<div class="table-wrap"><table class="assess-table findings-table"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>` : `<p class="empty">${esc(t("finding.none", locale2))}</p>`;
+    return `<div class="findings-toolbar"><div id="findings-filter" role="group" aria-label="${esc(t("finding.risk", locale2))}">${filters}</div>
+    <button type="button" id="findings-export" class="secondary">${esc(t("finding.export", locale2))}</button></div>${table}`;
+  }
+  function findingsCsv(findings, locale2) {
+    const head = ["clauseNo", "clauseText", "risk", "lawRefs", "riskPoint", "suggestion", "judgments"].map((k) => t("finding." + k, locale2)).join(",");
+    const lines = (findings || []).map((f) => [f.clauseNo, f.clauseText, t("risk." + (f.risk || "medium"), locale2), (f.lawRefs || []).join("\uFF1B"), f.riskPoint, f.suggestion, (f.judgmentCitations || []).join("\uFF1B")].map(csvCell).join(","));
+    return "\uFEFF" + [head, ...lines].join("\r\n");
+  }
+  function summaryPanel(result, locale2) {
+    const c = result.compliance || {}, b = result.contract || {};
+    const h3 = (key) => `<h3>${esc(t(key, locale2))}</h3>`;
+    const parties = (b.parties || []).map((p) => `${p.role}\uFF1A${p.name}`);
+    return `${h3("summary.contractType")}<p>${esc(c.contractType || b.contractType || "")}</p>
+    ${parties.length ? h3("summary.parties") + list(parties) : ""}
+    ${h3("summary.scopes")}${list(c.scopes || [], (s) => t("contract.scope." + s, locale2))}
+    ${h3("summary.overall")}<p>${riskBadge(c.overallRisk, locale2)}</p>
+    ${h3("summary.priorities")}${list(c.priorities)}
+    <p class="disclaimer">${ICONS.info}<span>${esc(c.disclaimer || "")}</span></p>`;
+  }
+  SECTION_HTML.contract = (b, locale2) => `<p><b>${esc(t("summary.contractType", locale2))}</b>\uFF1A${esc(b.contractType || "")}\uFF08${(b.clauses || []).length}\uFF09</p><p>${esc(b.summary || "")}</p>`;
+  SECTION_HTML.findings = (f, locale2) => findingsTable(f?.findings, locale2);
   var ISSUE_COLUMNS = ["no", "issue", "plaintiff", "plaintiffEvidence", "defendant", "defendantEvidence", "basis"];
   var CLAIM_COLUMNS = ["no", "basis", "claim"];
   var UNDISPUTED_COLUMNS = ["no", "fact", "evidence"];
@@ -876,17 +1067,22 @@
       <p class="disclaimer">${ICONS.info}<span>${esc(t("doc.disclaimer", locale2))}</span></p>
     </article>`;
   }
-  function renderSections(result, locale2) {
+  function renderRevised(revised, locale2) {
+    return revised?.items?.length ? "" : `<p class="doc-missing">${ICONS.info}<span>${esc(t("doc.missing", locale2))}</span></p>`;
+  }
+  function renderSections(result, locale2, mode = "case") {
     if (!result) return "";
-    const present = ["brainstorm", "research", "analysis"].filter((k) => result[k]);
+    const keys = mode === "contract" ? ["contract", "research", "findings"] : ["brainstorm", "research", "analysis"];
+    const present = keys.filter((k) => result[k]);
     if (!present.length) return "";
+    const label = (k) => k === "contract" ? t("summary.contractType", locale2) : t("result.tab." + k, locale2);
     const blocks = present.map((k) => `<details class="partial" data-section="${k}" open>
-      <summary>${esc(t("result.tab." + k, locale2))}</summary>${SECTION_HTML[k](result[k], locale2, result.assessment)}</details>`).join("");
+      <summary>${esc(label(k))}</summary>${SECTION_HTML[k](result[k], locale2, result.assessment)}</details>`).join("");
     return `<section class="partials"><h2>${esc(t("progress.partial", locale2))}</h2>${blocks}</section>`;
   }
-  function renderResult({ status, activeTab = "graph", outputs }, locale2) {
+  function renderResult({ status, activeTab = "graph", outputs, mode = status?.mode || "case", riskFilter = "all" }, locale2) {
     const r = status.result || {};
-    const TABS = tabsFor(outputs, !!r.assessment?.checklist?.length);
+    const TABS = tabsFor(outputs, !!r.assessment?.checklist?.length, mode, r);
     if (!TABS.includes(activeTab)) activeTab = TABS[0];
     const tabs = TABS.map((k) => `<button type="button" role="tab" id="tab-${k}" aria-controls="panel-${k}" aria-selected="${k === activeTab}" class="tab ${k === activeTab ? "active" : ""}" data-tab="${k}">${esc(tabLabel(k, locale2))}</button>`).join("");
     const panels = {
@@ -904,9 +1100,16 @@
       analysis: SECTION_HTML.analysis(r.analysis || {}, locale2, r.assessment),
       research: SECTION_HTML.research(r.research || {}, locale2),
       brainstorm: SECTION_HTML.brainstorm(r.brainstorm || {}, locale2),
-      checklist: checklistTable(r.assessment?.checklist, locale2)
+      checklist: checklistTable(r.assessment?.checklist, locale2),
+      findings: findingsTable(r.compliance?.findings || r.findings?.findings, locale2, riskFilter),
+      summary: summaryPanel(r, locale2),
+      laws: SECTION_HTML.research(r.research || {}, locale2)
     };
     for (const k of TABS) {
+      if (k === "doc-revised") {
+        panels[k] = renderRevised(r.revised, locale2);
+        continue;
+      }
       if (!k.startsWith("doc-")) continue;
       const type = k.slice(4);
       panels[k] = renderDocument((r.documents || []).find((d) => d.type === type), locale2);
@@ -930,6 +1133,43 @@
     root.querySelector("#new-case").addEventListener("click", onNewCase);
   }
 
+  // src/main/resources/static/js/views/home.js
+  var CAP_ICONS = {
+    case: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M5 21h14M12 6l-6 3 6-3 6 3-6-3"/><path d="M3 14a3 3 0 0 0 6 0L6 9l-3 5zM15 14a3 3 0 0 0 6 0l-3-5-3 5z"/></svg>',
+    contract: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/><path d="M9.5 15.5l2 2 3.5-4"/></svg>'
+  };
+  function renderHome(locale2) {
+    const card = (mode) => `<article class="capability card" data-mode="${mode}" tabindex="0" role="button" aria-label="${esc(t(`home.${mode}.title`, locale2))}">
+      <span class="cap-icon" aria-hidden="true">${CAP_ICONS[mode]}</span>
+      <h2>${esc(t(`home.${mode}.title`, locale2))}</h2>
+      <p>${esc(t(`home.${mode}.desc`, locale2))}</p>
+      <p class="cap-steps">${esc(t(`home.steps.${mode}`, locale2))}</p>
+      <button type="button" class="primary" data-mode="${mode}" tabindex="-1">${esc(t("home.start", locale2))}${ICONS.arrowRight}</button>
+    </article>`;
+    return `<section class="home"><h2 class="home-title">${esc(t("home.title", locale2))}</h2><p class="home-lead">${esc(t("home.lead", locale2))}</p>
+    <div class="capabilities">${card("case")}${card("contract")}</div>
+    <p class="disclaimer">${ICONS.info}<span>${esc(t("disclaimer", locale2))}</span></p></section>`;
+  }
+  function bindHome(root, { onSelect }) {
+    root.querySelectorAll(".capability").forEach((card) => {
+      const go = () => onSelect(card.dataset.mode);
+      card.addEventListener("click", go);
+      card.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && !e.target?.closest?.("button")) go();
+      });
+    });
+  }
+
+  // src/main/resources/static/js/router.js
+  var MODES = Object.freeze(["case", "contract"]);
+  function parseHash(hash) {
+    const path = String(hash || "").replace(/^#\/?/, "");
+    return MODES.includes(path) ? { view: "INPUT", mode: path } : { view: "HOME", mode: null };
+  }
+  function hashFor(state) {
+    return state?.view !== "HOME" && MODES.includes(state?.mode) ? `#/${state.mode}` : "#/";
+  }
+
   // src/main/resources/static/js/app.js
   function semanticAuthPath(status, locationLike = globalThis.location) {
     if (!status?.result?.research?.coverage?.authorizationRequired) return null;
@@ -946,13 +1186,16 @@
     a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 0);
   }
-  function createApp({ root, client, storage, navigatorLanguage, partialCollapseMs = 5e3 }) {
+  function createApp({ root, client, storage, navigatorLanguage, partialCollapseMs = 5e3, locationLike = globalThis.location }) {
     let state = { ...initialState };
     let locale2 = detectLocale(navigatorLanguage, storage.getItem("locale"));
     let samples = [];
     let stopPolling = null;
     let startRequestId = 0;
     let activeTab = "graph";
+    let riskFilter = "all";
+    const mode = () => state.mode || "case";
+    let hashListenerBound = false;
     let selectedOutputs = ["graph"];
     let questionDraft = {};
     let questionFillNotice = null;
@@ -997,6 +1240,8 @@
         authRedirected = true;
         globalThis.location.assign(authPath);
       }
+      const nextHash = hashFor(state);
+      if (locationLike && (locationLike.hash || "#/") !== nextHash) locationLike.hash = nextHash;
       render2();
       listeners.forEach((l) => l(state, "STATE"));
     }
@@ -1008,10 +1253,14 @@
         n.textContent = t(n.dataset.i18n, locale2);
       });
       switch (state.view) {
+        case States.HOME:
+          mount(el, renderHome(locale2));
+          bindHome(el, { onSelect: selectMode });
+          break;
         case States.INPUT: {
           const typed = el.querySelector?.("#case-text")?.value ?? "";
-          mount(el, renderInput({ samples, semanticAuth, usage, quota }, locale2));
-          bindInput(el, { onSubmit: start, onSample: startSample }, locale2);
+          mount(el, renderInput({ samples, semanticAuth, usage, quota, mode: mode() }, locale2));
+          bindInput(el, { onSubmit: start, onSample: startSample }, locale2, mode());
           if (typed) {
             const ta = el.querySelector("#case-text");
             if (ta) {
@@ -1022,21 +1271,31 @@
           break;
         }
         case States.RUNNING:
-          mount(el, renderProgress({ step: state.last?.step || "BRAINSTORM" }, locale2) + renderCancel(locale2) + renderSections(state.last?.result, locale2));
+          mount(el, renderProgress({ step: state.last?.step || firstStep(), mode: mode() }, locale2) + renderCancel(locale2) + renderSections(state.last?.result, locale2, mode()));
           bindCancel(el);
           break;
         case States.QUESTIONS:
-          mount(el, renderProgress({ step: "QUESTIONS", busy: false }, locale2) + renderCancel(locale2) + renderSections(state.last.result, locale2) + renderQuestions({ questions: state.last.questions, answers: questionDraft, notice: questionFillNotice }, locale2));
+          mount(el, renderProgress({ step: "QUESTIONS", busy: false, mode: mode() }, locale2) + renderCancel(locale2) + renderSections(state.last.result, locale2, mode()) + renderQuestions({ questions: state.last.questions, answers: questionDraft, notice: questionFillNotice }, locale2));
           bindQuestions(el, { onSubmit: answer });
           bindCancel(el);
           scheduleCollapse(el);
           break;
         case States.RESULT:
-          mount(el, renderResult({ status: state.last, activeTab, outputs: selectedOutputs }, locale2));
+          mount(el, renderResult({ status: state.last, activeTab, outputs: selectedOutputs, mode: mode(), riskFilter }, locale2));
           bindResult(el, { onTab: (k) => {
             activeTab = k;
             render2();
           }, onNewCase: reset });
+          el.querySelector("#findings-filter")?.querySelectorAll?.("button[data-risk]")?.forEach?.((b) => {
+            b.addEventListener("click", () => {
+              riskFilter = b.dataset.risk || "all";
+              render2();
+            });
+          });
+          el.querySelector("#findings-export")?.addEventListener("click", () => {
+            const findings = state.last?.result?.compliance?.findings || [];
+            downloadText(findingsCsv(findings, locale2), t("finding.file", locale2), "text/csv;charset=utf-8");
+          });
           el.querySelector("#checklist-export")?.addEventListener("click", () => {
             const items = state.last?.result?.assessment?.checklist || [];
             downloadText(checklistCsv(items, locale2), t("checklist.file", locale2), "text/csv;charset=utf-8");
@@ -1069,6 +1328,17 @@
         });
       }, partialCollapseMs);
     }
+    function firstStep() {
+      return mode() === "contract" ? "LOAD" : "BRAINSTORM";
+    }
+    async function selectMode(next) {
+      dispatch({ type: "SELECT_MODE", mode: next });
+      samples = await Promise.resolve().then(() => client.samples(locale2, mode())).catch(() => []);
+      render2();
+    }
+    function goHome() {
+      dispatch({ type: "GO_HOME" });
+    }
     function bindCancel(el) {
       el.querySelector("#cancel-case")?.addEventListener("click", reset);
     }
@@ -1091,15 +1361,18 @@
         dispatch({ type: "STATUS", status: s });
       });
     }
-    async function start(text, outputs, files = [], motionRequest = "") {
+    async function start(text, outputs, files = [], motionRequest = "", extra = {}) {
       if ((!text || !text.trim()) && (!Array.isArray(files) || !files.length)) return null;
-      selectedOutputs = normalizeOutputs(outputs);
-      activeTab = selectedOutputs.includes("graph") ? "graph" : "doc-" + selectedOutputs[0];
+      const m = mode();
+      selectedOutputs = normalizeOutputs(outputs, m);
+      activeTab = m === "contract" ? "findings" : selectedOutputs.includes("graph") ? "graph" : "doc-" + selectedOutputs[0];
       const requestId = ++startRequestId;
-      dispatch({ type: "START", caseId: null });
+      dispatch({ type: "START", caseId: null, mode: m });
+      const payloadExtra = m === "contract" ? [{ mode: "contract", party: extra?.party || "unknown", scopes: extra?.scopes || [] }] : [];
+      const documents = m === "contract" ? selectedOutputs : selectedOutputs.filter((o) => o !== "graph");
       let s;
       try {
-        s = await client.start((text || "").trim(), locale2, selectedOutputs.filter((o) => o !== "graph"), files, motionRequest);
+        s = await client.start((text || "").trim(), locale2, documents, files, motionRequest, ...payloadExtra);
         refreshUsage().catch(() => {
         });
       } catch (error) {
@@ -1108,7 +1381,7 @@
             type: "STATUS",
             status: {
               status: "FAILED",
-              step: "BRAINSTORM",
+              step: m === "contract" ? "LOAD" : "BRAINSTORM",
               locale: locale2,
               error: { code: error.code || "START_FAILED", message: error.message || "Unable to start case." }
             }
@@ -1119,19 +1392,20 @@
       if (requestId !== startRequestId) return null;
       storage.setItem("caseId", s.caseId);
       storage.setItem("outputs", JSON.stringify(selectedOutputs));
-      dispatch({ type: "START", caseId: s.caseId });
+      storage.setItem("mode", m);
+      dispatch({ type: "START", caseId: s.caseId, mode: m });
       beginPolling(s.caseId);
       return s;
     }
-    async function startSample(id, outputs) {
+    async function startSample(id, outputs, extra = {}) {
       const value = String(id || "").trim();
       let smp = samples.find((x) => x.id === value || x.title === value);
       if (!smp && value) {
-        const loaded = await client.samples(locale2).catch(() => []);
+        const loaded = await client.samples(locale2, mode()).catch(() => []);
         if (loaded.length) samples = loaded;
         smp = samples.find((x) => x.id === value || x.title === value);
       }
-      return smp ? start(smp.text, outputs) : null;
+      return smp ? start(smp.text, outputs, [], "", extra) : null;
     }
     async function answer(answers) {
       let s;
@@ -1283,12 +1557,13 @@
     function getOutputOptions() {
       const boxes = state.view === States.INPUT ? [...root.querySelectorAll('input[name="outputs"]')] : [];
       const checkedSet = new Set(boxes.length ? boxes.filter((box) => box.checked).map((box) => box.value) : selectedOutputs);
-      const options = OUTPUT_OPTIONS.map((code) => ({
+      const contract = mode() === "contract";
+      const options = outputOptionsFor(mode()).map((code) => ({
         code,
         label: outputLabel(code),
         kind: code === "graph" ? "graph" : "document",
         checked: checkedSet.has(code),
-        isDefault: code === "graph"
+        isDefault: !contract && code === "graph"
       }));
       return {
         ok: true,
@@ -1296,7 +1571,8 @@
         rendered: boxes.length > 0,
         count: options.length,
         checkedCount: options.filter((option) => option.checked).length,
-        minRequired: 1,
+        minRequired: contract ? 0 : 1,
+        mode: mode(),
         options,
         nextAction: state.view === States.INPUT ? "Use setOutputSelection to tick outputs, or pass documents to startCase." : "Output checkboxes are only editable on the input page."
       };
@@ -1317,6 +1593,12 @@
         charCount: fullText.trim().length,
         minChars: MIN_CHARS,
         canSubmit: Boolean(submit) && !submit.disabled,
+        mode: mode(),
+        // 合約模式專屬欄位：我方立場與審查範疇的目前勾選狀態
+        contract: mode() === "contract" ? {
+          party: root.querySelector('input[name="party"]:checked')?.value || "unknown",
+          scopes: [...root.querySelectorAll('input[name="scopes"]:checked')].map((c) => c.value)
+        } : void 0,
         outputs: getOutputOptions(),
         sampleCount: samples.length,
         samples: samples.map(({ id, title }) => ({ id, title }))
@@ -1327,14 +1609,15 @@
         return { ok: false, error: "RESULT_NOT_VISIBLE", view: state.view, message: "Result tabs are only visible after the case is completed." };
       }
       const result = state.last?.result || {};
-      const tabs = tabsFor(selectedOutputs).map((id) => {
-        const available = id === "graph" ? Boolean(result.graph) : id.startsWith("doc-") ? (result.documents || []).some((document2) => document2.type === id.slice(4)) : Boolean(result[id]);
+      const tabs = tabsFor(selectedOutputs, !!result.assessment?.checklist?.length, mode(), result).map((id) => {
+        const available = id === "graph" ? Boolean(result.graph) : id === "findings" ? Boolean(result.compliance?.findings?.length) : id === "summary" ? Boolean(result.compliance) : id === "laws" ? Boolean(result.research) : id.startsWith("doc-") ? (result.documents || []).some((document2) => document2.type === id.slice(4)) : Boolean(result[id]);
         return { id, label: tabLabel(id, locale2), active: id === activeTab, available };
       });
       return {
         ok: true,
         view: state.view,
         generatedLocale: state.last?.locale || locale2,
+        mode: mode(),
         outputs: [...selectedOutputs],
         count: tabs.length,
         activeTab,
@@ -1348,8 +1631,10 @@
       stopPolling = null;
       storage.removeItem("caseId");
       storage.removeItem("outputs");
+      storage.removeItem("mode");
       activeTab = "graph";
       selectedOutputs = ["graph"];
+      riskFilter = "all";
       authRedirected = false;
       await refreshAuthStatus();
       dispatch({ type: "RESET" });
@@ -1357,7 +1642,7 @@
     async function setLocale2(code) {
       locale2 = code in DICT ? code : "en";
       storage.setItem("locale", locale2);
-      samples = await client.samples(locale2);
+      samples = await client.samples(locale2, mode());
       const sel = root.querySelector("#lang-select");
       if (sel) sel.value = locale2;
       listeners.forEach((l) => l(state, "LOCALE"));
@@ -1369,19 +1654,36 @@
         sel.value = locale2;
         sel.addEventListener("change", () => setLocale2(sel.value));
       }
-      const [, loadedSamples] = await Promise.all([refreshAuthStatus(), client.samples(locale2).catch(() => [])]);
+      const initial = parseHash(locationLike?.hash);
+      bindHashChange();
+      const [, loadedSamples] = await Promise.all([
+        refreshAuthStatus(),
+        Promise.resolve().then(() => client.samples(locale2, initial.mode || "case")).catch(() => [])
+      ]);
       samples = loadedSamples;
       const saved = storage.getItem("caseId");
       if (saved) {
+        const savedMode = storage.getItem("mode") || "case";
         try {
-          selectedOutputs = normalizeOutputs(JSON.parse(storage.getItem("outputs")));
+          selectedOutputs = normalizeOutputs(JSON.parse(storage.getItem("outputs")), savedMode);
         } catch {
-          selectedOutputs = ["graph"];
+          selectedOutputs = normalizeOutputs([], savedMode);
         }
-        activeTab = selectedOutputs.includes("graph") ? "graph" : "doc-" + selectedOutputs[0];
-        dispatch({ type: "START", caseId: saved });
+        activeTab = savedMode === "contract" ? "findings" : selectedOutputs.includes("graph") ? "graph" : "doc-" + selectedOutputs[0];
+        dispatch({ type: "START", caseId: saved, mode: savedMode });
         beginPolling(saved, { resumed: true });
+      } else if (initial.view === "INPUT") {
+        await selectMode(initial.mode);
       } else render2();
+    }
+    function bindHashChange() {
+      if (hashListenerBound) return;
+      hashListenerBound = true;
+      globalThis.addEventListener?.("hashchange", () => {
+        const parsed = parseHash(locationLike?.hash);
+        if (state.view === States.HOME && parsed.view === "INPUT") selectMode(parsed.mode);
+        else if (parsed.view === "HOME" && state.view === States.INPUT) goHome();
+      });
     }
     return {
       mount: mount2,
@@ -1397,6 +1699,13 @@
       getQuota: () => quota,
       client,
       setLocale: setLocale2,
+      selectMode,
+      goHome,
+      getMode: mode,
+      setRiskFilter: (r) => {
+        riskFilter = r;
+        render2();
+      },
       start,
       startSample,
       answer,
@@ -1442,13 +1751,19 @@
       return call(path, { signal: AbortSignal.timeout(entryTimeoutMs) });
     }
     return {
-      /** 有附件時改用 multipart；無附件維持既有 JSON 契約與 WebMCP 相容性。 */
-      start: (caseText, locale2, documents, files = [], motionRequest = "") => {
+      /** 有附件時改用 multipart；無附件維持既有 JSON 契約與 WebMCP 相容性。extra.mode 有值時才附上 mode／party／scopes（合約模式）。 */
+      start: (caseText, locale2, documents, files = [], motionRequest = "", extra = {}) => {
+        const modeFields = extra.mode ? { mode: extra.mode, party: extra.party || "unknown", scopes: Array.isArray(extra.scopes) ? extra.scopes : [] } : {};
         if (Array.isArray(files) && files.length) {
           const form = new FormData();
           form.append("caseText", caseText || "");
           form.append("locale", locale2);
           if (motionRequest) form.append("motionRequest", motionRequest);
+          if (modeFields.mode) {
+            form.append("mode", modeFields.mode);
+            form.append("party", modeFields.party);
+            modeFields.scopes.forEach((s) => form.append("scopes", s));
+          }
           (Array.isArray(documents) ? documents : []).forEach((document2) => form.append("documents", document2));
           files.forEach((file) => form.append("files", file, file.name));
           return call("/api/cases", { method: "POST", body: form });
@@ -1459,13 +1774,15 @@
             caseText,
             locale: locale2,
             ...Array.isArray(documents) && documents.length ? { documents } : {},
-            ...motionRequest ? { motionRequest } : {}
+            ...motionRequest ? { motionRequest } : {},
+            ...modeFields
           })
         });
       },
       status: (id) => call(`/api/cases/${encodeURIComponent(id)}`),
       answer: (id, answers) => call(`/api/cases/${encodeURIComponent(id)}/answers`, { method: "POST", body: JSON.stringify({ answers }) }),
-      samples: (locale2) => entry(`/api/samples?locale=${encodeURIComponent(locale2)}`),
+      /** 案例清單：mode 有值時附加查詢參數以取合約模式範例。 */
+      samples: (locale2, mode) => entry(`/api/samples?locale=${encodeURIComponent(locale2)}${mode ? `&mode=${encodeURIComponent(mode)}` : ""}`),
       verify: (ref) => call(`/api/laws/verify?ref=${encodeURIComponent(ref)}`),
       authStatus: () => entry("/api/auth/tw-legal-rag/status"),
       /** 今日 token 用量與是否停用。 */
