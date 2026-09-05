@@ -128,7 +128,7 @@
 
 - `case_event`：`case_id VARCHAR PK`、`usage_day VARCHAR(10)`、`mode VARCHAR(16)`、`identity_kind VARCHAR(16)`（anonymous／member）、`identity_hash VARCHAR(64)`（SHA-256，供配額計數，不存原始 IP／sub）、`model VARCHAR(64)`、`status VARCHAR(16)`（RUNNING／COMPLETED／FAILED）、`prompt_tokens BIGINT`、`completion_tokens BIGINT`、`started_at TIMESTAMP`、`finished_at TIMESTAMP NULL`。索引 `(usage_day)`、`(identity_hash, usage_day)`。
 - `member`：`google_sub VARCHAR(64) PK`、`email VARCHAR(255)`、`display_name VARCHAR(255)`、`picture_url VARCHAR(1024)`、`first_login_at TIMESTAMP`、`last_login_at TIMESTAMP`、`login_count INT`、`blocked BOOLEAN`、`blocked_reason VARCHAR(255)`。不存 access／id token。每次 OAuth 登入成功（`OAuth2LoginSuccessHandler`／`OidcUserService` 包裝）upsert 一列並累加 `login_count`；`AccessPolicy` 命中時寫入 `blocked`。`case_event.identity_hash` 對會員改存 `google_sub`（`identity_kind=member`），匿名維持 IP 雜湊。
-- 會員資料保存期限：`last_login_at` 起 12 個月無活動即刪除（每日排程 `MemberRetentionJob`，`LAWGRAPH_MEMBER_RETENTION_DAYS` 預設 365），並在登入按鈕旁顯示個資告知（收集目的：身分識別與配額；欄位：Google email、名稱、頭像；保存期限；刪除申請 email，i18n `privacy.notice.*`）；提供 `DELETE /api/me` 讓已登入者自行刪除帳號與其 case_event 關聯（identity_hash 置空）。
+- 會員資料保存期限：`last_login_at` 起 12 個月無活動即刪除（每日排程 `MemberRetentionJob`，`LAWGRAPH_MEMBER_RETENTION_DAYS` 預設 365），個資告知只對**首次建立的帳號**顯示一次：`member` 新增 `notice_acknowledged_at TIMESTAMP NULL`；登入成功時若是新建列，`GET /api/me` 回 `firstLogin=true`，前端在頂欄下方顯示可關閉的告知卡（收集目的：身分識別與配額；欄位：Google email、名稱、頭像；保存期限；刪除方式，i18n `privacy.notice.*`），按「我知道了」呼叫 `POST /api/me/notice-ack` 寫入時間戳，之後登入不再顯示；登入按鈕旁不放告知文字；提供 `DELETE /api/me` 讓已登入者自行刪除帳號與其 case_event 關聯（identity_hash 置空）。
 - `usage_daily`：保留並新增欄位 `llm_calls BIGINT`、`cached_tokens BIGINT`、`reasoning_tokens BIGINT`（`ALTER TABLE ... ADD COLUMN IF NOT EXISTS`，H2 與 PostgreSQL 皆支援）。
 
 **元件**：
