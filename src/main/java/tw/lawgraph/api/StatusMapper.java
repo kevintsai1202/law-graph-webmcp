@@ -95,7 +95,9 @@ public final class StatusMapper {
     /** 依 blackboard 已產生的最後成果推導目前步驤；兩模式各一套。 */
     static String deriveStep(StatusSnapshot snapshot) {
         if (snapshot.isContract()) {
-            if (snapshot.compliance() != null || snapshot.revised() != null) return "GRAPH";
+            // 修訂條款產出後才進入 GRAPH；只有合規報告時仍停在 REVISE
+            if (snapshot.revised() != null) return "GRAPH";
+            if (snapshot.compliance() != null) return "REVISE";
             if (snapshot.findings() != null) return "SUMMARY";
             if (snapshot.research() != null) return "REVIEW";
             if (snapshot.answers() != null) return "RESEARCH";

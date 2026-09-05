@@ -57,6 +57,41 @@ class ContractPromptsTest {
         assertTrue(p.contains("包含")); assertTrue(p.contains("課予"));
     }
 
+    /** 所有 prompt 使用到的 <tag> 都必須列在 system prompt 第 8 條的注入防禦清單，避免新增標籤時漏掉。 */
+    @Test void everyPromptTagIsCoveredByInjectionDefence() {
+        var report = new ComplianceReport("勞動契約", List.of("labor"), Risk.high, List.of(), List.of(), null);
+        var research = new ResearchResult(List.of(), List.of(), List.of());
+        var answers = new ClarifiedAnswers(List.of(), List.of());
+        var prompts = List.of(
+                ContractPrompts.load(input),
+                ContractPrompts.clarify(input, brainstorm, List.of(), List.of(), 2),
+                ContractPrompts.research(input, brainstorm, answers),
+                ContractPrompts.review(input, brainstorm, brainstorm.clauses(), 1, 1, research, answers),
+                ContractPrompts.summarize(input, brainstorm, new ClauseFindings(List.of(), List.of())),
+                ContractPrompts.revise(input, brainstorm, report),
+                ContractPrompts.graph(input, brainstorm, research, report));
+        String system = LegalPrompts.system(Locale.ZH_TW);
+        // 取出第 8 條注入防禦那一行，只在該行內比對標籤
+        String rule8 = system.lines().filter(l -> l.contains("Prompt-injection defence")).findFirst().orElseThrow();
+        var pattern = java.util.regex.Pattern.compile("<([a-z_]+)>");
+        var tags = new java.util.TreeSet<String>();
+        for (String prompt : prompts) {
+            var m = pattern.matcher(prompt);
+            while (m.find()) tags.add(m.group(1));
+        }
+        assertFalse(tags.isEmpty());
+        for (String tag : tags) {
+            assertTrue(rule8.contains("<" + tag + ">"), "注入防禦清單缺少標籤 <" + tag + ">");
+        }
+    }
+
+    @Test void reviseWrapsReportInReportTag() {
+        var report = new ComplianceReport("勞動契約", List.of("labor"), Risk.high, List.of(), List.of(), null);
+        String p = ContractPrompts.revise(input, brainstorm, report);
+        assertTrue(p.contains("<report>"));
+        assertFalse(p.contains("<findings>"));
+    }
+
     @Test void partyLabels() {
         assertEquals("甲方", ContractPrompts.partyLabel("partyA"));
         assertEquals("乙方", ContractPrompts.partyLabel("partyB"));

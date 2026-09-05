@@ -30,6 +30,16 @@ class StatusMapperContractTest {
         assertEquals("RESEARCH", StatusMapper.deriveStep(snap(AgentProcessStatusCode.RUNNING, brainstorm, null, new UserAnswers(List.of()), null, null, null)));
         assertEquals("REVIEW", StatusMapper.deriveStep(snap(AgentProcessStatusCode.RUNNING, brainstorm, null, new UserAnswers(List.of()), research, null, null)));
         assertEquals("SUMMARY", StatusMapper.deriveStep(snap(AgentProcessStatusCode.RUNNING, brainstorm, null, new UserAnswers(List.of()), research, findings, null)));
+        // 合規報告完成但尚無修訂條款 → REVISE
+        assertEquals("REVISE", StatusMapper.deriveStep(snap(AgentProcessStatusCode.RUNNING, brainstorm, null, new UserAnswers(List.of()), research, findings, report)));
+        // 修訂條款完成 → GRAPH
+        assertEquals("GRAPH", StatusMapper.deriveStep(snap(AgentProcessStatusCode.RUNNING, brainstorm, null, new UserAnswers(List.of()), research, findings, report, null, new RevisedClauses(List.of()))));
+    }
+
+    @Test void runningWithComplianceOnlyMapsToReviseStep() {
+        var status = StatusMapper.map(snap(AgentProcessStatusCode.RUNNING, brainstorm, null, new UserAnswers(List.of()), research, findings, report));
+        assertEquals("RUNNING", status.status());
+        assertEquals("REVISE", status.step());
     }
 
     @Test void completedContractRequiresGraph() {

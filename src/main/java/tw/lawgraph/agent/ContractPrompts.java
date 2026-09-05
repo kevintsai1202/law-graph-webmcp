@@ -91,7 +91,7 @@ public final class ContractPrompts {
         return """
                 Activate skill "compliance-verification" step 3 (修改建議) and produce replacement wording. Output only a RevisedClauses object.
                 Our side: %s. Contract type: %s.
-                <findings>%s</findings>
+                <report>%s</report>
                 For every finding with risk high or medium (skip low): items[] {clauseNo (copy), original (copy clauseText verbatim), revised (complete replacement clause text in formal Taiwan contract drafting register, ready to paste; keep the clause numbering style), rationale (one sentence citing the lawRefs of that finding verbatim; never cite anything else)}.
                 Revised wording must protect our side while staying enforceable under Taiwan law; if the clause is void as a whole, replace it with a lawful clause that achieves the legitimate purpose. Taiwan legal terms only. Respond in %s.
                 """.formatted(partyLabel(input.party()), brainstorm.contractType(), toJson(report), input.locale().code());
