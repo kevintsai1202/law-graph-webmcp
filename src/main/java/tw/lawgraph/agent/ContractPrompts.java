@@ -54,7 +54,7 @@ public final class ContractPrompts {
                 <brainstorm>%s</brainstorm>
                 <user_answers>%s</user_answers>
                 Build `regulationQueries` (at most 15) naming one specific article each. Always include 民法第71條 and 民法第247條之1. Then by scope: commercial → the 民法 debt-chapter articles governing the contract type (e.g. 民法第490條, 民法第227條, 民法第252條); labor → 勞動基準法第24條, 勞動基準法第9條之1, 勞動基準法第15條之1, 勞動基準法第21條 and any article the clauses touch; privacy → 個人資料保護法第8條, 個人資料保護法第19條, 個人資料保護法第20條; corporate → the 公司法 articles the clauses touch. Add every article a clause explicitly cites.
-                Build `judgmentKeywordQueries` (at most 5): keyword = the clause topic plus 契約 (e.g. 加班費 放棄 約定 無效), caseType 民事, maxResults 5.
+                Build `judgmentKeywordQueries` (at most 5): keyword = the clause topic plus 契約 (e.g. 加班費 放棄 約定 無效), caseType 民事, maxResults 5. mainText: optionally "被告應給付" (defendant lost) or "原告之訴駁回" (plaintiff lost) to fetch judgments where such a clause was actually held void.
                 Write a ≤400-character summary of the contract, our side and the risky clauses into `semanticCaseText`.
                 """.formatted(input.text(), toJson(brainstorm), toJson(answers));
     }

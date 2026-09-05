@@ -89,6 +89,7 @@ public final class McpTaiwanLegalDbAdapter implements TaiwanLegalDbPort {
         putIfNotBlank(arguments, "court", query.court());
         putIfNotBlank(arguments, "from_date", query.fromDate());
         putIfNotBlank(arguments, "to_date", query.toDate());
+        putIfNotBlank(arguments, "main_text", query.mainText());
         if (query.maxResults() != null) arguments.put("max_results", query.maxResults());
         return Map.copyOf(arguments);
     }

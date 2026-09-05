@@ -45,7 +45,8 @@ public record ResearchPlan(List<String> regulationQueries,
 
     /** 關鍵字軌的一次查詢與可選結構化條件。 */
     public record JudgmentKeywordQuery(String keyword, String caseType, String court,
-                                       String fromDate, String toDate, Integer maxResults) {
+                                       String fromDate, String toDate, Integer maxResults,
+                                       String mainText) {
         /** 正規化選填條件；負數上限視為未設定。 */
         public JudgmentKeywordQuery {
             keyword = normalize(keyword);
@@ -54,6 +55,13 @@ public record ResearchPlan(List<String> regulationQueries,
             fromDate = normalize(fromDate);
             toDate = normalize(toDate);
             maxResults = maxResults != null && maxResults >= 0 ? maxResults : null;
+            mainText = normalize(mainText);
+        }
+
+        /** 相容舊版 6 參數建構子（無 mainText）。 */
+        public JudgmentKeywordQuery(String keyword, String caseType, String court,
+                                     String fromDate, String toDate, Integer maxResults) {
+            this(keyword, caseType, court, fromDate, toDate, maxResults, "");
         }
     }
 }
