@@ -1,24 +1,39 @@
 import { t } from '../i18n.js';
 import { esc } from './util.js';
 import { ICONS } from './icons.js';
-import { OUTPUT_OPTIONS } from '../documents.js';
+import { OUTPUT_OPTIONS, outputOptionsFor } from '../documents.js';
+import { CONTRACT_PARTIES, CONTRACT_SCOPES } from '../contract.js';
 
 /** 案情最少字數：與 webmcp.js startCase 的 caseText.minLength 一致，送出鈕在達標前停用。 */
 export const MIN_CHARS = 20;
 /** 瀏覽器端先限制可選附件數；後端仍會獨立驗證大小、格式與內容。 */
 export const MAX_FILES = 5;
 
-/** 輸出項目勾選區：關聯圖預設勾選，其餘書狀由使用者自選。 */
-function renderOutputs(locale) {
-  const items = OUTPUT_OPTIONS.map((option) => {
-    const label = option === 'graph' ? t('output.graph', locale) : t('doc.' + option, locale);
-    return `<label class="output-item"><input type="checkbox" name="outputs" value="${option}"${option === 'graph' ? ' checked' : ''}><span>${esc(label)}</span></label>`;
+/** 輸出項目勾選區：case 模式關聯圖預設勾選、其餘書狀自選；contract 模式只有「修訂本」且不預勾。 */
+function renderOutputs(locale, mode = 'case') {
+  const contract = mode === 'contract';
+  const options = outputOptionsFor(mode);
+  const items = options.map((option) => {
+    const label = contract ? t('doc.revised', locale) : (option === 'graph' ? t('output.graph', locale) : t('doc.' + option, locale));
+    return `<label class="output-item"><input type="checkbox" name="outputs" value="${option}"${!contract && option === 'graph' ? ' checked' : ''}><span>${esc(label)}</span></label>`;
   }).join('');
   return `<fieldset class="outputs" id="output-box">
-      <legend>${esc(t('input.outputs', locale))}</legend>
+      <legend>${esc(t(contract ? 'contract.outputs' : 'input.outputs', locale))}</legend>
       <div class="output-grid">${items}</div>
-      <p class="field-hint">${esc(t('input.outputsHint', locale))}</p>
+      <p class="field-hint">${esc(t(contract ? 'contract.outputsHint' : 'input.outputsHint', locale))}</p>
     </fieldset>`;
+}
+
+/** 合約模式專屬欄位：我方立場（radio）與審查範疇（checkbox）。 */
+function renderContractFields(locale) {
+  const parties = CONTRACT_PARTIES.map((p) =>
+    `<label class="output-item"><input type="radio" name="party" value="${p}"${p === 'unknown' ? ' checked' : ''}><span>${esc(t('contract.party.' + p, locale))}</span></label>`
+  ).join('');
+  const scopes = CONTRACT_SCOPES.map((s) =>
+    `<label class="output-item"><input type="checkbox" name="scopes" value="${s}"><span>${esc(t('contract.scope.' + s, locale))}</span></label>`
+  ).join('');
+  return `<fieldset class="outputs" id="contract-party"><legend>${esc(t('contract.party', locale))}</legend><div class="output-grid">${parties}</div></fieldset>
+    <fieldset class="outputs" id="contract-scopes"><legend>${esc(t('contract.scopes', locale))}</legend><div class="output-grid">${scopes}</div><p class="field-hint">${esc(t('contract.scopesHint', locale))}</p></fieldset>`;
 }
 
 /** 語意檢索授權提示：當語意功能開啟但尚未授權時，在表單頂部顯示授權提醒與一鍵授權按鈕。 */
@@ -72,7 +87,9 @@ function renderQuota(quota, locale) {
 }
 
 /** 案情輸入頁：可見標籤＋文字框＋字數提示＋輸出勾選＋送出；右側示範案例卡與免責聲明。 */
-export function renderInput({ samples = [], semanticAuth = null, usage = null, quota = null }, locale) {
+export function renderInput({ samples = [], semanticAuth = null, usage = null, quota = null, mode = 'case' }, locale) {
+  // 合約模式旗標：切換標籤／預留位置／提示／送出鈕文字，並插入立場與範疇欄位、拿掉聲請欄
+  const contract = mode === 'contract';
   const cards = samples.map((s) =>
     `<button type="button" class="sample" data-sample-id="${esc(s.id)}"><b>${esc(s.title)}</b><span>${esc(s.summary)}</span>${ICONS.arrowRight}</button>`).join('');
   const authNotice = renderSemanticAuthNotice(semanticAuth, locale);
@@ -83,11 +100,11 @@ export function renderInput({ samples = [], semanticAuth = null, usage = null, q
       ${usageNotice}
       ${quotaNotice}
       ${authNotice}
-      <label class="field-label" for="case-text">${esc(t('input.label', locale))}</label>
-      <textarea id="case-text" rows="3" aria-describedby="case-hint" placeholder="${esc(t('input.placeholder', locale))}"></textarea>
+      <label class="field-label" for="case-text">${esc(t(contract ? 'contract.label' : 'input.label', locale))}</label>
+      <textarea id="case-text" rows="3" aria-describedby="case-hint" placeholder="${esc(t(contract ? 'contract.placeholder' : 'input.placeholder', locale))}"></textarea>
       <!-- 失焦且已有內容時，以三行預覽取代輸入框（超長以 … 收尾）；點預覽即回到輸入框並放大 -->
       <button type="button" class="case-preview" id="case-preview" hidden aria-label="${esc(t('input.previewAria', locale))}"></button>
-      <div class="field-hint" id="case-hint"><span id="case-hint-text">${esc(t('input.hint', locale))}</span><span class="count" id="case-count" aria-live="polite">0 / ${MIN_CHARS}</span></div>
+      <div class="field-hint" id="case-hint"><span id="case-hint-text">${esc(t(contract ? 'contract.hint' : 'input.hint', locale))}</span><span class="count" id="case-count" aria-live="polite">0 / ${MIN_CHARS}</span></div>
       <div class="upload-field">
         <label class="field-label" for="case-files">${esc(t('input.files', locale))}</label>
         <input class="upload-input" id="case-files" type="file" accept=".pdf,.md,.markdown,.docx" multiple aria-describedby="file-hint file-status">
@@ -100,15 +117,16 @@ export function renderInput({ samples = [], semanticAuth = null, usage = null, q
         <div class="field-hint" id="file-hint">${esc(t('input.filesHint', locale))}</div>
         <p class="file-status" id="file-status" aria-live="polite">${esc(t('input.filesEmpty', locale))}</p>
       </div>
-      ${renderOutputs(locale)}
-      <div class="motion-field" id="motion-field" hidden>
+      ${contract ? renderContractFields(locale) : ''}
+      ${renderOutputs(locale, mode)}
+      ${contract ? '' : `<div class="motion-field" id="motion-field" hidden>
         <label class="field-label" for="motion-request">${esc(t('input.motionRequest', locale))}</label>
         <input id="motion-request" type="text" maxlength="200" placeholder="${esc(t('input.motionRequestPlaceholder', locale))}">
-      </div>
-      <div class="input-actions"><button id="case-submit" class="primary" type="button" disabled>${esc(t('input.submit', locale))}</button></div>
+      </div>`}
+      <div class="input-actions"><button id="case-submit" class="primary" type="button" disabled>${esc(t(contract ? 'input.submitContract' : 'input.submit', locale))}</button></div>
     </div>
     <aside class="input-side">
-      <h3>${esc(t('input.samples', locale))}</h3><div class="samples">${cards}</div>
+      <h3>${esc(t(contract ? 'input.samplesContract' : 'input.samples', locale))}</h3><div class="samples">${cards}</div>
       <p class="disclaimer">${ICONS.info}<span>${esc(t('disclaimer', locale))}</span></p>
       <p class="disclaimer lawpowers-note">${ICONS.info}<span>${esc(t('input.lawPowers', locale))} <a href="${LAW_POWERS_URL}" target="_blank" rel="noopener">${esc(t('input.lawPowersAction', locale))} ↗</a></span></p>
     </aside></section>`;
@@ -165,7 +183,7 @@ function renderFileList(container, files, locale) {
 }
 
 /** 綁定送出、字數即時回饋與輸出勾選（達標且至少勾一項才啟用送出）、示範案例點選。 */
-export function bindInput(root, { onSubmit, onSample }, locale = 'en') {
+export function bindInput(root, { onSubmit, onSample }, locale = 'en', mode = 'case') {
   const ta = root.querySelector('#case-text'), files = root.querySelector('#case-files');
   const btn = root.querySelector('#case-submit'), count = root.querySelector('#case-count');
   const dropzone = root.querySelector('#file-dropzone'), fileList = root.querySelector('#file-list');
@@ -197,7 +215,8 @@ export function bindInput(root, { onSubmit, onSample }, locale = 'en') {
     count.classList.toggle('ok', hasFiles || n >= MIN_CHARS);
     if (hintText) hintText.textContent = t(hasFiles ? 'input.hintWithFiles' : 'input.hint', locale);
     const hasInput = n >= MIN_CHARS || hasFiles;
-    btn.disabled = !hasInput || checked().length === 0 || selectedFiles.length > MAX_FILES;
+    // 合約模式不要求勾選輸出（送出即代表要修訂本）
+    btn.disabled = !hasInput || (mode !== 'contract' && checked().length === 0) || selectedFiles.length > MAX_FILES;
   };
   ta.addEventListener('input', sync);
   /** 失焦縮小：有內容就換成三行預覽（CSS line-clamp 以 … 收尾）；取得焦點放大並隱藏預覽。 */
@@ -255,7 +274,12 @@ export function bindInput(root, { onSubmit, onSample }, locale = 'en') {
   syncFiles();
   syncMotion();
   sync();
+  // 合約模式的附加欄位：我方立場與審查範疇；case 模式回空物件維持既有呼叫契約
+  const extra = () => mode === 'contract' ? {
+    party: root.querySelector('input[name="party"]:checked')?.value || 'unknown',
+    scopes: [...root.querySelectorAll('input[name="scopes"]:checked')].map((c) => c.value)
+  } : {};
   btn.addEventListener('click', () => onSubmit(ta.value, checked(), [...selectedFiles],
-    checked().includes('motion') && motionInput ? (motionInput.value || '').trim() : ''));
-  root.querySelectorAll('.sample').forEach((b) => b.addEventListener('click', () => onSample(b.dataset.sampleId, checked())));
+    mode !== 'contract' && checked().includes('motion') && motionInput ? (motionInput.value || '').trim() : '', extra()));
+  root.querySelectorAll('.sample').forEach((b) => b.addEventListener('click', () => onSample(b.dataset.sampleId, checked(), extra())));
 }

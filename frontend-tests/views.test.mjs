@@ -182,7 +182,7 @@ test('bindInput 勾選聲請狀時顯示聲請事項欄位，送出時把內容�
   motion.listeners.get('change')();
   assert.equal(motionField.hidden, false, '勾選聲請狀後顯示');
   submit.listeners.get('click')();
-  assert.deepEqual(submitted.slice(1), [['graph', 'motion'], [], '聲請調查證據']);
+  assert.deepEqual(submitted.slice(1), [['graph', 'motion'], [], '聲請調查證據', {}]);
 });
 test('progress 高亮當前步驤且之前步驤標 done', () => {
   const html = renderProgress({ step: 'RESEARCH' }, 'zh-TW');
@@ -554,4 +554,15 @@ test('progress 依 mode 切換步驤與文案', () => {
   assert.match(html, /data-step="REVIEW"[^>]*aria-current="step"/);
   assert.match(html, /逐條檢查是否違法或不公平/);
   assert.match(renderProgress({ step: 'RESEARCH' }, 'zh-TW'), /class="step done"[^>]*data-step="BRAINSTORM"/);
+});
+
+test('input 合約模式顯示立場、範疇與 revised 勾選，不顯示書狀與聲請欄', () => {
+  const html = renderInput({ samples: [{ id: 'labor-contract', title: '勞動契約', summary: 's' }], mode: 'contract' }, 'zh-TW');
+  assert.match(html, /name="party" value="partyB"/);
+  assert.match(html, /name="scopes" value="labor"/);
+  assert.match(html, /name="outputs" value="revised"/);
+  assert.doesNotMatch(html, /name="outputs" value="graph"/);
+  assert.doesNotMatch(html, /id="motion-field"/);
+  assert.match(html, /開始審查/);
+  assert.match(html, /貼上合約原文/);
 });

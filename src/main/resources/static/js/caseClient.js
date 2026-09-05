@@ -16,13 +16,22 @@ export function createCaseClient(fetchImpl = globalThis.fetch, base = '', { entr
     return call(path, { signal: AbortSignal.timeout(entryTimeoutMs) });
   }
   return {
-    /** 有附件時改用 multipart；無附件維持既有 JSON 契約與 WebMCP 相容性。 */
-    start: (caseText, locale, documents, files = [], motionRequest = '') => {
+    /** 有附件時改用 multipart；無附件維持既有 JSON 契約與 WebMCP 相容性。extra.mode 有值時才附上 mode／party／scopes（合約模式）。 */
+    start: (caseText, locale, documents, files = [], motionRequest = '', extra = {}) => {
+      // 合約模式專屬欄位：只在 extra.mode 存在時組出，避免影響既有案件模式的請求格狀
+      const modeFields = extra.mode
+        ? { mode: extra.mode, party: extra.party || 'unknown', scopes: Array.isArray(extra.scopes) ? extra.scopes : [] }
+        : {};
       if (Array.isArray(files) && files.length) {
         const form = new FormData();
         form.append('caseText', caseText || '');
         form.append('locale', locale);
         if (motionRequest) form.append('motionRequest', motionRequest);
+        if (modeFields.mode) {
+          form.append('mode', modeFields.mode);
+          form.append('party', modeFields.party);
+          modeFields.scopes.forEach((s) => form.append('scopes', s));
+        }
         (Array.isArray(documents) ? documents : []).forEach((document) => form.append('documents', document));
         files.forEach((file) => form.append('files', file, file.name));
         return call('/api/cases', { method: 'POST', body: form });
@@ -32,13 +41,15 @@ export function createCaseClient(fetchImpl = globalThis.fetch, base = '', { entr
         body: JSON.stringify({
           caseText, locale,
           ...(Array.isArray(documents) && documents.length ? { documents } : {}),
-          ...(motionRequest ? { motionRequest } : {})
+          ...(motionRequest ? { motionRequest } : {}),
+          ...modeFields
         })
       });
     },
     status: (id) => call(`/api/cases/${encodeURIComponent(id)}`),
     answer: (id, answers) => call(`/api/cases/${encodeURIComponent(id)}/answers`, { method: 'POST', body: JSON.stringify({ answers }) }),
-    samples: (locale) => entry(`/api/samples?locale=${encodeURIComponent(locale)}`),
+    /** 案例清單：mode 有值時附加查詢參數以取合約模式範例。 */
+    samples: (locale, mode) => entry(`/api/samples?locale=${encodeURIComponent(locale)}${mode ? `&mode=${encodeURIComponent(mode)}` : ''}`),
     verify: (ref) => call(`/api/laws/verify?ref=${encodeURIComponent(ref)}`),
     authStatus: () => entry('/api/auth/tw-legal-rag/status'),
     /** 今日 token 用量與是否停用。 */

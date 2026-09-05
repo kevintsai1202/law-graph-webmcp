@@ -114,3 +114,15 @@ test('poll 遇到 404 CASE_NOT_FOUND 立即失敗，不重試', async () => {
   assert.equal(seen[0].error.code, 'CASE_NOT_FOUND');
   assert.equal(fetch.calls.length, 1);
 });
+
+test('start 帶 extra.mode／party／scopes 時放進 JSON，samples 帶 mode', async () => {
+  const calls = [];
+  const client = createCaseClient(async (url, init) => { calls.push({ url, init }); return { ok: true, json: async () => ({}) }; });
+  await client.start('合約', 'zh-TW', ['revised'], [], '', { mode: 'contract', party: 'partyB', scopes: ['labor'] });
+  const body = JSON.parse(calls[0].init.body);
+  assert.equal(body.mode, 'contract'); assert.equal(body.party, 'partyB'); assert.deepEqual(body.scopes, ['labor']); assert.deepEqual(body.documents, ['revised']);
+  await client.samples('zh-TW', 'contract');
+  assert.match(calls[1].url, /\/api\/samples\?locale=zh-TW&mode=contract/);
+  await client.start('A hit B', 'en', [], []);
+  assert.equal(JSON.parse(calls[2].init.body).mode, undefined);
+});
