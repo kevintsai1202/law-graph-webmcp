@@ -16,3 +16,10 @@ test('detectLocale：儲存值優先，其次 zh 前綴，否則 en', () => {
   assert.equal(detectLocale('zh-Hant-TW', null), 'zh-TW');
   assert.equal(detectLocale('ja', null), 'en');
 });
+test('新增首頁、合約模式與進度鍵（中英皆有）', () => {
+  for (const key of ['home.title', 'home.case.title', 'home.contract.title', 'home.start', 'progress.case.BRAINSTORM', 'progress.contract.LOAD',
+    'contract.party', 'contract.scopes', 'result.tab.findings', 'result.tab.summary', 'result.tab.laws', 'finding.risk', 'doc.revised', 'nav.home']) {
+    assert.notEqual(t(key, 'en'), key, key); assert.notEqual(t(key, 'zh-TW'), key, key);
+  }
+  assert.equal(t('progress.BRAINSTORM', 'en'), 'progress.BRAINSTORM', '舊 progress.* 鍵應已改名');
+});
