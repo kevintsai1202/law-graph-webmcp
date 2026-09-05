@@ -2,6 +2,7 @@ package tw.lawgraph.auth;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 
@@ -10,6 +11,9 @@ import java.util.Optional;
  * 實作見 JdbcMemberStore（正式環境）與 InMemoryMemberStore（測試／無資料庫環境）。
  */
 public interface MemberStore {
+    /** 全站判定日曆日（countActiveOn、保存期限排程）所用的時區。 */
+    ZoneId ZONE = ZoneId.of("Asia/Taipei");
+
     /** upsert 結果：更新後的會員資料與本次是否為新建（首次登入）。 */
     record LoginResult(Member member, boolean created) {}
 
@@ -24,6 +28,9 @@ public interface MemberStore {
 
     /** 標記為使用授權排除方並記錄原因；sub 不存在時靜默略過。 */
     void block(String sub, String reason);
+
+    /** 解除封鎖並清空原因；sub 不存在時靜默略過。登入時依名單同步狀態，避免 blocked 只能寫一次。 */
+    void unblock(String sub);
 
     /** 刪除會員；確實刪到才回 true。 */
     boolean delete(String sub);

@@ -33,7 +33,7 @@ class DailyCaseQuotaControllerTest {
     @MockitoBean tw.lawgraph.usage.DailyTokenBudget budget;
     /** 配額改由 case_event 計數，這裡以假儲存模擬「啟動即計一次」。 */
     @MockitoBean UsageEventStore events;
-    /** MeController 需要會員儲存；此測試不驗證會員行為，以記憶體實作代替。 */
+    /** MeController 需要會員儲存；此測試不驗證會員行為，find 預設回 Optional.empty() 即可。 */
     @MockitoBean tw.lawgraph.auth.MemberStore members;
 
     /** identityHash → 今日已記錄的啟動次數。 */

@@ -19,7 +19,7 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 
 /** /api/me 的會員行為：首次登入告知旗標、告知確認、帳號刪除（連同事件去識別化）。 */
 @WebMvcTest(controllers = MeController.class)
-@Import({SecurityConfig.class, AccessPolicy.class, MeControllerMemberTest.Stores.class})
+@Import({SecurityConfig.class, AccessPolicy.class, tw.lawgraph.api.ApiExceptionHandler.class, MeControllerMemberTest.Stores.class})
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class MeControllerMemberTest {
     /** 以真實的記憶體會員儲存驗證讀寫串接。 */
@@ -67,6 +67,16 @@ class MeControllerMemberTest {
         assertThat(mvc.delete().uri("/api/me").with(login())).hasStatus(204);
         assertThat(members.find("s1")).isEmpty();
         verify(events).anonymize("s1");
+    }
+
+    /** 事件去識別化失敗時整筆不刪：回 503 ACCOUNT_DELETE_FAILED，且會員列必須保留。 */
+    @Test void deleteAccountFailsLoudlyWhenAnonymizeFails() {
+        members.recordLogin("s1", "k@example.com", "Kevin", null, Instant.parse("2026-09-05T02:00:00Z"));
+        org.mockito.Mockito.doThrow(new IllegalStateException("db down")).when(events).anonymize("s1");
+        var rejected = mvc.delete().uri("/api/me").with(login()).exchange();
+        assertThat(rejected).hasStatus(503);
+        assertThat(rejected).bodyJson().extractingPath("$.error").isEqualTo("ACCOUNT_DELETE_FAILED");
+        assertThat(members.find("s1")).isPresent();
     }
 
     /** 匿名刪除回 401。 */

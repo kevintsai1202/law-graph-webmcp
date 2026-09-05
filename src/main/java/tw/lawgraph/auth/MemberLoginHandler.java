@@ -42,7 +42,9 @@ public class MemberLoginHandler implements AuthenticationSuccessHandler {
                 String email = string(attributes.get("email"), null);
                 var result = store.recordLogin(sub, email, string(attributes.get("name"), null),
                         string(attributes.get("picture"), null), clock.instant());
+                // 每次登入都依名單同步封鎖狀態：命中就封鎖，未命中就解除（名單移除後要能恢復使用）。
                 if (policy.isBlocked(email)) store.block(sub, AccessPolicy.ERROR_CODE);
+                else store.unblock(sub);
                 if (result != null && result.created()) LOGGER.info("新會員首次登入：sub={}", sub);
             } catch (RuntimeException e) {
                 LOGGER.warn("會員登入記錄失敗，不影響登入：{}", e.toString());

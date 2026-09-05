@@ -2,7 +2,6 @@ package tw.lawgraph.auth;
 
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.ZoneId;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -10,9 +9,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /** 以記憶體 Map 保存會員，語意與 JdbcMemberStore 相同，供測試或無資料庫環境使用（重啟即歸零）。 */
 public final class InMemoryMemberStore implements MemberStore {
-    /** countActiveOn 判定日曆日所用的時區。 */
-    static final ZoneId ZONE = ZoneId.of("Asia/Taipei");
-
     /** googleSub -> 會員；ConcurrentHashMap 確保多執行緒下讀寫安全。 */
     private final ConcurrentHashMap<String, Member> members = new ConcurrentHashMap<>();
 
@@ -49,6 +45,12 @@ public final class InMemoryMemberStore implements MemberStore {
     }
 
     @Override
+    public void unblock(String sub) {
+        members.computeIfPresent(sub, (key, m) -> new Member(m.googleSub(), m.email(), m.displayName(), m.pictureUrl(),
+                m.firstLoginAt(), m.lastLoginAt(), m.loginCount(), false, null, m.noticeAcknowledgedAt()));
+    }
+
+    @Override
     public boolean delete(String sub) {
         return members.remove(sub) != null;
     }
@@ -74,7 +76,7 @@ public final class InMemoryMemberStore implements MemberStore {
 
     @Override
     public long countActiveOn(LocalDate day) {
-        return members.values().stream().filter(m -> LocalDate.ofInstant(m.lastLoginAt(), ZONE).equals(day)).count();
+        return members.values().stream().filter(m -> LocalDate.ofInstant(m.lastLoginAt(), MemberStore.ZONE).equals(day)).count();
     }
 
     @Override

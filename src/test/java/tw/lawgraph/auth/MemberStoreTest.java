@@ -14,7 +14,7 @@ import static org.junit.jupiter.api.Assertions.*;
 /** 對 InMemoryMemberStore 與 JdbcMemberStore 兩種實作跑同一組參數化測試，確保會員 upsert／刪除／統計行為一致。 */
 class MemberStoreTest {
     /** 台北時區：countActiveOn 以此判定「當日」。 */
-    private static final ZoneId TAIPEI = ZoneId.of("Asia/Taipei");
+    private static final ZoneId TAIPEI = MemberStore.ZONE;
 
     /** 兩種實作；Jdbc 版每次以獨立的 H2 記憶體資料庫避免互相污染。 */
     static Stream<MemberStore> stores() {
@@ -69,6 +69,18 @@ class MemberStoreTest {
         assertEquals("LICENSE_EXCLUDED", member.blockedReason());
     }
 
+    /** 解除封鎖：blocked 回 false、原因清空（名單移除後要能恢復使用）。 */
+    @ParameterizedTest
+    @MethodSource("stores")
+    void unblockClearsFlagAndReason(MemberStore store) {
+        store.recordLogin("s1", "x@excluded.com", "X", null, T1);
+        store.block("s1", "LICENSE_EXCLUDED");
+        store.unblock("s1");
+        var member = store.find("s1").orElseThrow();
+        assertFalse(member.blocked());
+        assertNull(member.blockedReason());
+    }
+
     /** delete 刪除存在的會員回 true，重複刪除回 false，find 之後為空。 */
     @ParameterizedTest
     @MethodSource("stores")
@@ -112,6 +124,7 @@ class MemberStoreTest {
     void unknownSubIsNoop(MemberStore store) {
         store.acknowledgeNotice("nobody", T1);
         store.block("nobody", "X");
+        store.unblock("nobody");
         assertTrue(store.find("nobody").isEmpty());
         assertNotNull(store.name());
     }

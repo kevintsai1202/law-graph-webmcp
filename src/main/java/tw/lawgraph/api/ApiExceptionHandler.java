@@ -31,6 +31,12 @@ public class ApiExceptionHandler {
         return error("QUOTA_STORE_UNAVAILABLE", exception.getMessage());
     }
 
+    /** 刪除帳號時去識別化失敗轉成 503：寧可整筆不刪，也不留下可識別的孤兒事件。 */
+    @ExceptionHandler(AccountDeletionException.class) @ResponseStatus(HttpStatus.SERVICE_UNAVAILABLE)
+    public Map<String, String> accountDeleteFailed(AccountDeletionException exception) {
+        return error("ACCOUNT_DELETE_FAILED", exception.getMessage());
+    }
+
     /** 將不支援、損壞或超限的附件轉成 400。 */
     @ExceptionHandler(InvalidAttachmentException.class) @ResponseStatus(HttpStatus.BAD_REQUEST)
     public Map<String, String> invalidAttachment(InvalidAttachmentException exception) {

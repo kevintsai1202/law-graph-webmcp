@@ -36,6 +36,7 @@ class MemberLoginHandlerTest {
                 token(Map.of("sub", "g-1", "email", "k@example.com", "name", "Kevin", "picture", "https://img/a.png")));
         verify(store).recordLogin("g-1", "k@example.com", "Kevin", "https://img/a.png", NOW);
         verify(store, never()).block(anyString(), anyString());
+        verify(store).unblock("g-1");
         verify(response).sendRedirect("/");
     }
 
@@ -48,6 +49,7 @@ class MemberLoginHandlerTest {
                 token(Map.of("sub", "g-9", "email", "lawyer@excluded-law.com.tw", "name", "某律師")));
         verify(store).recordLogin("g-9", "lawyer@excluded-law.com.tw", "某律師", null, NOW);
         verify(store).block("g-9", AccessPolicy.ERROR_CODE);
+        verify(store, never()).unblock(anyString());
         verify(response).sendRedirect("/");
     }
 

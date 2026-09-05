@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
+import tw.lawgraph.api.AccountDeletionException;
 import tw.lawgraph.usage.UsageEventStore;
 
 import java.time.Instant;
@@ -70,17 +71,22 @@ public class MeController {
         return ResponseEntity.noContent().build();
     }
 
-    /** DELETE /api/me：刪除會員資料、去識別化其使用事件並登出；未登入回 401。 */
+    /**
+     * DELETE /api/me：先去識別化使用事件、再刪除會員資料，最後登出；未登入回 401。
+     * 順序不可顛倒——若先刪會員而去識別化失敗，就會留下無人可對應卻仍可識別的事件；
+     * 因此去識別化失敗時整筆不刪，改以 503 ACCOUNT_DELETE_FAILED 明確告知。
+     */
     @DeleteMapping("/api/me")
     public ResponseEntity<Void> deleteAccount(@AuthenticationPrincipal OAuth2User user, HttpServletRequest request) {
         if (user == null) return ResponseEntity.status(401).build();
         String sub = subject(user);
-        members.delete(sub);
         try {
             events.anonymize(sub);
         } catch (RuntimeException e) {
-            LOGGER.warn("刪除帳號時事件去識別化失敗：{}", e.toString());
+            LOGGER.warn("刪除帳號時事件去識別化失敗，中止刪除：{}", e.toString());
+            throw new AccountDeletionException(e);
         }
+        members.delete(sub);
         var session = request.getSession(false);
         if (session != null) session.invalidate();
         SecurityContextHolder.clearContext();

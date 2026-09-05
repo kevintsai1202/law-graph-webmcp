@@ -90,6 +90,11 @@ public final class JdbcMemberStore implements MemberStore {
     }
 
     @Override
+    public void unblock(String sub) {
+        jdbc.update("UPDATE member SET blocked = FALSE, blocked_reason = NULL WHERE google_sub = ?", sub);
+    }
+
+    @Override
     public boolean delete(String sub) {
         return jdbc.update("DELETE FROM member WHERE google_sub = ?", sub) > 0;
     }
@@ -115,8 +120,8 @@ public final class JdbcMemberStore implements MemberStore {
     /** 台北日曆日換算為 [當日 00:00, 隔日 00:00) 的時間區間查詢。 */
     @Override
     public long countActiveOn(LocalDate day) {
-        Instant from = day.atStartOfDay(InMemoryMemberStore.ZONE).toInstant();
-        Instant to = day.plusDays(1).atStartOfDay(InMemoryMemberStore.ZONE).toInstant();
+        Instant from = day.atStartOfDay(MemberStore.ZONE).toInstant();
+        Instant to = day.plusDays(1).atStartOfDay(MemberStore.ZONE).toInstant();
         Long total = jdbc.queryForObject("SELECT COUNT(*) FROM member WHERE last_login_at >= ? AND last_login_at < ?",
                 Long.class, Timestamp.from(from), Timestamp.from(to));
         return total == null ? 0 : total;
