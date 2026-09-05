@@ -181,6 +181,8 @@ for (const w of WIDTHS) {
     });
 
     test('inspector：aria-expanded 同步折疊狀態', async ({ page }) => {
+      // 手機（≤720）以 CSS 隱藏工具檢視器，避免蓋住全寬送出鈕；此測試只在平板以上有意義
+      test.skip(width <= 720, '手機版隱藏工具檢視器');
       await expect(page.locator('#insp-toggle')).toHaveAttribute('aria-expanded', 'false');
       await page.click('#insp-toggle');
       await expect(page.locator('#insp-toggle')).toHaveAttribute('aria-expanded', 'true');

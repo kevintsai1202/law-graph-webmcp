@@ -187,14 +187,14 @@ label { display: block; }
 /* 右上角 Google 登入區 */
 .auth-slot { display: flex; align-items: center; }
 .login-link {
-  display: inline-flex; align-items: center; gap: 8px; min-height: 32px; padding: 4px 12px;
+  display: inline-flex; align-items: center; gap: 8px; min-height: var(--touch); padding: 4px 12px;
   border-radius: var(--radius-pill); border: 1px solid var(--color-border, #cbd5e1); background: var(--color-surface, #fff);
   color: var(--color-text); font-size: 0.85rem; font-weight: 600; text-decoration: none; white-space: nowrap; box-shadow: var(--shadow-sm);
 }
 .login-link:hover { text-decoration: none; filter: brightness(0.98); }
 .login-link .g-mark { width: 18px; height: 18px; flex: 0 0 auto; }
 .login-link small { font-weight: 400; color: var(--color-text-sub); }
-.auth-user { display: inline-flex; align-items: center; gap: 8px; min-height: 32px; padding: 2px 6px 2px 2px; border-radius: var(--radius-pill); background: var(--color-surface, #fff); box-shadow: var(--shadow-sm); }
+.auth-user { display: inline-flex; align-items: center; gap: 8px; min-height: var(--touch); padding: 2px 6px 2px 2px; border-radius: var(--radius-pill); background: var(--color-surface, #fff); box-shadow: var(--shadow-sm); }
 .avatar { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; }
 .avatar-fallback { display: inline-flex; align-items: center; justify-content: center; background: var(--color-primary); color: #fff; font-weight: 700; font-size: 0.85rem; }
 .auth-name { font-size: 0.85rem; font-weight: 600; max-width: 10em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -468,8 +468,8 @@ button svg { width: 18px; height: 18px; flex: 0 0 auto; }
   .tab { flex: 1 0 auto; }
   /* 手機：折疊時只佔按鈕寬度（少遮內容），展開後才滿版 */
   .inspector { right: var(--space-2); bottom: var(--space-2); width: auto; max-width: calc(100vw - 2 * var(--space-2)); padding: var(--space-1); }
-  /* 手機折疊時縮成小膠囊，少遮住案情輸入框；展開後仍滿版 */
-  .inspector.collapsed #insp-toggle { font-size: 0.78rem; padding: 4px 10px; min-height: 36px; }
+  /* 手機：工具檢視器整個隱藏。它是給 Agent host 看的唯讀清單，在手機上只會蓋住全寬的送出鈕（Playwright 也會因此點不到）。 */
+  .inspector { display: none; }
   .inspector:not(.collapsed) { left: var(--space-2); }
   .el { grid-template-columns: 1fr; }
   .el-badge { grid-row: auto; justify-self: start; }
