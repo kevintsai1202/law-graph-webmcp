@@ -233,6 +233,9 @@
       "stats.anonymous": "anonymous",
       "stats.loading": "Loading\u2026",
       "stats.error": "Statistics could not be loaded right now. Please try again later.",
+      "update.title": "This site has been updated",
+      "update.desc": "Reload to get the latest version.",
+      "update.action": "Reload",
       "stats.chart.cases": "Analyses per day",
       "stats.chart.tokens": "Tokens per day",
       "stats.chart.mix": "Capability mix",
@@ -519,6 +522,9 @@
       "stats.anonymous": "\u8A2A\u5BA2",
       "stats.loading": "\u8F09\u5165\u4E2D\u2026",
       "stats.error": "\u76EE\u524D\u7121\u6CD5\u8F09\u5165\u7D71\u8A08\u8CC7\u6599\uFF0C\u8ACB\u7A0D\u5F8C\u518D\u8A66\u3002",
+      "update.title": "\u7DB2\u7AD9\u5DF2\u66F4\u65B0",
+      "update.desc": "\u91CD\u65B0\u8F09\u5165\u5373\u53EF\u4F7F\u7528\u6700\u65B0\u7248\u672C\u3002",
+      "update.action": "\u91CD\u65B0\u8F09\u5165",
       "stats.chart.cases": "\u6BCF\u65E5\u5206\u6790\u6B21\u6578",
       "stats.chart.tokens": "\u6BCF\u65E5 token \u7528\u91CF",
       "stats.chart.mix": "\u80FD\u529B\u5360\u6BD4",
@@ -2064,6 +2070,8 @@
       stats: (days = 30) => entry("/api/stats?days=" + encodeURIComponent(days)),
       /** 目前登入者（Google）；未登入 loggedIn=false。 */
       me: () => entry("/api/me"),
+      /** 執行中的建置版本 { version }：前端比對後於網站重佈時提示重新載入。 */
+      version: () => entry("/api/version"),
       /** 首次登入個資告知已閱讀確認：之後 /api/me 的 firstLogin 改為 false。 */
       ackNotice: () => call("/api/me/notice-ack", { method: "POST" }),
       /** 刪除本人帳號：登入紀錄移除、使用紀錄匿名化。 */
@@ -3422,6 +3430,60 @@
     };
   }
 
+  // src/main/resources/static/js/updateCheck.js
+  function createUpdateChecker({ fetchVersion, onUpdate, intervalMs = 5 * 6e4, doc = globalThis.document, timers = globalThis } = {}) {
+    let baseline = null;
+    let notified = false;
+    let timer = null;
+    const normalize = (v) => String((v && typeof v === "object" ? v.version : v) || "");
+    async function check() {
+      let current2;
+      try {
+        current2 = normalize(await fetchVersion());
+      } catch {
+        return false;
+      }
+      if (!current2) return false;
+      if (baseline === null) {
+        baseline = current2;
+        return false;
+      }
+      if (current2 !== baseline && !notified) {
+        notified = true;
+        onUpdate?.(current2);
+        return true;
+      }
+      return false;
+    }
+    async function start() {
+      await check();
+      timer = timers.setInterval?.(check, intervalMs);
+      timer?.unref?.();
+      doc?.addEventListener?.("visibilitychange", () => {
+        if (doc.visibilityState === "visible") check();
+      });
+    }
+    function stop() {
+      if (timer !== null) {
+        timers.clearInterval?.(timer);
+        timer = null;
+      }
+    }
+    return { start, check, stop };
+  }
+
+  // src/main/resources/static/js/views/updateBanner.js
+  function renderUpdateBanner(locale2) {
+    return `<div class="update-banner" role="status">
+    <span class="update-icon" aria-hidden="true">${ICONS.refresh}</span>
+    <div class="update-message"><strong>${esc(t("update.title", locale2))}</strong><span>${esc(t("update.desc", locale2))}</span></div>
+    <button type="button" class="primary" id="update-reload">${esc(t("update.action", locale2))}</button>
+  </div>`;
+  }
+  function bindUpdateBanner(root, { onReload }) {
+    root.querySelector("#update-reload")?.addEventListener("click", () => onReload());
+  }
+
   // src/main/resources/static/js/main.js
   var loadGraphAssets = createGraphAssetLoader();
   var graphRenderId = 0;
@@ -3564,6 +3626,18 @@
     boot.markReady();
     inspector = mountInspector(document, webmcp, t, () => app.getLocale());
     inspector.refresh();
+    const updateSlot = document.getElementById("update-slot");
+    const updateChecker = createUpdateChecker({
+      fetchVersion: () => app.client.version(),
+      onUpdate: () => {
+        if (!updateSlot) return;
+        updateSlot.replaceChildren();
+        updateSlot.insertAdjacentHTML("afterbegin", renderUpdateBanner(app.getLocale()));
+        bindUpdateBanner(updateSlot, { onReload: () => location.reload() });
+      }
+    });
+    window.__lawGraphUpdate = updateChecker;
+    updateChecker.start();
   })();
   window.addEventListener("pagehide", () => boot.stop(), { once: true });
 })();

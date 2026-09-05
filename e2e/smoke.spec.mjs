@@ -423,3 +423,21 @@ test('HOME 狀態下 WebMCP 工具清單含 selectCapability 與 startContractRe
   expect(names).toContain('selectCapability');
   expect(names).toContain('startContractReview');
 });
+
+test('網站重佈後（/api/version 改變）顯示更新橫幅，點重新載入會重新載頁', async ({ page }) => {
+  let version = 'v1';
+  await page.route('**/api/version', (route) => route.fulfill({ json: { version } }));
+  await page.goto('/');
+  await expect.poll(async () => page.evaluate(() => Boolean(window.__lawGraphUpdate))).toBe(true);
+  // 版本不變：不出現橫幅
+  await page.evaluate(() => window.__lawGraphUpdate.check());
+  await expect(page.locator('#update-reload')).toHaveCount(0);
+  // 版本改變：橫幅出現一次
+  version = 'v2';
+  await page.evaluate(() => window.__lawGraphUpdate.check());
+  await expect(page.locator('.update-banner')).toBeVisible();
+  await expect(page.locator('.update-banner')).toContainText(/網站已更新|updated/);
+  const reloaded = page.waitForEvent('load');
+  await page.click('#update-reload');
+  await reloaded;
+});

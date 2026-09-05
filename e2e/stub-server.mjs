@@ -71,6 +71,8 @@ const server = createServer(async (req, res) => {
       });
     }
     if (url.pathname === '/api/stats') return json(res, 200, fakeStats());
+    // 建置版本：固定字串；更新橫幅的 E2E 以 page.route 覆寫成不同版本來觸發
+    if (url.pathname === '/api/version') return json(res, 200, { version: 'stub-1' });
     if (url.pathname === '/api/samples') {
       const locale = url.searchParams.get('locale') === 'zh-TW' ? 'zh-TW' : 'en';
       // 依 mode 過濾示範案例：無 mode 欄位視為 'case'，合約示範帶 "mode":"contract"

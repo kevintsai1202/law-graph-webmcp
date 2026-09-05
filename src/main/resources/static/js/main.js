@@ -6,6 +6,8 @@ import { createWebMcpBoot } from './webmcpBoot.js';
 import { mountInspector } from './inspector.js';
 import { renderLogin, bindLogin, renderPrivacyNotice, bindPrivacy } from './login.js';
 import { createGraphAssetLoader } from './graphAssets.js';
+import { createUpdateChecker } from './updateCheck.js';
+import { renderUpdateBanner, bindUpdateBanner } from './views/updateBanner.js';
 
 /** 只有顯示結果圖時才下載 3D 套件。 */
 const loadGraphAssets = createGraphAssetLoader();
@@ -171,5 +173,19 @@ app.onChange(async (state, kind) => {
   boot.markReady();
   inspector = mountInspector(document, webmcp, t, () => app.getLocale());
   inspector.refresh();
+  // 網站重佈偵測：版本改變時在頂欄下方顯示「網站已更新」橫幅，點重新載入才換版（不自動重載，避免打斷進行中的分析）
+  const updateSlot = document.getElementById('update-slot');
+  const updateChecker = createUpdateChecker({
+    fetchVersion: () => app.client.version(),
+    onUpdate: () => {
+      if (!updateSlot) return;
+      updateSlot.replaceChildren();
+      updateSlot.insertAdjacentHTML('afterbegin', renderUpdateBanner(app.getLocale()));
+      bindUpdateBanner(updateSlot, { onReload: () => location.reload() });
+    }
+  });
+  // E2E 以 window.__lawGraphUpdate.check() 立即觸發比對，不必等輪詢
+  window.__lawGraphUpdate = updateChecker;
+  updateChecker.start();
 })();
 window.addEventListener('pagehide', () => boot.stop(), { once: true });

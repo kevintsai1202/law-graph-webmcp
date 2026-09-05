@@ -209,6 +209,14 @@ label { display: block; }
 .auth-logout:hover { color: var(--color-text); text-decoration: underline; }
 @media (max-width: 640px) { .login-link small, .auth-name { display: none; } }
 .auth-blocked { background: var(--color-bad-soft, #fee2e2); }
+/* 網站已更新橫幅：綠色（正向）淡底，置中與版心同寬；按鈕沿用 primary */
+.update-banner { display: flex; align-items: center; gap: var(--space-3); max-width: 960px; margin: var(--space-3) auto 0; padding: 10px 16px; border: 1px solid rgba(21, 128, 61, 0.35); border-radius: var(--radius-md); background: var(--color-ok-soft); box-shadow: var(--shadow-sm); }
+.update-banner .update-icon { display: inline-flex; color: var(--color-ok); }
+.update-banner .update-icon svg { width: 20px; height: 20px; }
+.update-banner .update-message { display: flex; flex-direction: column; gap: 2px; flex: 1; font-size: 0.88rem; }
+.update-banner .update-message strong { color: var(--color-text); }
+.update-banner .update-message span { font-size: 0.8rem; color: var(--color-text-sub); }
+@media (max-width: 720px) { .update-banner { margin: var(--space-3) var(--space-3) 0; } }
 .privacy-notice { margin: var(--space-3) auto; max-width: 960px; padding: var(--space-3); border: 1px solid var(--color-border-strong); border-radius: 12px; background: var(--color-warn-soft); }
 .privacy-notice p { margin: .25rem 0; }
 .auth-delete { margin-left: .25rem; }

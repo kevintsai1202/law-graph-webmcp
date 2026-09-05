@@ -8,6 +8,14 @@ spring:
       max-file-size: 10MB
       max-request-size: 50MB
 
+  web:
+    resources:
+      cache:
+        cachecontrol:
+          # 靜態檔（index.html、bundle、css）每次都向伺服器驗證（ETag／Last-Modified 304），
+          # 使用者按「重新載入」時才會真的拿到新版 bundle，而不是瀏覽器的啟發式快取。
+          no-cache: true
+
   ai:
     mcp:
       client:
