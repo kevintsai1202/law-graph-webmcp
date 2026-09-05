@@ -4,6 +4,9 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import tw.lawgraph.domain.AnalysisResult;
 import tw.lawgraph.domain.BrainstormResult;
 import tw.lawgraph.domain.CaseAssessment;
+import tw.lawgraph.domain.ClauseFindings;
+import tw.lawgraph.domain.ComplianceReport;
+import tw.lawgraph.domain.ContractBrainstorm;
 import tw.lawgraph.domain.DraftedDocument;
 import tw.lawgraph.domain.GraphData;
 import tw.lawgraph.domain.Question;
@@ -11,15 +14,30 @@ import tw.lawgraph.domain.ResearchResult;
 
 import java.util.List;
 
-/** 前端輪詢與 WebMCP getCaseStatus 共用的唯一狀態契約。 */
+/** 前端輪詢與 WebMCP getCaseStatus 共用的唯一狀態契約；mode 告訴前端走哪套步驤與分頁。 */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record CaseStatus(String caseId, String status, String step, String locale,
-                         List<Question> questions, Result result, ErrorInfo error) {
-    /** COMPLETED 時的分析結果與勾選書狀（documents 未勾選時為 null 或空清單）。 */
-    @JsonInclude(JsonInclude.Include.NON_NULL)
-    public record Result(BrainstormResult brainstorm, ResearchResult research,
-                         AnalysisResult analysis, CaseAssessment assessment, List<DraftedDocument> documents, GraphData graph) {}
+                         List<Question> questions, Result result, ErrorInfo error, String mode) {
+    /** 正規化 mode，未知一律視為案件模式。 */
+    public CaseStatus { mode = CaseMode.normalize(mode); }
 
-    /** FAILED 時的錯誤代碼、訊息與步驟。 */
+    /** 相容既有呼叫端：案件模式。 */
+    public CaseStatus(String caseId, String status, String step, String locale, List<Question> questions, Result result, ErrorInfo error) {
+        this(caseId, status, step, locale, questions, result, error, CaseMode.CASE);
+    }
+
+    /** 案件模式的分析結果，或合約模式的 contract／findings／compliance（graph 兩模式共用）。 */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record Result(BrainstormResult brainstorm, ResearchResult research, AnalysisResult analysis, CaseAssessment assessment,
+                         List<DraftedDocument> documents, GraphData graph,
+                         ContractBrainstorm contract, ClauseFindings findings, ComplianceReport compliance) {
+        /** 相容既有呼叫端。 */
+        public Result(BrainstormResult brainstorm, ResearchResult research, AnalysisResult analysis, CaseAssessment assessment,
+                      List<DraftedDocument> documents, GraphData graph) {
+            this(brainstorm, research, analysis, assessment, documents, graph, null, null, null);
+        }
+    }
+
+    /** FAILED 時的錯誤代碼、訊息與步驤。 */
     public record ErrorInfo(String code, String message, String step) {}
 }

@@ -10,8 +10,9 @@ import java.util.List;
 public final class StatusMapper {
     private StatusMapper() {}
 
-    /** 依流程狀態與 blackboard 產物建立 CaseStatus。 */
+    /** 依流程狀態與 blackboard 產物建立 CaseStatus；合約模式走 mapContract。 */
     public static CaseStatus map(StatusSnapshot snapshot) {
+        if (snapshot.isContract()) return mapContract(snapshot);
         String step = deriveStep(snapshot);
         switch (snapshot.code()) {
             case COMPLETED -> {
@@ -44,6 +45,34 @@ public final class StatusMapper {
         }
     }
 
+    /** 合約模式：COMPLETED 需有 ComplianceReport；有 outcome（M2）就一併附上圖並以 GRAPH 為步驤，否則以 SUMMARY 為步驤。 */
+    private static CaseStatus mapContract(StatusSnapshot s) {
+        String step = deriveStep(s);
+        switch (s.code()) {
+            case COMPLETED -> {
+                if (s.compliance() == null) return failed(s, "COMPLETED_WITHOUT_REPORT", "process completed without a compliance report", step);
+                List<String> notes = new ArrayList<>(s.research() == null ? List.of() : s.research().notes());
+                if (s.outcome() != null) notes.addAll(s.outcome().notes());
+                ResearchResult research = s.research() == null ? null : s.research().withNotes(notes);
+                String completedStep = s.outcome() == null ? "SUMMARY" : "GRAPH";
+                return new CaseStatus(s.caseId(), "COMPLETED", completedStep, s.locale().code(), null,
+                        new CaseStatus.Result(null, research, null, null, null, s.outcome() == null ? null : s.outcome().graph(),
+                                s.contract(), s.findings(), s.compliance()), null, CaseMode.CONTRACT);
+            }
+            case WAITING -> {
+                return new CaseStatus(s.caseId(), "WAITING", "QUESTIONS", s.locale().code(), s.pendingQuestions(), partialContract(s), null, CaseMode.CONTRACT);
+            }
+            case FAILED, TERMINATED, KILLED, STUCK -> {
+                String message = s.failure() == null ? "agent process " + s.code().name().toLowerCase() : s.failure();
+                String code = s.failureCode() == null ? s.code().name() : s.failureCode();
+                return failed(s, code, message, step);
+            }
+            default -> {
+                return new CaseStatus(s.caseId(), "RUNNING", step, s.locale().code(), null, partialContract(s), null, CaseMode.CONTRACT);
+            }
+        }
+    }
+
     /** 進行中／等待時的中間成果：已完成步驟的產物逐段公開，圖一律為 null；尚無任何產物則回 null。 */
     static CaseStatus.Result partial(StatusSnapshot snapshot) {
         if (snapshot.brainstorm() == null && snapshot.research() == null && snapshot.analysis() == null
@@ -52,13 +81,27 @@ public final class StatusMapper {
                 snapshot.assessment(), documents(snapshot), null);
     }
 
+    /** 合約模式中間成果：已產出的 contract／research／findings 逐段公開；尚無任何產物則回 null。 */
+    static CaseStatus.Result partialContract(StatusSnapshot s) {
+        if (s.contract() == null && s.research() == null && s.findings() == null) return null;
+        return new CaseStatus.Result(null, s.research(), null, null, null, null, s.contract(), s.findings(), s.compliance());
+    }
+
     /** 已起草的書狀清單；draftDocuments 尚未執行時為 null。 */
     private static List<DraftedDocument> documents(StatusSnapshot snapshot) {
         return snapshot.documents() == null ? null : snapshot.documents().documents();
     }
 
-    /** 依 blackboard 已產生的最後成果推導目前步驟。 */
+    /** 依 blackboard 已產生的最後成果推導目前步驤；兩模式各一套。 */
     static String deriveStep(StatusSnapshot snapshot) {
+        if (snapshot.isContract()) {
+            if (snapshot.compliance() != null) return "GRAPH";
+            if (snapshot.findings() != null) return "SUMMARY";
+            if (snapshot.research() != null) return "REVIEW";
+            if (snapshot.answers() != null) return "RESEARCH";
+            if (snapshot.contract() != null) return "QUESTIONS";
+            return "LOAD";
+        }
         if (snapshot.documents() != null) return "GRAPH";
         if (snapshot.assessment() != null) return "DOCUMENTS";
         if (snapshot.analysis() != null) return "ASSESSMENT";
@@ -68,9 +111,9 @@ public final class StatusMapper {
         return "BRAINSTORM";
     }
 
-    /** 建立統一的失敗狀態。 */
+    /** 建立統一的失敗狀態，帶上快照的模式。 */
     private static CaseStatus failed(StatusSnapshot snapshot, String code, String message, String step) {
         return new CaseStatus(snapshot.caseId(), "FAILED", step, snapshot.locale().code(), null, null,
-                new CaseStatus.ErrorInfo(code, message, step));
+                new CaseStatus.ErrorInfo(code, message, step), snapshot.mode());
     }
 }
