@@ -138,7 +138,8 @@ export function createApp({ root, client, storage, navigatorLanguage, partialCol
         // 若使用者已開始打字，不能把文字洗掉（2026-09-05 e2e 實測會清空）。
         const typed = el.querySelector?.('#case-text')?.value ?? '';
         mountHtml(el, renderInput({ samples, semanticAuth, usage, quota, mode: mode() }, locale));
-        bindInput(el, { onSubmit: start, onSample: startSample }, locale, mode());
+        // 配額或站台額度用完：送出鈕直接鎖住（畫面上方已有橫幅說明），不讓使用者送出後才看到錯誤
+        bindInput(el, { onSubmit: start, onSample: startSample }, locale, mode(), { locked: Boolean(quota?.exhausted || usage?.exhausted) });
         if (typed) {
           const ta = el.querySelector('#case-text');
           if (ta) { ta.value = typed; ta.dispatchEvent?.(new globalThis.Event('input', { bubbles: true })); }

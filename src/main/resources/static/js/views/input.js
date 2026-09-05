@@ -182,10 +182,14 @@ function renderFileList(container, files, locale) {
   });
 }
 
-/** 綁定送出、字數即時回饋與輸出勾選（達標且至少勾一項才啟用送出）、示範案例點選。 */
-export function bindInput(root, { onSubmit, onSample }, locale = 'en', mode = 'case') {
+/**
+ * 綁定送出、字數即時回饋與輸出勾選（達標且至少勾一項才啟用送出）、示範案例點選。
+ * locked：今日配額或站台 AI 額度已用完時為 true，送出鈕永遠停用並附說明，避免送出後才收到錯誤。
+ */
+export function bindInput(root, { onSubmit, onSample }, locale = 'en', mode = 'case', { locked = false } = {}) {
   const ta = root.querySelector('#case-text'), files = root.querySelector('#case-files');
   const btn = root.querySelector('#case-submit'), count = root.querySelector('#case-count');
+  if (locked) btn.title = t('input.submitLocked', locale);
   const dropzone = root.querySelector('#file-dropzone'), fileList = root.querySelector('#file-list');
   const fileStatus = root.querySelector('#file-status');
   /** 字數提示文字節點；附檔時改顯示「描述可留空」說明。 */
@@ -216,7 +220,7 @@ export function bindInput(root, { onSubmit, onSample }, locale = 'en', mode = 'c
     if (hintText) hintText.textContent = t(hasFiles ? 'input.hintWithFiles' : 'input.hint', locale);
     const hasInput = n >= MIN_CHARS || hasFiles;
     // 合約模式不要求勾選輸出（送出即代表要修訂本）
-    btn.disabled = !hasInput || (mode !== 'contract' && checked().length === 0) || selectedFiles.length > MAX_FILES;
+    btn.disabled = locked || !hasInput || (mode !== 'contract' && checked().length === 0) || selectedFiles.length > MAX_FILES;
   };
   ta.addEventListener('input', sync);
   /** 失焦縮小：有內容就換成三行預覽（CSS line-clamp 以 … 收尾）；取得焦點放大並隱藏預覽。 */

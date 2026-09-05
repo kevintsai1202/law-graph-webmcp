@@ -87,6 +87,38 @@ test('input 綁定時使用目前語系，初始化完成後分析按鈕可送�
   submit.listeners.get('click')();
   assert.equal(submittedText, textarea.value);
 });
+test('今日配額或 AI 額度已用完時，送出鈕即使字數達標也維持停用，並附說明', () => {
+  /** 最小 DOM 替身（與上一個測試相同結構）。 */
+  const node = (extra = {}) => ({
+    listeners: new Map(), attrs: {},
+    classList: { toggle() {}, add() {}, remove() {} },
+    addEventListener(type, listener) { this.listeners.set(type, listener); },
+    setAttribute(k, v) { this.attrs[k] = v; },
+    ...extra
+  });
+  const build = () => {
+    const textarea = node({ value: '' }), submit = node({ disabled: true });
+    const bySelector = {
+      '#case-text': textarea, '#case-files': node({ files: [], value: '', click() {} }), '#case-submit': submit,
+      '#case-count': node({ textContent: '' }), '#file-status': node({ textContent: '' }), '#file-dropzone': node(), '#file-list': node({ replaceChildren() {} })
+    };
+    const root = { querySelector: (sel) => bySelector[sel], querySelectorAll: (sel) => sel.includes('outputs') ? [node({ checked: true, value: 'graph' })] : [] };
+    return { root, textarea, submit };
+  };
+  const locked = build();
+  bindInput(locked.root, { onSubmit() {}, onSample() {} }, 'zh-TW', 'case', { locked: true });
+  locked.textarea.value = '這是一段已達最低字數且可以送出的案件內容。';
+  locked.textarea.listeners.get('input')();
+  assert.equal(locked.submit.disabled, true);
+  assert.equal(locked.submit.title, '今日分析次數已用完，明天再來。');
+  // 未鎖定時同樣輸入可送出
+  const open = build();
+  bindInput(open.root, { onSubmit() {}, onSample() {} }, 'zh-TW', 'case', { locked: false });
+  open.textarea.value = locked.textarea.value;
+  open.textarea.listeners.get('input')();
+  assert.equal(open.submit.disabled, false);
+  assert.equal(open.submit.title, undefined);
+});
 test('input 有聲請事項欄位，預設隱藏；標題與 placeholder 依語系', () => {
   const html = renderInput({ samples: [] }, 'zh-TW');
   assert.match(html, /<div class="motion-field" id="motion-field" hidden>/);

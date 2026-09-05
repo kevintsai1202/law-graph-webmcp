@@ -5,7 +5,7 @@ import * as graphView from './graphView.js';
 import { createWebMcpBoot } from './webmcpBoot.js';
 import { mountInspector } from './inspector.js';
 import { renderLogin, bindLogin, renderPrivacyNotice, bindPrivacy } from './login.js';
-import { createGraphAssetLoader } from './graphAssets.js';
+import { createGraphAssetLoader, shouldPreloadGraphAssets } from './graphAssets.js';
 import { createUpdateChecker } from './updateCheck.js';
 import { renderUpdateBanner, bindUpdateBanner } from './views/updateBanner.js';
 
@@ -153,6 +153,8 @@ app.onChange(async (state, kind) => {
   if (kind === 'STATE') {
     updateSemanticBadge();
     syncTools(state.view);
+    // 案件送出後趁等待 LLM 的空檔背景預載 3D 套件；失敗這裡不提示，真正切到關聯圖時 renderGraph 會再試並顯示訊息
+    if (shouldPreloadGraphAssets(state)) loadGraphAssets().catch(() => {});
   }
   if (kind === 'RESULT_RENDERED') {
     if (state.last?.result?.graph) await renderGraph(state.last.result.graph);

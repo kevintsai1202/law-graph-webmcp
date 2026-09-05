@@ -209,6 +209,7 @@
       "usage.exhausted.tip": "This site pauses new analyses once the shared daily token budget is spent. Install the Law Powers skills and run the same analysis with your own AI agent, with no limit.",
       "usage.exhausted.action": "Get Law Powers",
       "quota.count": "Analyses used today:",
+      "input.submitLocked": "Today's analyses are used up. Come back tomorrow.",
       "input.previewAria": "Case description (click to edit)",
       "quota.loginTip": "Sign in with Google to get {limit} analyses per day.",
       "nav.login": "Sign in with Google",
@@ -498,6 +499,7 @@
       "usage.exhausted.tip": "\u672C\u7AD9\u6BCF\u65E5\u5171\u4EAB token \u984D\u5EA6\u7528\u5B8C\u5F8C\u6703\u66AB\u505C\u65B0\u7684\u5206\u6790\u3002\u4F60\u4E5F\u53EF\u4EE5\u5B89\u88DD Law Powers \u6280\u80FD\uFF0C\u7528\u81EA\u5DF1\u7684 AI Agent \u505A\u540C\u6A23\u7684\u5206\u6790\uFF0C\u4E0D\u53D7\u984D\u5EA6\u9650\u5236\u3002",
       "usage.exhausted.action": "\u53D6\u5F97 Law Powers",
       "quota.count": "\u4ECA\u65E5\u5DF2\u5206\u6790",
+      "input.submitLocked": "\u4ECA\u65E5\u5206\u6790\u6B21\u6578\u5DF2\u7528\u5B8C\uFF0C\u660E\u5929\u518D\u4F86\u3002",
       "input.previewAria": "\u6848\u60C5\u63CF\u8FF0\uFF08\u9EDE\u4E00\u4E0B\u7DE8\u8F2F\uFF09",
       "quota.loginTip": "\u7528 Google \u767B\u5165\u5F8C\u6BCF\u5929\u53EF\u5206\u6790 {limit} \u6B21\u3002",
       "nav.login": "Google \u767B\u5165",
@@ -833,9 +835,10 @@
       container.append(item);
     });
   }
-  function bindInput(root, { onSubmit, onSample }, locale2 = "en", mode = "case") {
+  function bindInput(root, { onSubmit, onSample }, locale2 = "en", mode = "case", { locked = false } = {}) {
     const ta = root.querySelector("#case-text"), files = root.querySelector("#case-files");
     const btn = root.querySelector("#case-submit"), count = root.querySelector("#case-count");
+    if (locked) btn.title = t("input.submitLocked", locale2);
     const dropzone = root.querySelector("#file-dropzone"), fileList = root.querySelector("#file-list");
     const fileStatus = root.querySelector("#file-status");
     const hintText = root.querySelector("#case-hint-text");
@@ -858,7 +861,7 @@
       count.classList.toggle("ok", hasFiles || n >= MIN_CHARS);
       if (hintText) hintText.textContent = t(hasFiles ? "input.hintWithFiles" : "input.hint", locale2);
       const hasInput = n >= MIN_CHARS || hasFiles;
-      btn.disabled = !hasInput || mode !== "contract" && checked().length === 0 || selectedFiles.length > MAX_FILES;
+      btn.disabled = locked || !hasInput || mode !== "contract" && checked().length === 0 || selectedFiles.length > MAX_FILES;
     };
     ta.addEventListener("input", sync);
     const preview = root.querySelector("#case-preview");
@@ -1476,7 +1479,7 @@
         case States.INPUT: {
           const typed = el.querySelector?.("#case-text")?.value ?? "";
           mount(el, renderInput({ samples, semanticAuth, usage, quota, mode: mode() }, locale2));
-          bindInput(el, { onSubmit: start, onSample: startSample }, locale2, mode());
+          bindInput(el, { onSubmit: start, onSample: startSample }, locale2, mode(), { locked: Boolean(quota?.exhausted || usage?.exhausted) });
           if (typed) {
             const ta = el.querySelector("#case-text");
             if (ta) {
@@ -3397,11 +3400,13 @@
   }
 
   // src/main/resources/static/js/graphAssets.js
-  function createGraphAssetLoader({ doc = globalThis.document, runtime = globalThis, timeoutMs = 15e3 } = {}) {
+  function createGraphAssetLoader({ doc = globalThis.document, runtime = globalThis, timeoutMs = 15e3, maxAttempts = 2 } = {}) {
     let pending = null;
-    const assets = [["THREE", "/vendor/three.min.js"], ["SpriteText", "/vendor/three-spritetext.min.js"], ["ForceGraph3D", "/vendor/3d-force-graph.min.js"]];
-    function load(name, src) {
-      if (runtime[name]) return Promise.resolve();
+    const chains = [
+      [["THREE", "/vendor/three.min.js"], ["SpriteText", "/vendor/three-spritetext.min.js"]],
+      [["ForceGraph3D", "/vendor/3d-force-graph.min.js"]]
+    ];
+    function attempt(name, src) {
       return new Promise((resolve, reject) => {
         const script = doc.createElement("script");
         const timer = setTimeout(() => finish(new Error(`Loading timed out: ${src}`)), timeoutMs);
@@ -3419,15 +3424,29 @@
         doc.head.appendChild(script);
       });
     }
+    async function load(name, src) {
+      if (runtime[name]) return;
+      for (let i = 1; ; i++) {
+        try {
+          return await attempt(name, i === 1 ? src : `${src}?retry=${i - 1}`);
+        } catch (error) {
+          if (i >= maxAttempts) throw error;
+        }
+      }
+    }
     return () => {
-      if (!pending) pending = (async () => {
-        for (const [name, src] of assets) await load(name, src);
-      })().catch((error) => {
+      if (!pending) pending = Promise.all(chains.map(async (chain) => {
+        for (const [name, src] of chain) await load(name, src);
+      })).then(() => void 0).catch((error) => {
         pending = null;
         throw error;
       });
       return pending;
     };
+  }
+  var PRELOAD_VIEWS = /* @__PURE__ */ new Set(["RUNNING", "QUESTIONS", "RESULT"]);
+  function shouldPreloadGraphAssets(state) {
+    return Boolean(state?.caseId) && PRELOAD_VIEWS.has(state.view);
   }
 
   // src/main/resources/static/js/updateCheck.js
@@ -3610,6 +3629,8 @@
     if (kind === "STATE") {
       updateSemanticBadge();
       syncTools(state.view);
+      if (shouldPreloadGraphAssets(state)) loadGraphAssets().catch(() => {
+      });
     }
     if (kind === "RESULT_RENDERED") {
       if (state.last?.result?.graph) await renderGraph(state.last.result.graph);
