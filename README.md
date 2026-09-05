@@ -37,8 +37,8 @@ Video script skeleton: (1) open the site in ChatGPT, list samples; (2) Agent sta
 Browser (HTML/JS, no framework)
   ├─ views/*.js        pure render(model, locale) → HTML string (node-tested, all model text escaped)
   ├─ graphView.js      law-powers 3D renderer (three.js + 3d-force-graph) as an ES module
-   ├─ webmcp.js         thirteen tool definitions + execute, state-synchronised registration
-   └─ inspector.js      read-only viewer for the same thirteen tools (state + tool list; no direct execution)
+   ├─ webmcp.js         22 tool definitions + execute, state-synchronised registration
+   └─ inspector.js      read-only viewer for the same 22 tools (state + tool list; no direct execution)
         │ 2 s polling  GET /api/cases/{id}
 Spring Boot 4.1 / Embabel 1.5.1 (Java 21)
   ├─ LegalGraphAgent   seven @Action steps: planResearch → dual-track research → analyze (incl. selected pleadings) + WaitFor.awaitable
@@ -51,7 +51,7 @@ Spring Boot 4.1 / Embabel 1.5.1 (Java 21)
                 └─ Java orchestration: parallel retrieval → JID dedupe → citation allowlist → merged evidence
 ```
 
-Only six sidecar tools are whitelisted for the Agent: `search_regulations`, `query_regulation`, `get_pcode`, `search_judgments`, `get_judgment`, `get_citations`. The LLM is selected by the `MODEL` value in `.env` (`embabel.models.default-llm`) and defaults to `gpt-5.4-nano`. The model catalogue is the project-owned `src/main/resources/models/openai-models.yml`, which shadows the copy bundled with Embabel 1.5.1 so that OpenAI-compatible providers can be used: set `OPENAI_BASE_URL` (including `/v1`, e.g. `https://api.meta.ai/v1` for Meta Muse) and pick a `MODEL` that exists in that file (`muse-spark-1.3-contributor`, `muse-spark-1.3`, `gpt-5.4-mini`, `gpt-5.4-nano`). Leave `OPENAI_BASE_URL` unset to talk to api.openai.com.
+Only six sidecar tools are whitelisted for the Agent: `search_regulations`, `query_regulation`, `get_pcode`, `search_judgments`, `get_judgment`, `get_citations`. When a research query supplies a judgment full-text filter, it is forwarded to `search_judgments` as `main_text` (`McpTaiwanLegalDbAdapter`, from `ResearchPlan.mainText`). The LLM is selected by the `MODEL` value in `.env` (`embabel.models.default-llm`) and defaults to `gpt-5.4-nano`. The model catalogue is the project-owned `src/main/resources/models/openai-models.yml`, which shadows the copy bundled with Embabel 1.5.1 so that OpenAI-compatible providers can be used: set `OPENAI_BASE_URL` (including `/v1`, e.g. `https://api.meta.ai/v1` for Meta Muse) and pick a `MODEL` that exists in that file (`muse-spark-1.3-contributor`, `muse-spark-1.3`, `gpt-5.4-mini`, `gpt-5.4-nano`). Leave `OPENAI_BASE_URL` unset to talk to api.openai.com.
 
 ## WebMCP implementation
 
@@ -80,8 +80,16 @@ await modelContext.registerTool({ name, description, inputSchema, annotations,
 | `focusNode` | `RESULT` | | Fly the camera to a node by id or label text; returns neighbours |
 | `filterGraph` | `RESULT` | | Show only some groups / one family; `reset` |
 | `explainEdge` | `RESULT` | ✓ | Label, relation type and note of one edge |
+| `listCapabilities` | `HOME` | ✓ | List the two capability cards (case analysis / contract review) |
+| `selectCapability` | `HOME` | | Navigate to `#/case` or `#/contract` |
+| `startContractReview` | `HOME` | | Start a contract review directly from `#/`（`caseText`／`sampleId`／`party`／`scopes`／`documents`） |
+| `getComplianceReport` | `RESULT`（contract） | ✓（untrusted content） | Contract mode findings, priorities, overall risk |
+| `filterFindingsByRisk` | `RESULT`（contract） | | Filter the findings table by risk level |
+| `getUsageStats` | `HOME` | ✓ | Daily token/case usage (stubbed pending M3) |
 
-Environment notes: in **Chrome 149+** enable `chrome://flags/#enable-webmcp-testing`, then `await document.modelContext.getTools()` returns the tools for the current view (6 / 2 / 4 / 9 / 2 for `INPUT` / `RUNNING` / `QUESTIONS` / `RESULT` / `FAILED`; the WebMCP layer ships as a separate `js/webmcp-bundle.js` loaded synchronously in `<head>` so tools are registered before the app bundle runs). In the **ChatGPT desktop app**, the address-bar *Site tools* list is page-scoped and should be refreshed after a state transition. The declarative (`<form>`-based) WebMCP API is not used.
+`RESULT` in contract mode additionally exposes the合約義務關係圖 (`getGraphSummary`／`focusNode`／`filterGraph`／`explainEdge`, same tools as case mode) and, when `documents` included `"revised"`, the `doc-revised` tab in the rendered page (no dedicated tool — read via `getResultTabs`/`getAnalysis`).
+
+Environment notes: in **Chrome 149+** enable `chrome://flags/#enable-webmcp-testing`, then `await document.modelContext.getTools()` returns the tools for the current view (6 / 2 / 4 / 9 / 2 for `INPUT` / `RUNNING` / `QUESTIONS` / `RESULT` / `FAILED` in case mode; `HOME` additionally exposes `listCapabilities` / `selectCapability` / `startContractReview` / `getUsageStats`; 22 tool definitions total across all views and both modes; the WebMCP layer ships as a separate `js/webmcp-bundle.js` loaded synchronously in `<head>` so tools are registered before the app bundle runs). In the **ChatGPT desktop app**, the address-bar *Site tools* list is page-scoped and should be refreshed after a state transition. The declarative (`<form>`-based) WebMCP API is not used.
 
 ## UI design system
 
@@ -165,11 +173,11 @@ $env:E2E_LIVE='1'; npx playwright test -c e2e/playwright.config.mjs e2e/tutorial
 2. **QUESTIONS** — 有問題就停在 `WAITING`，等待人工作答（`POST /api/cases/{id}/answers`）
 3. **RESEARCH** — 依選定的 `scopes` 產生檢索計畫並查詢法規
 4. **REVIEW** — 逐批呼叫 LLM 審查每條條款是否合規，沒有條款切分時以全文為單一條款「全文」
-5. **SUMMARY** — 整體風險（`overallRisk`）由 Java 依所有 findings 取最高風險等級，本里程碑（M1）的目標步驟
-6. **REVISE**（M2 起）— 產生建議修改後的條款文字
-7. **GRAPH**（M2 起）— 產出契約義務關係圖
+5. **SUMMARY** — 整體風險（`overallRisk`）由 Java 依所有 findings 取最高風險等級
+6. **REVISE**（選填，勾選 `documents: ["revised"]` 才產出）— 產生建議修改後的條款文字
+7. **GRAPH** — 產出契約義務關係圖：contract → clause → obligation 三層節點，`clause.risk` 依風險上色（`ContractGraphRules` 以審查結果覆寫節點風險／描述，並補建缺漏條款節點）
 
-M1 只做到 SUMMARY；REVISE 與 GRAPH 尚未實作，會在 M2 補上。
+結果頁對應分頁：`findings`（逐條發現）／`summary`（整體風險摘要）／`doc-revised`（修訂版條款，僅勾選 `revised` 時出現）／`graph`（契約義務關係圖）／`laws`（引用法規白名單）。
 
 ### API 參數
 
@@ -178,7 +186,7 @@ M1 只做到 SUMMARY；REVISE 與 GRAPH 尚未實作，會在 M2 補上。
 - `mode`：`"case"` 或 `"contract"`（預設 `"case"`）
 - `party`：己方立場，`"partyA"`／`"partyB"`／`"unknown"`（預設 `"unknown"`）
 - `scopes`：審查範疇子集合，可含 `"commercial"`／`"labor"`／`"privacy"`／`"corporate"`
-- `documents`：合約模式下的輸出選項（目前為 `"revised"`，即修改後條款；M2 起提供）
+- `documents`：合約模式下的輸出選項，目前為 `"revised"`（修改後條款；不勾選則 REVISE 步驟略過，結果不含 `revised` 欄位）
 
 ```bash
 curl -s -X POST localhost:8080/api/cases -H 'Content-Type: application/json' \

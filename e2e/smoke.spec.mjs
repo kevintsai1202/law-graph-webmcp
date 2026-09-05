@@ -220,10 +220,10 @@ test('WebMCP getOutputOptions／getInputForm 回報輸入頁可見內容：9 個
 
 test('每個頁面狀態的 WebMCP 工具與 Inspector 清單一致', async ({ page }) => {
   const stateTools = {
-    INPUT: ['listSampleCases', 'startCase', 'setOutputSelection', 'getOutputOptions', 'getInputForm', 'verifyCitation'],
+    INPUT: ['listSampleCases', 'startCase', 'setOutputSelection', 'getOutputOptions', 'getInputForm', 'verifyCitation', 'listCapabilities', 'selectCapability', 'startContractReview', 'getUsageStats'],
     RUNNING: ['getCaseStatus', 'resetCase'],
     QUESTIONS: ['getCaseStatus', 'getQuestions', 'fillQuestions', 'resetCase'],
-    RESULT: ['getAnalysis', 'getCaseStatus', 'getResultTabs', 'getGraphSummary', 'focusNode', 'filterGraph', 'explainEdge', 'resetCase', 'verifyCitation'],
+    RESULT: ['getAnalysis', 'getCaseStatus', 'getResultTabs', 'getGraphSummary', 'focusNode', 'filterGraph', 'explainEdge', 'resetCase', 'verifyCitation', 'getComplianceReport', 'filterFindingsByRisk', 'getUsageStats'],
     FAILED: ['getCaseStatus', 'resetCase']
   };
   const names = async () => (await page.evaluate(() => document.modelContext.getTools())).map((t) => t.name).sort();
@@ -345,7 +345,7 @@ test('inspector is read-only: shows state and tool list, no run controls; tools 
   await page.click('#insp-toggle');
   // 唯讀：只顯示頁面狀態與可用工具清單，不提供直接執行
   await expect(page.locator('#insp-state')).toContainText('RESULT');
-  await expect(page.locator('#insp-list li')).toHaveCount(9);
+  await expect(page.locator('#insp-list li')).toHaveCount(12);
   await expect(page.locator('#insp-list')).toContainText('getGraphSummary');
   await expect(page.locator('#insp-run')).toHaveCount(0);
   await expect(page.locator('#insp-tool')).toHaveCount(0);
@@ -381,11 +381,27 @@ test('合約 COMPLETED 狀態顯示風險條款清單與篩選', async ({ page }
     result: { contract: { contractType: '勞動契約', clauses: [] }, research: { laws: [], judgments: [], notes: [] },
       compliance: { contractType: '勞動契約', scopes: ['labor'], overallRisk: 'high', priorities: ['先改第二條'], disclaimer: 'x',
         findings: [{ clauseNo: '第二條', clauseText: '不發加班費', risk: 'high', lawRefs: [], riskPoint: 'r', suggestion: 's', judgmentCitations: [] },
-                   { clauseNo: '第五條', clauseText: '調動', risk: 'low', lawRefs: [], riskPoint: 'r', suggestion: 's', judgmentCitations: [] }] } } });
+                   { clauseNo: '第五條', clauseText: '調動', risk: 'low', lawRefs: [], riskPoint: 'r', suggestion: 's', judgmentCitations: [] }] },
+      graph: { nodes: [{ id: 'c', group: 'contract', label: '勞動契約' }, { id: 'cl', group: 'clause', label: '第二條', risk: 'high' }],
+        edges: [{ from: 'c', to: 'cl', label: '包含' }] } } });
   await expect(page.locator('[data-tab="findings"]')).toBeVisible();
+  // 加了 graph 後預設分頁會落在 graph，先切回 findings 面板才能點篩選按鈕
+  await page.locator('[data-tab="findings"]').click();
   await expect(page.locator('tr[data-risk]')).toHaveCount(2);
   await page.locator('#findings-filter [data-risk="high"]').click();
   await expect(page.locator('tr[data-risk]')).toHaveCount(1);
   await page.locator('[data-tab="summary"]').click();
   await expect(page.locator('#panel-summary')).toContainText('先改第二條');
+  // 合約圖分頁：契約→條款圖已回傳，分頁應存在（不點擊，3D 圖資產較重）
+  await expect(page.locator('[data-tab="graph"]')).toBeVisible();
+});
+
+// HOME：能力入口頁應同時公布切換能力與啟動合約審查的 WebMCP 工具
+test('HOME 狀態下 WebMCP 工具清單含 selectCapability 與 startContractReview', async ({ page }) => {
+  await page.goto('/');
+  await waitForTool(page, 'selectCapability');
+  await waitForTool(page, 'startContractReview');
+  const names = (await page.evaluate(() => document.modelContext.getTools())).map((t) => t.name);
+  expect(names).toContain('selectCapability');
+  expect(names).toContain('startContractReview');
 });
