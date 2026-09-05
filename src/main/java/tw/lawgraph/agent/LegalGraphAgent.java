@@ -161,22 +161,17 @@ public class LegalGraphAgent {
 
     /** 防禦模型回傳 null questions，且 sufficient=true 時強制不再追問。 */
     private static List<tw.lawgraph.domain.Question> safeQuestions(ClarificationAssessment assessment) {
-        return assessment == null || assessment.sufficient() || assessment.questions() == null
-                ? List.of() : assessment.questions().stream().filter(java.util.Objects::nonNull).limit(5).toList();
+        return ClarificationSupport.safeQuestions(assessment);
     }
 
     /** 防禦模型回傳 null evidenceGaps。 */
     private static List<String> safeGaps(ClarificationAssessment assessment) {
-        return assessment == null || assessment.evidenceGaps() == null
-                ? List.of() : assessment.evidenceGaps().stream().filter(value -> value != null && !value.isBlank()).distinct().toList();
+        return ClarificationSupport.safeGaps(assessment);
     }
 
     /** 判斷回答是否明確表示未知／無法取得；這類答案是終止資訊而不是下一輪重問理由。 */
     private static boolean isUnavailable(String answer) {
-        if (answer == null || answer.isBlank()) return true;
-        String value = answer.trim().toLowerCase(java.util.Locale.ROOT);
-        return List.of("unknown", "not sure", "unavailable", "不知道", "不清楚", "沒有資料", "無資料", "無法取得")
-                .stream().anyMatch(value::contains);
+        return ClarificationSupport.isUnavailable(answer);
     }
 
     /** 語意檢索 provider 的 query 上限；超過才需要額外一次 LLM 摘要。 */

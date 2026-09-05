@@ -125,6 +125,26 @@ public final class TaiwanTerminology {
         return new CaseAssessment(defenses, evidence, checklist, audit.fix(assessment.riskSummary()));
     }
 
+    /** 合約條款審查清單守門：條款原文、風險點、修改建議逐欄替換；引用字串不動（必須逐字比對白名單）。 */
+    public static ClauseFindings sanitize(ClauseFindings findings) {
+        if (findings == null) return new ClauseFindings(List.of(), List.of());
+        return new ClauseFindings(findings.findings().stream().map(TaiwanTerminology::sanitize).toList(), findings.notes());
+    }
+
+    /** 單一條款審查結果守門。 */
+    static ClauseFinding sanitize(ClauseFinding f) {
+        return new ClauseFinding(f.clauseNo(), sanitize(f.clauseText()), f.risk(), f.lawRefs(),
+                sanitize(f.riskPoint()), sanitize(f.suggestion()), f.judgmentCitations());
+    }
+
+    /** 合規摘要守門：契約類型、優先順序、免責聲明與條款清單。 */
+    public static ComplianceReport sanitize(ComplianceReport report) {
+        if (report == null) return new ComplianceReport("", List.of(), null, List.of(), List.of(), null);
+        return new ComplianceReport(sanitize(report.contractType()), report.scopes(), report.overallRisk(),
+                report.findings().stream().map(TaiwanTerminology::sanitize).toList(),
+                report.priorities().stream().map(TaiwanTerminology::sanitize).toList(), sanitize(report.disclaimer()));
+    }
+
     /** 收集一次淨化過程命中的詞，最後只寫一行 WARN。 */
     private static final class Auditor {
         private final String scope;
