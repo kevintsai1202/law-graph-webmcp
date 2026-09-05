@@ -102,11 +102,11 @@ test('WebMCP startCase enters the progress view before a slow start response ret
     });
   });
   // 假案件不存在於任何後端，輪詢會 404 把畫面翻成 FAILED：狀態查詢一併攔截，測試才不依賴跑在 :8080 的服務
-  await page.route('**/api/cases/webmcp-title-start', async (route) => {
+  await page.route('**/api/cases/webmcp-slow-start', async (route) => {
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify({ caseId: 'webmcp-title-start', status: 'RUNNING', step: 'BRAINSTORM', locale: 'en' })
+      body: JSON.stringify({ caseId: 'webmcp-slow-start', status: 'RUNNING', step: 'BRAINSTORM', locale: 'en' })
     });
   });
   await waitForTool(page, 'startCase');

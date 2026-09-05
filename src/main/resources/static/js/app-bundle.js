@@ -1328,6 +1328,7 @@
     let usage = null;
     let quota = null;
     let stats = null;
+    let statsInFlight = false;
     const hadAuthCallback = consumeAuthCallbackQuery();
     let authRedirected = hadAuthCallback;
     async function refreshAuthStatus() {
@@ -1472,6 +1473,8 @@
       render2();
     }
     async function showStats() {
+      if (statsInFlight) return;
+      statsInFlight = true;
       dispatch({ type: "SHOW_STATS" });
       stats = null;
       render2();
@@ -1480,6 +1483,7 @@
       } catch (e) {
         stats = { error: e?.message || "ERROR" };
       }
+      statsInFlight = false;
       render2();
     }
     function goHome() {

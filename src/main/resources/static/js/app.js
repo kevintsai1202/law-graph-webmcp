@@ -65,6 +65,8 @@ export function createApp({ root, client, storage, navigatorLanguage, partialCol
   let quota = null;
   /** 統計頁資料（/api/stats）；null 代表載入中，{ error } 代表載入失敗。 */
   let stats = null;
+  /** showStats() 重入旗標：dispatch 同步 hash 觸發的 hashchange 重呼叫要被擋下。 */
+  let statsInFlight = false;
   /** OAuth callback query 已被消耗時，不再自動導向，避免授權失敗造成重導迴圈。 */
   const hadAuthCallback = consumeAuthCallbackQuery();
   /** 同一頁面生命週期只允許自動導向授權一次。 */
@@ -225,8 +227,12 @@ export function createApp({ root, client, storage, navigatorLanguage, partialCol
     render();
   }
 
-  /** 進入統計頁：先顯示載入中，再取近 30 日資料；失敗時顯示錯誤而不影響進行中的案件。 */
+  /** 進入統計頁：先顯示載入中，再取近 30 日資料；失敗時顯示錯誤而不影響進行中的案件。
+   * 進站時 dispatch 會同步網址 hash 成 #/stats，觸發 hashchange 監聽器再次呼叫本函式；
+   * 以 statsInFlight 旗標擋掉這次重入，避免 client.stats 被呼叫兩次。 */
   async function showStats() {
+    if (statsInFlight) return;
+    statsInFlight = true;
     dispatch({ type: 'SHOW_STATS' });
     stats = null;
     render();
@@ -235,6 +241,7 @@ export function createApp({ root, client, storage, navigatorLanguage, partialCol
     } catch (e) {
       stats = { error: e?.message || 'ERROR' };
     }
+    statsInFlight = false;
     render();
   }
 

@@ -266,6 +266,34 @@ test('mount 時 hash 為 #/stats 會載入統計資料並停在統計頁；getSt
   assert.equal(askedDays, 7);
 });
 
+test('進入統計頁只呼叫一次 client.stats：dispatch 同步網址 hash 觸發的 hashchange 不應重複抓取', async () => {
+  const originalAdd = globalThis.addEventListener;
+  let onHashChange = null;
+  globalThis.addEventListener = (type, handler) => { if (type === 'hashchange') onHashChange = handler; };
+  let statsCalls = 0;
+  const client = {
+    samples: async () => [], poll: () => () => {}, usage: async () => null, quota: async () => null,
+    authStatus: async () => null,
+    stats: async () => { statsCalls += 1; return { days: [] }; }
+  };
+  // 模擬真實瀏覽器行為：JS 設定 location.hash 會同步觸發 hashchange 監聽器（測試用其他 locationLike 都是純資料物件，不會觸發）
+  let hashValue = '';
+  const loc = {
+    pathname: '/', search: '',
+    get hash() { return hashValue; },
+    set hash(v) { if (v === hashValue) return; hashValue = v; onHashChange && onHashChange(); }
+  };
+  try {
+    const app = createApp({ root: mountRoot(), client, storage: fakeStorage(), navigatorLanguage: 'zh-TW', locationLike: loc });
+    await app.mount();
+    await app.showStats();
+    assert.equal(statsCalls, 1);
+    assert.equal(app.getState().view, 'STATS');
+  } finally {
+    globalThis.addEventListener = originalAdd;
+  }
+});
+
 test('統計頁為唯讀分頁：進行中的案件在返回 #/case 時直接回到進行中畫面，不被捨棄', async () => {
   const originalAdd = globalThis.addEventListener;
   let onHashChange = null;
