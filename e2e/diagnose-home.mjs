@@ -1,0 +1,37 @@
+// 用途：診斷首頁是否卡在初始畫面（例如登入後回到 / 卻沒有渲染）。
+// 開啟指定網址，收集 console 錯誤與失敗的網路請求，並回報 #stage 是否有內容、頁首 i18n 是否套用。
+// 執行：node e2e/diagnose-home.mjs [url]   （預設線上網址；可加 --headed 觀察）
+import { chromium } from 'playwright';
+
+const url = process.argv.find((a) => a.startsWith('http')) || 'https://law-graph-webmcp.zeabur.app/';
+const headed = process.argv.includes('--headed');
+const browser = await chromium.launch({ headless: !headed });
+const page = await browser.newPage({ locale: 'zh-TW' });
+// --stale-case=<id>：模擬 sessionStorage 留有已不存在的案件（例如部署後遺失），觀察 mount 是否卡住
+const stale = (process.argv.find((a) => a.startsWith('--stale-case=')) || '').split('=')[1];
+if (stale) await page.addInitScript((id) => { try { sessionStorage.setItem('caseId', id); } catch {} }, stale);
+const errors = [];
+const failed = [];
+page.on('console', (m) => { if (m.type() === 'error' || m.type() === 'warning') errors.push(`[${m.type()}] ${m.text()}`); });
+page.on('pageerror', (e) => errors.push(`[pageerror] ${e.message}\n${e.stack || ''}`));
+page.on('response', (r) => { if (r.status() >= 400) failed.push(`${r.status()} ${r.url()}`); });
+// --session-first：先踩 /oauth2/authorization/google 取得 JSESSIONID（不真的登入），再回首頁，觀察帶 session cookie 是否影響載入
+if (process.argv.includes('--session-first')) {
+  await page.route('**accounts.google.com/**', (r) => r.fulfill({ status: 200, body: 'blocked' }));
+  await page.goto(new URL('/oauth2/authorization/google', url).href, { waitUntil: 'domcontentloaded' }).catch(() => {});
+  console.log('cookies after login-start:', (await page.context().cookies()).map((c) => `${c.name}=${c.value.slice(0, 8)}…`).join(', '));
+}
+const all = [];
+page.on('response', (r) => all.push(`${r.status()} ${r.request().resourceType()} ${r.url().replace(url, '/')}`));
+await page.goto(url, { waitUntil: 'networkidle' });
+await page.waitForTimeout(3000);
+const info = await page.evaluate(() => ({
+  title: document.querySelector('h1')?.textContent,
+  stageChars: document.getElementById('stage')?.innerHTML.length ?? -1,
+  badge: document.getElementById('agent-badge')?.textContent,
+  authSlot: document.getElementById('auth-slot')?.innerHTML.slice(0, 120),
+  hasApp: typeof window.__lawGraphApp,
+  view: window.__lawGraphApp?.getState?.()?.view
+}));
+console.log(JSON.stringify({ url, info, errors, failed, requests: all.filter((l) => !/\.(png|svg|woff2?)/.test(l)).slice(0, 25) }, null, 2));
+await browser.close();
