@@ -102,7 +102,8 @@ a { color: var(--color-primary); }
   display: grid; place-items: center; box-shadow: var(--shadow-sm);
 }
 .brand-mark svg { width: 24px; height: 24px; }
-.topbar h1 { font-size: 1.5rem; font-weight: 700; line-height: 1.2; }
+.topbar h1 { font-size: 1.5rem; font-weight: 700; line-height: 1.2; white-space: nowrap; }
+.brand > div { min-width: 0; }
 .topbar p { font-size: 0.85rem; color: var(--color-text-sub); }
 .topbar-right { display: flex; align-items: center; gap: var(--space-3); flex: 0 0 auto; }
 /* 選單連結：金色實心膠囊，與狀態徽章區隔，讓 Law Powers 入口一眼可見 */
@@ -283,7 +284,7 @@ button svg { width: 18px; height: 18px; flex: 0 0 auto; }
 .disclaimer svg { width: 16px; height: 16px; flex: 0 0 auto; margin-top: 2px; color: var(--color-gold-text); }
 
 /* ── 進度列（五步 stepper）與退路 ── */
-.progress { list-style: none; padding: 0; margin: 0 0 var(--space-3); display: grid; grid-template-columns: repeat(5, 1fr); gap: var(--space-2); counter-reset: step; }
+.progress { list-style: none; padding: 0; margin: 0 0 var(--space-3); display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: var(--space-2); counter-reset: step; }
 .step {
   position: relative; display: flex; align-items: center; gap: var(--space-2);
   min-height: 56px; padding: var(--space-2) var(--space-3); font-size: 0.85rem; line-height: 1.3;
@@ -442,15 +443,18 @@ button svg { width: 18px; height: 18px; flex: 0 0 auto; }
 /* ── 響應式：768 以下單欄、375 可用 ── */
 @media (max-width: 960px) {
   .input { grid-template-columns: 1fr; }
-  .progress { grid-template-columns: repeat(5, 1fr); }
+  .progress { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
   .step { flex-direction: column; text-align: center; font-size: 0.78rem; padding: var(--space-2); }
 }
-@media (max-width: 720px) {
+/* 平板以下：右側選單整列換到品牌下方並允許自行換行，避免品牌標題被壓成直排 */
+@media (max-width: 1024px) {
   .topbar { flex-wrap: wrap; padding: var(--space-3) var(--space-4); }
-  /* 窄螢幕：右側選單列自行換行，Law Powers 連結與徽章不得撐出水平捲軸 */
-  .topbar-right { flex: 1 1 100%; flex-wrap: wrap; row-gap: var(--space-2); }
+  .topbar-right { flex: 1 1 100%; flex-wrap: wrap; row-gap: var(--space-2); justify-content: flex-start; }
   .topbar-right .nav-link { order: -1; }
+}
+@media (max-width: 720px) {
   .topbar h1 { font-size: 1.25rem; }
+  .license-banner { font-size: 12.5px; padding: 8px 12px; }
   #stage { padding: var(--space-4) var(--space-3) var(--space-8); }
   .input-main, .questions, .panel, .failed { padding: var(--space-4); }
   .input-actions .primary { width: 100%; }
@@ -463,7 +467,9 @@ button svg { width: 18px; height: 18px; flex: 0 0 auto; }
   .tablist { width: 100%; overflow-x: auto; }
   .tab { flex: 1 0 auto; }
   /* 手機：折疊時只佔按鈕寬度（少遮內容），展開後才滿版 */
-  .inspector { right: var(--space-2); bottom: var(--space-2); width: auto; max-width: calc(100vw - 2 * var(--space-2)); }
+  .inspector { right: var(--space-2); bottom: var(--space-2); width: auto; max-width: calc(100vw - 2 * var(--space-2)); padding: var(--space-1); }
+  /* 手機折疊時縮成小膠囊，少遮住案情輸入框；展開後仍滿版 */
+  .inspector.collapsed #insp-toggle { font-size: 0.78rem; padding: 4px 10px; min-height: 36px; }
   .inspector:not(.collapsed) { left: var(--space-2); }
   .el { grid-template-columns: 1fr; }
   .el-badge { grid-row: auto; justify-self: start; }

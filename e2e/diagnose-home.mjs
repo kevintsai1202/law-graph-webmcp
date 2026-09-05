@@ -8,7 +8,10 @@ const headed = process.argv.includes('--headed');
 // --browser=firefox|webkit|chromium：不同引擎行為可能不同（例如 Firefox 的追蹤保護）
 const engine = (process.argv.find((a) => a.startsWith('--browser=')) || '--browser=chromium').split('=')[1];
 const browser = await ({ firefox, webkit, chromium }[engine] || chromium).launch({ headless: !headed });
-const page = await browser.newPage({ locale: 'zh-TW' });
+// --width=<px>：以指定視窗寬度開啟（手機 375、平板 768）；--shot=<path>：截整頁存檔供人工檢視
+const width = Number((process.argv.find((a) => a.startsWith('--width=')) || '--width=1280').split('=')[1]);
+const shot = (process.argv.find((a) => a.startsWith('--shot=')) || '').split('=')[1];
+const page = await browser.newPage({ locale: 'zh-TW', viewport: { width, height: 800 }, deviceScaleFactor: 1 });
 // --stale-case=<id>：模擬 sessionStorage 留有已不存在的案件（例如部署後遺失），觀察 mount 是否卡住
 const stale = (process.argv.find((a) => a.startsWith('--stale-case=')) || '').split('=')[1];
 if (stale) await page.addInitScript((id) => { try { sessionStorage.setItem('caseId', id); } catch {} }, stale);
@@ -28,6 +31,9 @@ if (process.argv.includes('--mock-login')) {
   await page.route('**/api/me', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ enabled: true, loggedIn: true, name: 'Kevin Tsai', email: 'k@example.com', picture: 'https://lh3.googleusercontent.com/a/x=s96-c', loginPath: '/oauth2/authorization/google', blocked: false, blockedMessage: null }) }));
   await page.route('**/api/quota', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ date: '2026-09-05', used: 0, limit: 5, remaining: 5, exhausted: false, loggedIn: true, memberLimit: 5, loginPath: '/oauth2/authorization/google' }) }));
 }
+// --css=<本機檔案>：把線上 app.css 換成本機檔，不用部署就能預覽 RWD 修改
+const cssOverride = (process.argv.find((a) => a.startsWith('--css=')) || '').split('=')[1];
+if (cssOverride) await page.route('**/css/app.css*', (r) => r.fulfill({ path: cssOverride, contentType: 'text/css' }));
 const all = [];
 page.on('response', (r) => all.push(`${r.status()} ${r.request().resourceType()} ${r.url().replace(url, '/')}`));
 await page.goto(url, { waitUntil: 'networkidle' });
@@ -50,5 +56,6 @@ if (process.argv.includes('--textarea-probe')) {
   await page.click('#case-text'); await page.waitForTimeout(300); probe.refocused = await h();
   console.log('textarea probe:', JSON.stringify(probe, null, 1));
 }
+if (shot) { await page.screenshot({ path: shot, fullPage: true }); console.log('screenshot:', shot); }
 console.log(JSON.stringify({ url, info, errors, failed, requests: all.filter((l) => !/\.(png|svg|woff2?)/.test(l)).slice(0, 25) }, null, 2));
 await browser.close();
