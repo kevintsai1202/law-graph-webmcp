@@ -14,6 +14,8 @@ const entryMode = process.argv.includes('--entry');
 const slowEntry = process.argv.includes('--slow-entry');
 const failGraph = process.argv.includes('--fail-graph');
 let member = false;
+/** 是否已按過首次登入個資告知的「我知道了」；登出後重置。 */
+let noticeAcked = false;
 const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.json': 'application/json', '.png': 'image/png', '.svg': 'image/svg+xml' };
 
 /** 假的進行中案件狀態：BRAINSTORM 已完成、RESEARCH 進行中，帶中間成果。 */
@@ -25,19 +27,40 @@ const running = {
 /** 回 JSON。 */
 const json = (res, status, body) => { res.writeHead(status, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(body)); };
 
+/** 假的站台使用統計：形狀與真正 /api/stats 一致，讓統計頁在 stub 下也能渲染。 */
+const fakeStats = () => {
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const days = [2, 1, 0].map((i) => {
+    const d = new Date(Date.now() - i * 86400000).toISOString().slice(0, 10);
+    const n = 3 - i;
+    return { day: d, total: n, byMode: { case: n, contract: 0 }, completed: n, failed: 0, promptTokens: n * 500, completionTokens: n * 300, totalTokens: n * 800 };
+  });
+  const today = days[days.length - 1];
+  return {
+    from: days[0].day, to: todayStr, store: 'stub',
+    members: { total: 1, activeToday: member ? 1 : 0 },
+    today: { ...today, byIdentity: { member: member ? 1 : 0 } },
+    days
+  };
+};
+
 const server = createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host}`);
   try {
     if (entryMode) {
-      if (url.pathname === '/api/me') return json(res, 200, { enabled: true, loggedIn: member, name: member ? '入口測試帳號' : null, loginPath: '/oauth2/authorization/google', blocked: false });
+      if (url.pathname === '/api/me') return json(res, 200, { enabled: true, loggedIn: member, name: member ? '入口測試帳號' : null, loginPath: '/oauth2/authorization/google', blocked: false, firstLogin: member ? !noticeAcked : false });
+      if (url.pathname === '/api/me/notice-ack' && req.method === 'POST') { noticeAcked = true; res.writeHead(204); return res.end(); }
+      if (url.pathname === '/api/me' && req.method === 'DELETE') { member = false; noticeAcked = false; res.writeHead(204); return res.end(); }
       if (url.pathname === '/oauth2/authorization/google' || (url.pathname === '/logout' && req.method === 'POST')) {
         member = url.pathname !== '/logout';
+        if (!member) noticeAcked = false;
         res.writeHead(302, { Location: '/' }); return res.end();
       }
       if (slowEntry && ['/api/usage', '/api/auth/tw-legal-rag/status', '/api/quota', '/api/samples'].includes(url.pathname)) return;
       if (url.pathname === '/api/auth/tw-legal-rag/status') return json(res, 200, { enabled: false });
       if (url.pathname === '/api/usage') return json(res, 200, { paused: false });
       if (url.pathname === '/api/quota') return json(res, 200, { used: 0, limit: member ? 5 : 1, remaining: member ? 5 : 1, memberLimit: 5, loggedIn: member });
+      if (url.pathname === '/api/stats') return json(res, 200, fakeStats());
       if (failGraph && url.pathname.startsWith('/vendor/')) return json(res, 503, { error: 'test-only graph failure' });
       if (url.pathname.startsWith('/api/cases/')) return json(res, 200, {
         caseId: 'stub-1', status: 'COMPLETED', step: 'GRAPH', locale: 'zh-TW',
@@ -45,6 +68,7 @@ const server = createServer(async (req, res) => {
           graph: { nodes: [{ id: 'f1', group: 'fact', label: '測試事實' }, { id: 'i1', group: 'issue', label: '測試爭點' }], edges: [{ from: 'f1', to: 'i1', label: 'trigger' }] } }
       });
     }
+    if (url.pathname === '/api/stats') return json(res, 200, fakeStats());
     if (url.pathname === '/api/samples') {
       const locale = url.searchParams.get('locale') === 'zh-TW' ? 'zh-TW' : 'en';
       // 依 mode 過濾示範案例：無 mode 欄位視為 'case'，合約示範帶 "mode":"contract"

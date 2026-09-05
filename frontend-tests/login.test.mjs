@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { renderLogin, bindLogin } from '../src/main/resources/static/js/login.js';
+import { renderLogin, bindLogin, renderPrivacyNotice, bindPrivacy } from '../src/main/resources/static/js/login.js';
 
 // 用途：右上角登入區三種狀態（未啟用／未登入／已登入）的呈現契約。
 test('後端未啟用 Google 登入時整塊不顯示', () => {
@@ -22,6 +22,8 @@ test('已登入：顯示頭像、名稱與登出；名稱／圖片經 esc', () =
   assert.match(html, /Kevin &lt;b&gt;/);
   assert.match(html, /id="logout-btn"/);
   assert.match(html, /登出/);
+  assert.match(html, /id="delete-account"/);
+  assert.match(html, /刪除帳號/);
   // 沒有頭像時用名稱首字母
   const noPic = renderLogin({ enabled: true, loggedIn: true, name: 'Amy' }, null, 'en');
   assert.match(noPic, /avatar-fallback[^>]*>A</);
@@ -47,4 +49,35 @@ test('登出按鈕以表單 POST /logout 送出，不用 fetch＋reload', () => 
   assert.equal(btn.disabled, true);
   assert.deepEqual(submitted, ['/logout:POST']);
   assert.equal(appended.length, 1);
+});
+
+test('刪除帳號按鈕點擊呼叫 onDelete', () => {
+  const delBtn = { listeners: new Map(), addEventListener(t, l) { this.listeners.set(t, l); } };
+  const fakeRoot = { querySelector: (sel) => (sel === '#delete-account' ? delBtn : null) };
+  let called = 0;
+  bindLogin(fakeRoot, { onDelete: () => { called += 1; } });
+  delBtn.listeners.get('click')();
+  assert.equal(called, 1);
+});
+
+// 用途：首次登入個資告知卡——只在已登入且 firstLogin 為真時出現；ack 後由呼叫端負責移除（本函式只負責渲染）。
+test('首次登入才顯示個資告知卡；未登入或已告知過則不顯示', () => {
+  assert.equal(renderPrivacyNotice(null, 'zh-TW'), '');
+  assert.equal(renderPrivacyNotice({ loggedIn: false, firstLogin: true }, 'zh-TW'), '');
+  assert.equal(renderPrivacyNotice({ loggedIn: true, firstLogin: false }, 'zh-TW'), '');
+  const html = renderPrivacyNotice({ loggedIn: true, firstLogin: true }, 'zh-TW');
+  assert.match(html, /class="privacy-notice"/);
+  assert.match(html, /role="note"/);
+  assert.match(html, /id="privacy-ack"/);
+  assert.match(html, /個資告知/);
+  assert.match(renderPrivacyNotice({ loggedIn: true, firstLogin: true }, 'en'), /Personal data notice/);
+});
+
+test('bindPrivacy 綁定 #privacy-ack 按鈕觸發 onAck', () => {
+  const btn = { listeners: new Map(), addEventListener(t, l) { this.listeners.set(t, l); } };
+  const root = { querySelector: () => btn };
+  let called = 0;
+  bindPrivacy(root, { onAck: () => { called += 1; } });
+  btn.listeners.get('click')();
+  assert.equal(called, 1);
 });

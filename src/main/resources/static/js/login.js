@@ -23,6 +23,7 @@ export function renderLogin(me, quota, locale) {
     return `<div class="auth-user" title="${esc(me.email || '')}">
       ${avatar}<span class="auth-name">${esc(name)}</span>
       <button type="button" id="logout-btn" class="auth-logout">${esc(t('nav.logout', locale))}</button>
+      <button type="button" id="delete-account" class="auth-logout auth-delete">${esc(t('nav.deleteAccount', locale))}</button>
     </div>`;
   }
   const benefit = t('nav.loginBenefit', locale).replace('{limit}', memberLimit);
@@ -35,17 +36,46 @@ export function renderLogin(me, quota, locale) {
 /**
  * 綁定登出：以表單 POST /logout，讓瀏覽器自己跟隨 302 回首頁。
  * 不用 fetch(redirect:'manual')＋reload：實測（e2e/diagnose-logout.mjs）那種做法會讓重載後的頁面腳本不執行、停在空白首頁。
+ * 另綁「刪除帳號」按鈕（onDelete 由呼叫端處理 confirm／API／reload）。
  */
-export function bindLogin(root, { logout } = {}) {
+export function bindLogin(root, { logout, onDelete } = {}) {
   const btn = root.querySelector('#logout-btn');
-  if (!btn) return;
-  btn.addEventListener('click', () => {
-    btn.disabled = true;
-    if (typeof logout === 'function') { logout(); return; }
-    const doc = globalThis.document;
-    if (!doc?.createElement) return;
-    const form = doc.createElement('form');
-    form.method = 'POST'; form.action = '/logout'; form.hidden = true;
-    doc.body.appendChild(form); form.submit();
-  });
+  if (btn) {
+    btn.addEventListener('click', () => {
+      btn.disabled = true;
+      if (typeof logout === 'function') { logout(); return; }
+      const doc = globalThis.document;
+      if (!doc?.createElement) return;
+      const form = doc.createElement('form');
+      form.method = 'POST'; form.action = '/logout'; form.hidden = true;
+      doc.body.appendChild(form); form.submit();
+    });
+  }
+  const delBtn = root.querySelector('#delete-account');
+  if (delBtn && typeof onDelete === 'function') {
+    delBtn.addEventListener('click', () => onDelete());
+  }
+}
+
+/**
+ * 首次登入個資告知卡：僅在已登入且 me.firstLogin 為真時顯示（PDPA 第 8 條告知義務，僅顯示一次）。
+ * 內含「我知道了」按鈕 #privacy-ack，由 bindPrivacy 綁定 onAck。
+ */
+export function renderPrivacyNotice(me, locale) {
+  if (!me?.loggedIn || !me.firstLogin) return '';
+  return `<div class="privacy-notice" role="note" aria-live="polite">
+    <strong>${esc(t('privacy.notice.title', locale))}</strong>
+    <p>${esc(t('privacy.notice.purpose', locale))}</p>
+    <p>${esc(t('privacy.notice.fields', locale))}</p>
+    <p>${esc(t('privacy.notice.retention', locale))}</p>
+    <p>${esc(t('privacy.notice.delete', locale))}</p>
+    <button type="button" id="privacy-ack" class="primary">${esc(t('privacy.notice.ack', locale))}</button>
+  </div>`;
+}
+
+/** 綁定個資告知卡的「我知道了」按鈕。 */
+export function bindPrivacy(root, { onAck } = {}) {
+  const btn = root.querySelector('#privacy-ack');
+  if (!btn || typeof onAck !== 'function') return;
+  btn.addEventListener('click', () => onAck());
 }

@@ -107,6 +107,20 @@ test('poll 連續失敗達上限才回 FAILED／NETWORK 並停止', async () => 
   assert.match(seen[0].error.message, /502/);
   assert.equal(fetch.calls.length, 3);
 });
+test('ackNotice 送 POST /api/me/notice-ack', async () => {
+  const fetch = fakeFetch([{ status: 204, body: {} }]);
+  const c = createCaseClient(fetch);
+  await c.ackNotice();
+  assert.equal(fetch.calls[0].url, '/api/me/notice-ack');
+  assert.equal(fetch.calls[0].method, 'POST');
+});
+test('deleteMe 送 DELETE /api/me', async () => {
+  const fetch = fakeFetch([{ status: 204, body: {} }]);
+  const c = createCaseClient(fetch);
+  await c.deleteMe();
+  assert.equal(fetch.calls[0].url, '/api/me');
+  assert.equal(fetch.calls[0].method, 'DELETE');
+});
 test('poll 遇到 404 CASE_NOT_FOUND 立即失敗，不重試', async () => {
   const fetch = fakeFetch([{ ok: false, status: 404, body: { error: 'CASE_NOT_FOUND', message: 'gone' } }, { body: { status: 'RUNNING' } }]);
   const c = createCaseClient(fetch); const seen = [];

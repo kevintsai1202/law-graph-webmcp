@@ -4,7 +4,7 @@ import { t } from './i18n.js';
 import * as graphView from './graphView.js';
 import { createWebMcpBoot } from './webmcpBoot.js';
 import { mountInspector } from './inspector.js';
-import { renderLogin, bindLogin } from './login.js';
+import { renderLogin, bindLogin, renderPrivacyNotice, bindPrivacy } from './login.js';
 import { createGraphAssetLoader } from './graphAssets.js';
 
 /** 只有顯示結果圖時才下載 3D 套件。 */
@@ -54,6 +54,7 @@ const webmcp = boot.bind(app, graphView);
 window.__webmcp = webmcp;
 const badge = document.getElementById('agent-badge');
 const authSlot = document.getElementById('auth-slot');
+const privacySlot = document.getElementById('privacy-slot');
 /** 最近一次 /api/me 結果；null 代表尚未取得或失敗（視為未啟用）。 */
 let me = null;
 
@@ -62,7 +63,31 @@ const updateLoginSlot = () => {
   if (!authSlot) return;
   authSlot.replaceChildren();
   authSlot.insertAdjacentHTML('afterbegin', renderLogin(me, app.getQuota?.(), app.getLocale()));
-  bindLogin(authSlot); // 登出走表單 POST（見 login.js），不傳 fetch 版 logout
+  bindLogin(authSlot, {
+    // 刪除帳號：先確認，再呼叫 API，失敗提示訊息、成功則整頁重載回到未登入狀態
+    onDelete: async () => {
+      if (!globalThis.confirm?.(t('privacy.deleteConfirm', app.getLocale()))) return;
+      try {
+        await app.client.deleteMe();
+      } catch (e) {
+        globalThis.alert?.(e.message);
+        return;
+      }
+      location.reload();
+    }
+  });
+  if (privacySlot) {
+    privacySlot.replaceChildren();
+    privacySlot.insertAdjacentHTML('afterbegin', renderPrivacyNotice(me, app.getLocale()));
+    bindPrivacy(privacySlot, {
+      // 我知道了：呼叫後端記下已告知（失敗也不擋 UI），本地立即隱藏告知卡
+      onAck: async () => {
+        try { await app.client.ackNotice(); } catch { /* 後端失敗不擋前端已知悉狀態 */ }
+        me = { ...me, firstLogin: false };
+        updateLoginSlot();
+      }
+    });
+  }
 };
 
 /** 讀取登入身分後重繪登入區；失敗不影響其他功能。 */

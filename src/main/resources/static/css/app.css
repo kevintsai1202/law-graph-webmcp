@@ -205,6 +205,9 @@ label { display: block; }
 .auth-logout:hover { color: var(--color-text); text-decoration: underline; }
 @media (max-width: 640px) { .login-link small, .auth-name { display: none; } }
 .auth-blocked { background: var(--color-bad-soft, #fee2e2); }
+.privacy-notice { margin: var(--space-3) auto; max-width: 960px; padding: var(--space-3); border: 1px solid var(--color-border-strong); border-radius: 12px; background: var(--color-warn-soft); }
+.privacy-notice p { margin: .25rem 0; }
+.auth-delete { margin-left: .25rem; }
 .auth-blocked .auth-name { max-width: 24em; color: var(--color-bad, #b91c1c); }
 /* 頁面最上方的使用授權橫幅：沿用 law-powers 技能頁的漸層綠帶與白字 */
 .license-banner { background: linear-gradient(90deg, var(--color-primary) 0%, #0f9d6e 100%); color: #fff; text-align: center; padding: 10px 16px; font-size: 14px; line-height: 1.6; letter-spacing: 0.02em; }

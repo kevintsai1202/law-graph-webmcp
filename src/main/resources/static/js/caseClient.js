@@ -60,6 +60,10 @@ export function createCaseClient(fetchImpl = globalThis.fetch, base = '', { entr
     stats: (days = 30) => entry('/api/stats?days=' + encodeURIComponent(days)),
     /** 目前登入者（Google）；未登入 loggedIn=false。 */
     me: () => entry('/api/me'),
+    /** 首次登入個資告知已閱讀確認：之後 /api/me 的 firstLogin 改為 false。 */
+    ackNotice: () => call('/api/me/notice-ack', { method: 'POST' }),
+    /** 刪除本人帳號：登入紀錄移除、使用紀錄匿名化。 */
+    deleteMe: () => call('/api/me', { method: 'DELETE' }),
     /** 登出：Spring Security 的 POST /logout 會 302 回首頁，這裡只需送出請求。 */
     logout: () => fetchImpl(base + '/logout', { method: 'POST', redirect: 'manual' }),
     /**
