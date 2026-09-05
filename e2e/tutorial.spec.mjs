@@ -25,7 +25,7 @@ for (const locale of ['en', 'zh-TW']) {
     // 1. 輸入頁與語系
     await page.goto('/');
     await page.evaluate((l) => window.__lawGraphApp.setLocale(l), locale); // 頁首已無語系選單，改由 app API 切換
-    await expect(page.locator('.sample')).toHaveCount(4);
+    await expect(page.locator('.sample')).toHaveCount(6);
     await shot('input-view');
 
     // 2–3. 點示範案例 → 提問 → 填答 → 完成。模型偶爾不提問、或圖過小（法條被硬規則剔除），

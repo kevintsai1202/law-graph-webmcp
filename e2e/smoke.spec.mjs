@@ -48,7 +48,7 @@ test('選單上有 Law Powers 技能常駐連結，切換語系後文字跟著�
   await expect(link).toHaveText(/Law Powers skills/);
 });
 test('input view lists six sample cards and switches locale', async ({ page }) => {
-  await expect(page.locator('.sample')).toHaveCount(4);
+  await expect(page.locator('.sample')).toHaveCount(6);
   await expect(page.locator('#case-submit')).toHaveText('Analyse');
   await page.evaluate((l) => window.__lawGraphApp.setLocale(l), 'zh-TW'); // 頁首已無語系選單，改由 app API 切換
   await expect(page.locator('#case-submit')).toHaveText('開始分析');
@@ -182,7 +182,7 @@ test('WebMCP 工具在 <head> 的 webmcp-bundle.js 載入時即註冊，早於�
     const tool = (await document.modelContext.getTools()).find((candidate) => candidate.name === 'listSampleCases');
     return tool.execute({});
   });
-  expect(samples.length).toBe(4);
+  expect(samples.length).toBe(6);
 });
 
 test('WebMCP getOutputOptions／getInputForm 回報輸入頁可見內容：9 個可勾輸出、字數與送出狀態', async ({ page }) => {
