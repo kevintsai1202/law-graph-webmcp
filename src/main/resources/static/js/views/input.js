@@ -37,7 +37,7 @@ function renderContractFields(locale) {
 }
 
 /** 語意檢索授權提示：當語意功能開啟但尚未授權時，在表單頂部顯示授權提醒與一鍵授權按鈕。 */
-function renderSemanticAuthNotice(auth, locale) {
+export function renderSemanticAuthNotice(auth, locale) {
   if (!auth || !auth.enabled || auth.authorized) return '';
   return `<div class="semantic-auth-banner" role="alert">
     <span class="auth-icon" aria-hidden="true">${ICONS.alert}</span>

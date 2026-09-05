@@ -2,7 +2,7 @@ import { t, detectLocale, DICT } from './i18n.js';
 import { States, reduce, initialState } from './state.js';
 import { esc, mount as mountHtml } from './views/util.js';
 import { ICONS } from './views/icons.js';
-import { renderInput, bindInput, MIN_CHARS, LAW_POWERS_URL } from './views/input.js';
+import { renderInput, bindInput, renderSemanticAuthNotice, MIN_CHARS, LAW_POWERS_URL } from './views/input.js';
 import { renderProgress, renderCancel } from './views/progress.js';
 import { renderQuestions, bindQuestions } from './views/questions.js';
 import { renderResult, bindResult, renderSections, tabsFor, tabLabel, checklistCsv, findingsCsv } from './views/result.js';
@@ -18,6 +18,17 @@ export function semanticAuthPath(status, locationLike = globalThis.location) {
   if (new URLSearchParams(search).has('mcpAuth')) return null;
   const returnTo = `${locationLike?.pathname || '/'}${search}`;
   return `/api/auth/tw-legal-rag/start?returnTo=${encodeURIComponent(returnTo)}`;
+}
+
+/**
+ * 分析進行中或完成時，若這件案子的研究結果回報語意檢索授權失效，回傳提示橫幅（含授權連結）；
+ * 不再自動整頁導向第三方授權站——導向會把使用者從分析中途丟到別的網站，且伺服器本身多半已自動重新授權。
+ * 已回到授權 callback（網址帶 mcpAuth）或後端目前已授權（authStatus.authorized）時不提示。
+ */
+export function semanticAuthBanner(status, locale, locationLike = globalThis.location, authStatus = null) {
+  if (authStatus?.authorized) return '';
+  const path = semanticAuthPath(status, locationLike);
+  return path ? renderSemanticAuthNotice({ enabled: true, authorized: false, startPath: path }, locale) : '';
 }
 
 /** 以 Blob 觸發瀏覽器下載；測試環境無 document 或 createObjectURL 時安全略過。 */
@@ -67,10 +78,8 @@ export function createApp({ root, client, storage, navigatorLanguage, partialCol
   let stats = null;
   /** showStats() 重入旗標：dispatch 同步 hash 觸發的 hashchange 重呼叫要被擋下。 */
   let statsInFlight = false;
-  /** OAuth callback query 已被消耗時，不再自動導向，避免授權失敗造成重導迴圈。 */
+  /** 剛從 OAuth callback 回來（網址帶 mcpAuth）：清掉查詢字串；此頁不再顯示授權橫幅。 */
   const hadAuthCallback = consumeAuthCallbackQuery();
-  /** 同一頁面生命週期只允許自動導向授權一次。 */
-  let authRedirected = hadAuthCallback;
 
   /** 向後端查詢語意 MCP 的授權狀態，並一併更新今日 token 用量。 */
   async function refreshAuthStatus() {
@@ -109,17 +118,15 @@ export function createApp({ root, client, storage, navigatorLanguage, partialCol
       questionDraft = Object.fromEntries(Object.entries(questionDraft).filter(([id]) => ids.has(id)));
     }
     state = nextState;
-    const authPath = semanticAuthPath(nextState.last);
-    if (!authRedirected && authPath && typeof globalThis.location?.assign === 'function') {
-      authRedirected = true;
-      globalThis.location.assign(authPath);
-    }
     // 同步網址 hash：讓上一頁／分享網址能回到同一條流程（首頁為 #/）
     const nextHash = hashFor(state);
     if (locationLike && (locationLike.hash || '#/') !== nextHash) locationLike.hash = nextHash;
     render();
     listeners.forEach((l) => l(state, 'STATE'));
   }
+
+  /** 本案研究結果顯示語意檢索需授權時的提示橫幅；剛從授權 callback 回來或後端已授權則為空。 */
+  const authBanner = () => (hadAuthCallback ? '' : semanticAuthBanner(state.last, locale, locationLike, semanticAuth));
 
   /** 依 view 渲染並綁事件；[data-i18n] 節點同步換字。 */
   function render() {
@@ -149,12 +156,12 @@ export function createApp({ root, client, storage, navigatorLanguage, partialCol
       case States.RUNNING:
         // 放棄按鈕緊接進度列，捲動前就看得到
         mountHtml(el, renderProgress({ step: state.last?.step || firstStep(), mode: mode() }, locale) + renderCancel(locale)
-          + renderSections(state.last?.result, locale, mode()));
+          + authBanner() + renderSections(state.last?.result, locale, mode()));
         bindCancel(el);
         break;
       case States.QUESTIONS:
         // 頭腦風暴成果放在提問之前（先看脈絡再回答），數秒後自動收折讓問題浮上來
-        mountHtml(el, renderProgress({ step: 'QUESTIONS', busy: false, mode: mode() }, locale) + renderCancel(locale) + renderSections(state.last.result, locale, mode())
+        mountHtml(el, renderProgress({ step: 'QUESTIONS', busy: false, mode: mode() }, locale) + renderCancel(locale) + authBanner() + renderSections(state.last.result, locale, mode())
           + renderQuestions({ questions: state.last.questions, answers: questionDraft, notice: questionFillNotice }, locale));
         bindQuestions(el, { onSubmit: answer });
         bindCancel(el);
@@ -164,7 +171,7 @@ export function createApp({ root, client, storage, navigatorLanguage, partialCol
         // 合約模式預設分頁為 findings：不論 RESULT 由何種路徑進入（含直接派送 STATUS COMPLETED），
         // 只要使用者本案件尚未主動點過分頁，就把模組預設的 graph 改回 findings。
         if (mode() === 'contract' && !tabChosenByUser && activeTab === 'graph') activeTab = 'findings';
-        mountHtml(el, renderResult({ status: state.last, activeTab, outputs: selectedOutputs, mode: mode(), riskFilter }, locale));
+        mountHtml(el, authBanner() + renderResult({ status: state.last, activeTab, outputs: selectedOutputs, mode: mode(), riskFilter }, locale));
         bindResult(el, { onTab: (k) => { tabChosenByUser = true; activeTab = k; render(); }, onNewCase: reset });
         // 合約模式風險清單：風險等級篩選與 CSV 匯出
         el.querySelector('#findings-filter')?.querySelectorAll?.('button[data-risk]')?.forEach?.((b) => {
@@ -624,7 +631,6 @@ export function createApp({ root, client, storage, navigatorLanguage, partialCol
     tabChosenByUser = false;
     selectedOutputs = ['graph'];
     riskFilter = 'all';
-    authRedirected = false;
     await refreshAuthStatus();
     dispatch({ type: 'RESET' });
   }

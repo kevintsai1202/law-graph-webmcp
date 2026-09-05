@@ -1391,6 +1391,11 @@
     const returnTo = `${locationLike?.pathname || "/"}${search}`;
     return `/api/auth/tw-legal-rag/start?returnTo=${encodeURIComponent(returnTo)}`;
   }
+  function semanticAuthBanner(status, locale2, locationLike = globalThis.location, authStatus = null) {
+    if (authStatus?.authorized) return "";
+    const path = semanticAuthPath(status, locationLike);
+    return path ? renderSemanticAuthNotice({ enabled: true, authorized: false, startPath: path }, locale2) : "";
+  }
   function downloadText(text, filename, mime) {
     if (typeof document === "undefined" || typeof URL?.createObjectURL !== "function") return;
     const a = document.createElement("a");
@@ -1419,7 +1424,6 @@
     let stats = null;
     let statsInFlight = false;
     const hadAuthCallback = consumeAuthCallbackQuery();
-    let authRedirected = hadAuthCallback;
     async function refreshAuthStatus() {
       const usageReady = refreshUsage();
       if (typeof client?.authStatus === "function") {
@@ -1451,16 +1455,12 @@
         questionDraft = Object.fromEntries(Object.entries(questionDraft).filter(([id]) => ids.has(id)));
       }
       state = nextState;
-      const authPath = semanticAuthPath(nextState.last);
-      if (!authRedirected && authPath && typeof globalThis.location?.assign === "function") {
-        authRedirected = true;
-        globalThis.location.assign(authPath);
-      }
       const nextHash = hashFor(state);
       if (locationLike && (locationLike.hash || "#/") !== nextHash) locationLike.hash = nextHash;
       render2();
       listeners.forEach((l) => l(state, "STATE"));
     }
+    const authBanner = () => hadAuthCallback ? "" : semanticAuthBanner(state.last, locale2, locationLike, semanticAuth);
     function render2() {
       const el = stage();
       if (!el) return;
@@ -1490,18 +1490,18 @@
           break;
         }
         case States.RUNNING:
-          mount(el, renderProgress({ step: state.last?.step || firstStep(), mode: mode() }, locale2) + renderCancel(locale2) + renderSections(state.last?.result, locale2, mode()));
+          mount(el, renderProgress({ step: state.last?.step || firstStep(), mode: mode() }, locale2) + renderCancel(locale2) + authBanner() + renderSections(state.last?.result, locale2, mode()));
           bindCancel(el);
           break;
         case States.QUESTIONS:
-          mount(el, renderProgress({ step: "QUESTIONS", busy: false, mode: mode() }, locale2) + renderCancel(locale2) + renderSections(state.last.result, locale2, mode()) + renderQuestions({ questions: state.last.questions, answers: questionDraft, notice: questionFillNotice }, locale2));
+          mount(el, renderProgress({ step: "QUESTIONS", busy: false, mode: mode() }, locale2) + renderCancel(locale2) + authBanner() + renderSections(state.last.result, locale2, mode()) + renderQuestions({ questions: state.last.questions, answers: questionDraft, notice: questionFillNotice }, locale2));
           bindQuestions(el, { onSubmit: answer });
           bindCancel(el);
           scheduleCollapse(el);
           break;
         case States.RESULT:
           if (mode() === "contract" && !tabChosenByUser && activeTab === "graph") activeTab = "findings";
-          mount(el, renderResult({ status: state.last, activeTab, outputs: selectedOutputs, mode: mode(), riskFilter }, locale2));
+          mount(el, authBanner() + renderResult({ status: state.last, activeTab, outputs: selectedOutputs, mode: mode(), riskFilter }, locale2));
           bindResult(el, { onTab: (k) => {
             tabChosenByUser = true;
             activeTab = k;
@@ -1883,7 +1883,6 @@
       tabChosenByUser = false;
       selectedOutputs = ["graph"];
       riskFilter = "all";
-      authRedirected = false;
       await refreshAuthStatus();
       dispatch({ type: "RESET" });
     }
