@@ -40,5 +40,15 @@ const info = await page.evaluate(() => ({
   hasApp: typeof window.__lawGraphApp,
   view: window.__lawGraphApp?.getState?.()?.view
 }));
+// --textarea-probe：量測案情輸入框在初始、focus、輸入、blur 各階段的高度，追查「失焦時縮小」問題
+if (process.argv.includes('--textarea-probe')) {
+  const h = () => page.evaluate(() => { const t = document.getElementById('case-text'); const cs = getComputedStyle(t); return { offset: t.offsetHeight, rows: t.rows, cssHeight: cs.height, minH: cs.minHeight, flexShrink: cs.flexShrink, inlineStyle: t.getAttribute('style') }; });
+  const probe = { initial: await h() };
+  await page.click('#case-text'); probe.focused = await h();
+  await page.type('#case-text', '甲於2024年1月駕車撞傷乙，乙住院兩週並支出醫療費十萬元。'); probe.typed = await h();
+  await page.click('h1'); await page.waitForTimeout(300); probe.blurred = await h();
+  await page.click('#case-text'); await page.waitForTimeout(300); probe.refocused = await h();
+  console.log('textarea probe:', JSON.stringify(probe, null, 1));
+}
 console.log(JSON.stringify({ url, info, errors, failed, requests: all.filter((l) => !/\.(png|svg|woff2?)/.test(l)).slice(0, 25) }, null, 2));
 await browser.close();

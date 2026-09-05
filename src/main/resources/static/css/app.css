@@ -158,6 +158,8 @@ select, textarea, input[type=text] {
 }
 select { padding-right: 32px; cursor: pointer; }
 textarea { width: 100%; resize: vertical; line-height: 1.6; }
+/* 案情輸入框：固定最小高度且不參與 flex 收縮，避免部分瀏覽器／擴充套件環境在失焦時把它壓小 */
+#case-text { min-height: 16rem; flex: 0 0 auto; }
 select:hover, textarea:hover, input[type=text]:hover { border-color: var(--color-border-strong); }
 select:focus-visible, textarea:focus-visible, input[type=text]:focus-visible {
   outline: none; border-color: var(--color-primary); box-shadow: 0 0 0 3px rgba(30, 58, 138, 0.18);
