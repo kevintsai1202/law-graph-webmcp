@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import tw.lawgraph.agent.AnswersResponse;
+import tw.lawgraph.agent.ContractReviewAgent;
 import tw.lawgraph.agent.LegalGraphAgent;
 import tw.lawgraph.agent.QuestionsAwaitable;
 import tw.lawgraph.agent.BaseQuestionsAwaitable;
@@ -20,6 +21,10 @@ import tw.lawgraph.domain.Answer;
 import tw.lawgraph.domain.BrainstormResult;
 import tw.lawgraph.domain.CaseAssessment;
 import tw.lawgraph.domain.CaseInput;
+import tw.lawgraph.domain.ClauseFindings;
+import tw.lawgraph.domain.ComplianceReport;
+import tw.lawgraph.domain.ContractBrainstorm;
+import tw.lawgraph.domain.ContractInput;
 import tw.lawgraph.domain.DraftedDocuments;
 import tw.lawgraph.domain.GraphOutcome;
 import tw.lawgraph.domain.Locale;
@@ -45,6 +50,8 @@ public class CaseService {
     private final Map<String, Locale> locales = new ConcurrentHashMap<>();
     /** 已被看門狗中止的案件與其逾時訊息。 */
     private final Map<String, String> timedOut = new ConcurrentHashMap<>();
+    /** caseId → 啟動時的流程模式（case／contract）。 */
+    private final Map<String, String> modes = new ConcurrentHashMap<>();
 
     /** 相容舊呼叫端與單元測試：預設 300 秒看門狗與系統時鐘。 */
     public CaseService(AgentPlatform platform) {
@@ -109,12 +116,21 @@ public class CaseService {
      * model 為 API 層已過濾的測試模型覆寫（空白用預設）。
      */
     public CaseStatus start(String text, Locale locale, List<String> documents, String motionRequest, String model) {
-        Agent agent = platform.agents().stream()
-                .filter(candidate -> LegalGraphAgent.AGENT_NAME.equals(candidate.getName()))
-                .findFirst().orElseThrow(() -> new IllegalStateException("LegalGraphAgent not deployed"));
-        AgentProcess process = platform.createAgentProcessFrom(agent, new ProcessOptions(),
-                new CaseInput(text, locale, documents, motionRequest, model));
+        return launch(LegalGraphAgent.AGENT_NAME, CaseMode.CASE, locale, new CaseInput(text, locale, documents, motionRequest, model));
+    }
+
+    /** 啟動合約審查流程（ContractReviewAgent）。 */
+    public CaseStatus startContract(ContractInput input) {
+        return launch(ContractReviewAgent.AGENT_NAME, CaseMode.CONTRACT, input.locale(), input);
+    }
+
+    /** 依 agent 名稱建立流程並啟動；記住語系與模式。 */
+    private CaseStatus launch(String agentName, String mode, Locale locale, Object input) {
+        Agent agent = platform.agents().stream().filter(c -> agentName.equals(c.getName()))
+                .findFirst().orElseThrow(() -> new IllegalStateException(agentName + " not deployed"));
+        AgentProcess process = platform.createAgentProcessFrom(agent, new ProcessOptions(), input);
         locales.put(process.getId(), locale);
+        modes.put(process.getId(), mode);
         platform.start(process);
         return status(process.getId());
     }
@@ -153,7 +169,11 @@ public class CaseService {
                 blackboard.last(DraftedDocuments.class),
                 blackboard.last(GraphOutcome.class),
                 timeout != null ? timeout : failure == null ? null : failure.toString(),
-                timeout != null ? STEP_TIMEOUT : null);
+                timeout != null ? STEP_TIMEOUT : null,
+                modes.getOrDefault(caseId, CaseMode.CASE),
+                blackboard.last(ContractBrainstorm.class),
+                blackboard.last(ClauseFindings.class),
+                blackboard.last(ComplianceReport.class));
     }
 
     /** 依輪次由後往前取得目前等待物件；不同型別確保每輪答案能驅動下一個 GOAP Action。 */

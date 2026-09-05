@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 import tw.lawgraph.domain.Answer;
+import tw.lawgraph.domain.ContractInput;
 import tw.lawgraph.domain.Locale;
 
 import java.time.Clock;
@@ -25,8 +26,9 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/cases")
 public class CaseController {
-    /** 啟動案件請求；documents 為勾選的書狀代碼（可省略）。 */
-    public record StartRequest(String caseText, String locale, List<String> documents, String motionRequest) {}
+    /** 啟動案件請求；documents 為勾選的書狀代碼（可省略）；mode 為 case／contract（預設 case），party／scopes 僅合約模式使用。 */
+    public record StartRequest(String caseText, String locale, List<String> documents, String motionRequest,
+                               String mode, String party, List<String> scopes) {}
     /** 提交人工答案請求。 */
     public record AnswersRequest(List<Answer> answers) {}
 
@@ -121,10 +123,13 @@ public class CaseController {
         }
         ResponseEntity<?> quotaGate = quotaGate(http, request.locale());
         if (quotaGate != null) return quotaGate;
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(service.start(request.caseText().trim(), Locale.fromCode(request.locale()),
-                        request.documents() == null ? List.of() : request.documents(),
-                        request.motionRequest() == null ? "" : request.motionRequest(), modelOverride(http)));
+        Locale loc = Locale.fromCode(request.locale());
+        List<String> documents = request.documents() == null ? List.of() : request.documents();
+        String model = modelOverride(http);
+        CaseStatus created = CaseMode.CONTRACT.equals(CaseMode.normalize(request.mode()))
+                ? service.startContract(new ContractInput(request.caseText().trim(), loc, request.party(), request.scopes(), documents, model))
+                : service.start(request.caseText().trim(), loc, documents, request.motionRequest() == null ? "" : request.motionRequest(), model);
+        return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
     /** 由文字與 PDF、MD、DOCX 附件啟動案件；附件只在記憶體解析，不保存原檔。 */
@@ -133,6 +138,9 @@ public class CaseController {
                                             @RequestParam(defaultValue = "en") String locale,
                                             @RequestParam(required = false) List<String> documents,
                                             @RequestParam(defaultValue = "") String motionRequest,
+                                            @RequestParam(defaultValue = "case") String mode,
+                                            @RequestParam(defaultValue = "unknown") String party,
+                                            @RequestParam(required = false) List<String> scopes,
                                             @RequestParam List<MultipartFile> files,
                                             HttpServletRequest http) {
         if ((caseText == null || caseText.isBlank()) && (files == null || files.stream().allMatch(MultipartFile::isEmpty))) {
@@ -147,9 +155,13 @@ public class CaseController {
         ResponseEntity<?> quotaGate = quotaGate(http, locale);
         if (quotaGate != null) return quotaGate;
         String composed = fileExtractor.composeCaseText(caseText, fileExtractor.extract(files));
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(service.start(composed, Locale.fromCode(locale), documents == null ? List.of() : documents, motionRequest,
-                        modelOverride(http)));
+        Locale loc = Locale.fromCode(locale);
+        List<String> docs = documents == null ? List.of() : documents;
+        String model = modelOverride(http);
+        CaseStatus created = CaseMode.CONTRACT.equals(CaseMode.normalize(mode))
+                ? service.startContract(new ContractInput(composed, loc, party, scopes, docs, model))
+                : service.start(composed, loc, docs, motionRequest, model);
+        return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
     /** 取得指定案件狀態。 */
