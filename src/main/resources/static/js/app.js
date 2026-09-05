@@ -118,10 +118,18 @@ export function createApp({ root, client, storage, navigatorLanguage, partialCol
     clearTimeout(collapseTimer);
     root.querySelectorAll('[data-i18n]').forEach((n) => { n.textContent = t(n.dataset.i18n, locale); });
     switch (state.view) {
-      case States.INPUT:
+      case States.INPUT: {
+        // 重繪輸入頁前先保住使用者已輸入的案情：mount 載完示範案例／配額後會再 render 一次，
+        // 若使用者已開始打字，不能把文字洗掉（2026-09-05 e2e 實測會清空）。
+        const typed = el.querySelector?.('#case-text')?.value ?? '';
         mountHtml(el, renderInput({ samples, semanticAuth, usage, quota }, locale));
         bindInput(el, { onSubmit: start, onSample: startSample }, locale);
+        if (typed) {
+          const ta = el.querySelector('#case-text');
+          if (ta) { ta.value = typed; ta.dispatchEvent?.(new globalThis.Event('input', { bubbles: true })); }
+        }
         break;
+      }
       case States.RUNNING:
         // 放棄按鈕緊接進度列，捲動前就看得到
         mountHtml(el, renderProgress({ step: state.last?.step || 'BRAINSTORM' }, locale) + renderCancel(locale)

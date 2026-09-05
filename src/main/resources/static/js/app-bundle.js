@@ -1017,10 +1017,19 @@
         n.textContent = t(n.dataset.i18n, locale2);
       });
       switch (state.view) {
-        case States.INPUT:
+        case States.INPUT: {
+          const typed = el.querySelector?.("#case-text")?.value ?? "";
           mount(el, renderInput({ samples, semanticAuth, usage, quota }, locale2));
           bindInput(el, { onSubmit: start, onSample: startSample }, locale2);
+          if (typed) {
+            const ta = el.querySelector("#case-text");
+            if (ta) {
+              ta.value = typed;
+              ta.dispatchEvent?.(new globalThis.Event("input", { bubbles: true }));
+            }
+          }
           break;
+        }
         case States.RUNNING:
           mount(el, renderProgress({ step: state.last?.step || "BRAINSTORM" }, locale2) + renderCancel(locale2) + renderSections(state.last?.result, locale2));
           bindCancel(el);

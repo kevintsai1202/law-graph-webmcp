@@ -79,7 +79,7 @@ for (const w of WIDTHS) {
       await page.fill('#case-text', '甲駕車進入市區十字路口後，與乙車發生碰撞，乙主張甲闖紅燈並請求醫療費與薪資損失。');
       await expect(page.locator('#case-submit')).toBeEnabled();
       await expect(page.locator('#case-count')).toHaveClass(/ok/);
-      for (const sel of ['#case-submit', '.sample', '#auth-slot']) {
+      for (const sel of ['#case-submit', '.sample', '#file-dropzone']) {
         const box = await page.locator(sel).first().boundingBox();
         expect(box.height, `${sel} 高度`).toBeGreaterThanOrEqual(44);
       }
