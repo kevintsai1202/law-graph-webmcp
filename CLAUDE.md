@@ -5,6 +5,8 @@
 - Service ID（app，Spring Boot 主站）: 6a94e90bb869c167a93d3b2e
 - Service ID（legal-mcp，台灣法規判例 MCP sidecar）: 6a94e8c3b869c167a93d3b08
 - Zeabur 部署卡住（2026-09-05 經驗）：build 完成後 pod 停在 Pulling image、服務 STARTING 超過 30 分鐘、runtime log 空白，兩次重新 deploy 都一樣；`npx zeabur@latest service restart --id <svc> --env-id <env> -y -i=false` 後 20 秒內拉取成功並上線。舊容器在卡住期間仍正常服務，重啟才會有約一分鐘 502。
+- Zeabur 建置失敗「429 Too Many Requests」拉 maven／eclipse-temurin 基底映像（2026-09-05 連三次，且鏡像站 dockerhub.zeabur.cloud DNS 解析失敗、BUILDING 空轉無 log 後被 CANCELED）：docker/app/Dockerfile 基底映像已改 `public.ecr.aws/docker/library/...`（與 Docker Hub 同名官方映像相同），改後一次成功。新增基底映像請沿用 ECR Public。
+- /vendor/** 靜態檔回 `max-age=31536000, public, immutable`（StaticCacheConfig），其餘靜態檔維持 no-cache；升級 three／3d-force-graph 要改檔名。
 - 重佈指令（只重佈 app）：`npx zeabur@latest deploy --project-id 6a94e7dc2ed2e7dbfbd22854 --service-id 6a94e90bb869c167a93d3b2e --json`
 - app 環境變數：OPENAI_API_KEY／OPENAI_BASE_URL／MODEL／LEGAL_MCP_URL=http://legal-mcp.zeabur.internal:8000
 - LLM 供應商（2026-09-04 起暫用 Meta Muse，OpenAI 相容）：OPENAI_BASE_URL=https://api.meta.ai/v1（含 /v1，Spring AI 2.0 會自行接 /chat/completions）、MODEL=muse-spark-1.3-contributor、OPENAI_API_KEY=LLM_… 金鑰。模型目錄由專案自帶的 `src/main/resources/models/openai-models.yml` 遮蔽 Embabel 內建檔（只含 muse-spark-1.3(-contributor) 與 gpt-5.4-mini/nano，無 embedding）；新模型要先加進這份 yml 才能被 MODEL 選到。Muse 是 reasoning 模型，reasoning_tokens 會吃 completion 額度，yml 內 max_tokens 設 16384；結構化輸出偶爾吐出畸形 JSON，靠 Embabel 重試（10 次）補救。切回 OpenAI：刪 OPENAI_BASE_URL、換金鑰、MODEL=gpt-5.4-mini 即可。

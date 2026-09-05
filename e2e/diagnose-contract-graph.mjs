@@ -44,8 +44,10 @@ const state = async (label) => console.log(label, JSON.stringify(await page.eval
 await state('載入後');
 const graphTab = page.getByRole('tab', { name: /關係圖|Graph/ });
 await graphTab.click();
-await page.waitForTimeout(6000);
-await state('切到關係圖 6s 後');
+// 等到畫布出現或載入失敗文字，最多 40 秒（首次逾時 15 秒＋重試）；記錄實際等了多久
+const tStart = Date.now();
+await page.waitForFunction(() => { const c = document.getElementById('network-canvas'); return c && (c.querySelector('canvas') || /失敗|could not/.test(c.textContent)); }, null, { timeout: 40000 }).catch(() => {});
+await state(`切到關係圖 ${Math.round((Date.now() - tStart) / 1000)}s 後`);
 // 直接在頁面內重跑 render，把同步例外原文抓出來（renderGraph 只 console.error）
 const direct = await page.evaluate(async (graph) => {
   try { window.__graphView.render(graph); return { ok: true }; } catch (e) { return { ok: false, message: e.message, stack: e.stack }; }
