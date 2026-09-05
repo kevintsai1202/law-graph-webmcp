@@ -6,4 +6,9 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record GraphNode(String id, String group, String label, String description, String ref, String jid,
                         String met, String status, String url, String family, String favorable, String risk,
-                        String duty, String role) {}
+                        String duty, String role) {
+    /** 以新 ref 複製（測試與規則覆寫用）。 */
+    public GraphNode withRef(String ref) {
+        return new GraphNode(id, group, label, description, ref, jid, met, status, url, family, favorable, risk, duty, role);
+    }
+}
