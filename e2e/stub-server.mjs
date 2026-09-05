@@ -47,10 +47,24 @@ const server = createServer(async (req, res) => {
     }
     if (url.pathname === '/api/samples') {
       const locale = url.searchParams.get('locale') === 'zh-TW' ? 'zh-TW' : 'en';
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      return res.end(await readFile(join(ROOT, 'samples', `${locale}.json`)));
+      // 依 mode 過濾示範案例：無 mode 欄位視為 'case'，合約示範帶 "mode":"contract"
+      const mode = url.searchParams.get('mode') || 'case';
+      const all = JSON.parse(await readFile(join(ROOT, 'samples', `${locale}.json`), 'utf8'));
+      const filtered = all.filter((s) => (s.mode || 'case') === mode);
+      return json(res, 200, filtered);
     }
-    if (url.pathname === '/api/cases' && req.method === 'POST') return json(res, 200, { caseId: 'stub-1', status: 'RUNNING', step: 'BRAINSTORM' });
+    if (url.pathname === '/api/cases' && req.method === 'POST') {
+      // 讀取 request body，若為合約模式回傳帶 mode:'contract' 的假回應
+      const chunks = [];
+      for await (const chunk of req) chunks.push(chunk);
+      const bodyText = Buffer.concat(chunks).toString('utf8');
+      if (bodyText.includes('"mode":"contract"')) return json(res, 200, { caseId: 'stub-c1', status: 'RUNNING', step: 'LOAD', mode: 'contract' });
+      return json(res, 200, { caseId: 'stub-1', status: 'RUNNING', step: 'BRAINSTORM' });
+    }
+    if (url.pathname === '/api/cases/stub-c1') return json(res, 200, {
+      caseId: 'stub-c1', status: 'RUNNING', step: 'REVIEW', locale: 'zh-TW', mode: 'contract',
+      result: { contract: { contractType: '勞動契約', clauses: [{ clauseNo: '第二條', text: 'x' }], summary: '摘要' } }
+    });
     if (url.pathname.startsWith('/api/cases/')) return json(res, 200, running);
     if (url.pathname.startsWith('/api/laws/verify')) return json(res, 200, { ref: url.searchParams.get('ref'), exists: true, source: 'stub', text: '' });
     // 靜態檔：防止路徑跳脫

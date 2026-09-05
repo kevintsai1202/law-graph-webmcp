@@ -48,6 +48,7 @@ test('選單上有 Law Powers 技能常駐連結，切換語系後文字跟著�
   await expect(link).toHaveText(/Law Powers skills/);
 });
 test('input view lists six sample cards and switches locale', async ({ page }) => {
+  await page.goto('/#/case'); // 首頁現為能力入口，案件輸入頁改走 hash 路由
   await expect(page.locator('.sample')).toHaveCount(6);
   await expect(page.locator('#case-submit')).toHaveText('Analyse');
   await page.evaluate((l) => window.__lawGraphApp.setLocale(l), 'zh-TW'); // 頁首已無語系選單，改由 app API 切換
@@ -57,6 +58,7 @@ test('input view lists six sample cards and switches locale', async ({ page }) =
 });
 
 test('modern upload component shows file details and supports removal', async ({ page }) => {
+  await page.goto('/#/case'); // 首頁現為能力入口，案件輸入頁改走 hash 路由
   await page.evaluate((l) => window.__lawGraphApp.setLocale(l), 'zh-TW'); // 頁首已無語系選單，改由 app API 切換
   await expect(page.locator('#file-dropzone')).toContainText('將參考文件拖曳到這裡');
 
@@ -88,6 +90,7 @@ test('modern upload component shows file details and supports removal', async ({
 });
 
 test('WebMCP startCase enters the progress view before a slow start response returns', async ({ page }) => {
+  await page.goto('/#/case'); // 首頁現為能力入口，案件輸入頁改走 hash 路由
   // 延遲啟動回應，驗證 WebMCP handler 不會讓畫面停在輸入頁等待後端。
   await page.route('**/api/cases', async (route) => {
     if (route.request().method() !== 'POST') return route.continue();
@@ -117,6 +120,7 @@ test('WebMCP startCase enters the progress view before a slow start response ret
 });
 
 test('WebMCP startCase accepts the visible sample title and stringified arguments', async ({ page }) => {
+  await page.goto('/#/case'); // 首頁現為能力入口，案件輸入頁改走 hash 路由
   // ChatGPT 可能傳入畫面標題，或由 host 將 JSON arguments 序列化成字串；兩者都應啟動同一頁面狀態。
   await page.route('**/api/cases', async (route) => {
     if (route.request().method() !== 'POST') return route.continue();
@@ -148,6 +152,7 @@ test('WebMCP startCase accepts the visible sample title and stringified argument
 });
 
 test('WebMCP setOutputSelection ticks visible output checkboxes without starting the case', async ({ page }) => {
+  await page.goto('/#/case'); // 首頁現為能力入口，案件輸入頁改走 hash 路由
   await waitForTool(page, 'setOutputSelection');
   const outcome = await page.evaluate(async () => {
     const tool = (await document.modelContext.getTools()).find((candidate) => candidate.name === 'setOutputSelection');
@@ -172,7 +177,10 @@ test('WebMCP 工具在 <head> 的 webmcp-bundle.js 載入時即註冊，早於�
       return original(tool, opts);
     };
   });
-  await page.goto('/');
+  // hash-only 導覽不會讓瀏覽器重新載入文件，addInitScript 就不會套用；
+  // 先跳到空白頁再導向 #/case，確保是真正的新導覽（頁面一開始就在案件輸入頁）
+  await page.goto('about:blank');
+  await page.goto('/#/case');
   await waitForTool(page, 'startCase');
   const log = await page.evaluate(() => window.__registrationLog);
   const first = log.find((entry) => entry.name === 'startCase');
@@ -186,6 +194,7 @@ test('WebMCP 工具在 <head> 的 webmcp-bundle.js 載入時即註冊，早於�
 });
 
 test('WebMCP getOutputOptions／getInputForm 回報輸入頁可見內容：9 個可勾輸出、字數與送出狀態', async ({ page }) => {
+  await page.goto('/#/case'); // 首頁現為能力入口，案件輸入頁改走 hash 路由
   await waitForTool(page, 'getOutputOptions');
   const call = (name, input = {}) => page.evaluate(async ([toolName, args]) => {
     const tool = (await document.modelContext.getTools()).find((candidate) => candidate.name === toolName);
@@ -201,7 +210,7 @@ test('WebMCP getOutputOptions／getInputForm 回報輸入頁可見內容：9 個
   expect((await call('getOutputOptions')).checkedCount).toBe(2);
   // 輸入頁全貌：尚未輸入案情，送出鈕停用
   const form = await call('getInputForm');
-  expect(form).toMatchObject({ ok: true, charCount: 0, minChars: 20, canSubmit: false, sampleCount: 4 });
+  expect(form).toMatchObject({ ok: true, charCount: 0, minChars: 20, canSubmit: false, sampleCount: 6 }); // 示範案例已從 4 筆擴充為 6 筆
   await page.fill('#case-text', 'A ran a red light and crashed into B, who now claims damages.');
   const filled = await call('getInputForm');
   expect(filled.canSubmit).toBe(true);
@@ -231,6 +240,7 @@ test('每個頁面狀態的 WebMCP 工具與 Inspector 清單一致', async ({ p
     await expect(page.locator('#insp-state')).toContainText(view);
   };
 
+  await page.goto('/#/case'); // 首頁現為能力入口，案件輸入頁改走 hash 路由
   await expectState('INPUT');
 
   // RUNNING：案件啟動後只能查詢或由人明確放棄，不得再送第二個 sample。
@@ -290,8 +300,10 @@ test('每個頁面狀態的 WebMCP 工具與 Inspector 清單一致', async ({ p
   await page.evaluate(() => window.__lawGraphApp.dispatch({ type: 'STATUS', status: { caseId: 'smoke-failed', status: 'FAILED', step: 'BRAINSTORM', error: 'stub failure' } }));
   await expectState('FAILED');
 
-  // 明確重置後才回到 INPUT，重新取得建立案件工具。
+  // 明確重置後回到首頁（能力入口），需再次選擇案件分析才回到 INPUT、重新取得建立案件工具。
   await page.evaluate(() => window.__lawGraphApp.reset());
+  await expect(page.locator('.capability')).toHaveCount(2);
+  await page.goto('/#/case');
   await expect(page.locator('#case-submit')).toBeVisible();
   await expectState('INPUT');
 });
@@ -322,7 +334,8 @@ test('waiting view offers a cancel button that returns to the input view', async
   expect(pos & 4 /* DOCUMENT_POSITION_FOLLOWING */).toBeTruthy();
   await expect(page.locator('#cancel-case')).toBeInViewport();
   await page.click('#cancel-case');
-  await expect(page.locator('#case-submit')).toBeVisible();
+  // 放棄後回到首頁（能力入口），不再直接停在案件輸入頁
+  await expect(page.locator('.capability')).toHaveCount(2);
   await expect(page.locator('#questions-form')).toHaveCount(0);
 });
 
@@ -347,4 +360,32 @@ test('inspector is read-only: shows state and tool list, no run controls; tools 
   await expect(page.locator('#detail-panel')).toHaveClass(/active/);
   await expect(page.locator('#detail-title')).toContainText('民法第184條');
   await page.screenshot({ path: 'e2e/screenshots/smoke-graph.png', fullPage: true });
+});
+
+// 首頁雙入口：兩張能力卡片，點合約審查可進入合約輸入頁並看到示範合約；切回案件輸入頁仍是 6 筆
+test('首頁顯示兩張能力卡片；點合約審查進入合約輸入頁並可看示範合約', async ({ page }) => {
+  await expect(page.locator('.capability')).toHaveCount(2);
+  await page.locator('.capability[data-mode="contract"] button').click();
+  await expect(page).toHaveURL(/#\/contract$/);
+  await expect(page.locator('input[name="party"]')).toHaveCount(3);
+  await expect(page.locator('.sample')).toHaveCount(2);
+  await page.goto('/#/case');
+  await expect(page.locator('.sample')).toHaveCount(6);
+});
+
+// 合約結果頁：COMPLETED 狀態下顯示風險條款清單，可依風險篩選，摘要分頁顯示優先建議
+test('合約 COMPLETED 狀態顯示風險條款清單與篩選', async ({ page }) => {
+  await page.goto('/#/contract');
+  await page.evaluate((s) => window.__lawGraphApp.dispatch({ type: 'STATUS', status: s }), {
+    caseId: 'c1', status: 'COMPLETED', step: 'SUMMARY', locale: 'zh-TW', mode: 'contract',
+    result: { contract: { contractType: '勞動契約', clauses: [] }, research: { laws: [], judgments: [], notes: [] },
+      compliance: { contractType: '勞動契約', scopes: ['labor'], overallRisk: 'high', priorities: ['先改第二條'], disclaimer: 'x',
+        findings: [{ clauseNo: '第二條', clauseText: '不發加班費', risk: 'high', lawRefs: [], riskPoint: 'r', suggestion: 's', judgmentCitations: [] },
+                   { clauseNo: '第五條', clauseText: '調動', risk: 'low', lawRefs: [], riskPoint: 'r', suggestion: 's', judgmentCitations: [] }] } } });
+  await expect(page.locator('[data-tab="findings"]')).toBeVisible();
+  await expect(page.locator('tr[data-risk]')).toHaveCount(2);
+  await page.locator('#findings-filter [data-risk="high"]').click();
+  await expect(page.locator('tr[data-risk]')).toHaveCount(1);
+  await page.locator('[data-tab="summary"]').click();
+  await expect(page.locator('#panel-summary')).toContainText('先改第二條');
 });

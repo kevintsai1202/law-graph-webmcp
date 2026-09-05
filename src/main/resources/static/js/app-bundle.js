@@ -1683,6 +1683,7 @@
         const parsed = parseHash(locationLike?.hash);
         if (state.view === States.HOME && parsed.view === "INPUT") selectMode(parsed.mode);
         else if (parsed.view === "HOME" && state.view === States.INPUT) goHome();
+        else if (state.view === States.INPUT && parsed.view === "INPUT" && parsed.mode !== mode()) selectMode(parsed.mode);
       });
     }
     return {

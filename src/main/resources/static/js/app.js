@@ -628,6 +628,8 @@ export function createApp({ root, client, storage, navigatorLanguage, partialCol
       const parsed = parseHash(locationLike?.hash);
       if (state.view === States.HOME && parsed.view === 'INPUT') selectMode(parsed.mode);
       else if (parsed.view === 'HOME' && state.view === States.INPUT) goHome();
+      // 直接在兩條輸入頁之間切換 hash（例如 #/contract → #/case），也要重新載入該模式的示範案例
+      else if (state.view === States.INPUT && parsed.view === 'INPUT' && parsed.mode !== mode()) selectMode(parsed.mode);
     });
   }
 
