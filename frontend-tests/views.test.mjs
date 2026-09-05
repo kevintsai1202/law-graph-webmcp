@@ -5,7 +5,7 @@ import { bindInput, renderInput } from '../src/main/resources/static/js/views/in
 import { renderProgress, renderCancel, STEPS, STEPS_BY_MODE } from '../src/main/resources/static/js/views/progress.js';
 import { renderHome, bindHome } from '../src/main/resources/static/js/views/home.js';
 import { renderQuestions } from '../src/main/resources/static/js/views/questions.js';
-import { renderResult, renderSections, claimStatus, checklistCsv } from '../src/main/resources/static/js/views/result.js';
+import { renderResult, renderSections, claimStatus, checklistCsv, findingsCsv, tabsFor } from '../src/main/resources/static/js/views/result.js';
 
 test('renderSections 只列出已有的中間成果段落，且文字經轉義', () => {
   const partial = { brainstorm: { facts: ['<i>hit</i>'], relations: [], issues: ['Negligence'], evidenceNeeds: [] } };
@@ -588,4 +588,41 @@ test('bindHome 按鈕聚焦按 Enter 時 keydown 監聽不重複觸發，只有�
   const eOnCard = { key: 'Enter', target: { closest: () => null } };
   card.listeners.get('keydown')(eOnCard);
   assert.equal(calls, 2);
+});
+
+const contractStatus = { locale: 'zh-TW', mode: 'contract', result: {
+  contract: { contractType: '勞動契約', scopes: ['labor'], parties: [{ name: '○○科技', role: '甲方（雇主）' }], clauses: [{ clauseNo: '第二條', text: 'x' }], summary: '摘要' },
+  research: { laws: [{ ref: '勞動基準法第24條', title: '勞基法 24' }], judgments: [], notes: [] },
+  findings: { findings: [], notes: [] },
+  compliance: { contractType: '勞動契約', scopes: ['labor'], overallRisk: 'high', priorities: ['先改第二條'], disclaimer: '免責',
+    findings: [
+      { clauseNo: '第二條', clauseText: '不發加班費', risk: 'high', lawRefs: ['勞動基準法第24條'], riskPoint: '違反強行規定', suggestion: '依勞基法辦理', judgmentCitations: [] },
+      { clauseNo: '第五條', clauseText: '<b>調動</b>', risk: 'medium', lawRefs: [], riskPoint: '範圍不明', suggestion: '限縮', judgmentCitations: [] }
+    ] } } };
+
+test('合約模式分頁順序與風險清單', () => {
+  assert.deepEqual(tabsFor([], false, 'contract', contractStatus.result), ['findings', 'summary', 'laws']);
+  assert.deepEqual(tabsFor(['revised'], false, 'contract', { graph: {} }), ['findings', 'summary', 'doc-revised', 'graph', 'laws']);
+  const html = renderResult({ status: contractStatus, outputs: [], mode: 'contract' }, 'zh-TW');
+  assert.match(html, /data-tab="findings"[^>]*>風險條款清單/);
+  assert.match(html, /<tr data-risk="high">/); assert.match(html, /<tr data-risk="medium">/);
+  assert.match(html, /&lt;b&gt;調動&lt;\/b&gt;/);
+  assert.match(html, /id="findings-filter"/); assert.match(html, /data-risk="all"/);
+  assert.match(html, /id="findings-export"/);
+  assert.match(html, /整體風險/); assert.match(html, /先改第二條/);
+  assert.match(html, /勞動基準法第24條/);
+});
+test('riskFilter 只顯示該級條款', () => {
+  const html = renderResult({ status: contractStatus, outputs: [], mode: 'contract', riskFilter: 'high' }, 'zh-TW');
+  assert.match(html, /<tr data-risk="high">/); assert.doesNotMatch(html, /<tr data-risk="medium">/);
+});
+test('findingsCsv 含 BOM、表頭與公式注入防護', () => {
+  const csv = findingsCsv([{ clauseNo: '=1+1', clauseText: 'a,b', risk: 'high', lawRefs: ['民法第71條'], riskPoint: '', suggestion: '', judgmentCitations: [] }], 'zh-TW');
+  assert.ok(csv.startsWith('\uFEFF'));
+  assert.match(csv, /條款,條款原文,風險,法規依據,風險點,修改建議,佐證判決/);
+  assert.match(csv, /'=1\+1,"a,b",高,民法第71條/);
+});
+test('renderSections 合約模式列出契約摘要與條款數', () => {
+  const html = renderSections({ contract: contractStatus.result.contract }, 'zh-TW', 'contract');
+  assert.match(html, /data-section="contract"/); assert.match(html, /勞動契約/); assert.match(html, /1/);
 });

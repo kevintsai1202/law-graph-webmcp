@@ -6,8 +6,13 @@ import { DOC_TYPES, normalizeOutputs } from '../documents.js';
 /** 三個固定殿後的輔助分頁。 */
 const AUX_TABS = ['analysis', 'research', 'brainstorm'];
 
-/** 依勾選輸出組出分頁順序：關聯圖、各書狀（doc-<type>）、（有清單資料才有）當事人準備清單、輔助分頁。 */
-export function tabsFor(outputs, hasChecklist = false) {
+/** 依勾選輸出組出分頁順序：案件模式為關聯圖、各書狀（doc-<type>）、（有清單資料才有）當事人準備清單、輔助分頁；
+ *  合約模式為風險清單、合規摘要、（勾選修訂條款才有）修訂條款、（有關係圖資料才有）關係圖、法源。 */
+export function tabsFor(outputs, hasChecklist = false, mode = 'case', result = null) {
+  if (mode === 'contract') {
+    const selected = normalizeOutputs(outputs, 'contract');
+    return ['findings', 'summary', ...(selected.includes('revised') ? ['doc-revised'] : []), ...(result?.graph ? ['graph'] : []), 'laws'];
+  }
   const selected = normalizeOutputs(outputs);
   const front = ['graph', ...DOC_TYPES].filter((o) => selected.includes(o))
     .map((o) => (o === 'graph' ? 'graph' : 'doc-' + o));
@@ -136,6 +141,46 @@ const SECTION_HTML = {
   }
 };
 
+/** 風險徽章：色塊＋文字（不只靠顏色，同時附符號）。 */
+const riskBadge = (risk, locale) => `<span class="risk risk-${esc(risk || 'medium')}">${risk === 'high' ? '🔴' : risk === 'low' ? '🟢' : '🟡'} ${esc(t('risk.' + (risk || 'medium'), locale))}</span>`;
+
+/** 風險條款清單：篩選鈕（all/high/medium/low）、表格（每列帶 data-risk）、CSV 匯出鈕。 */
+function findingsTable(findings, locale, riskFilter = 'all') {
+  const rows = (findings || []).filter((f) => riskFilter === 'all' || f.risk === riskFilter);
+  const filters = ['all', 'high', 'medium', 'low'].map((r) => `<button type="button" class="chip ${r === riskFilter ? 'active' : ''}" data-risk="${r}" aria-pressed="${r === riskFilter}">${esc(r === 'all' ? t('finding.filter.all', locale) : t('risk.' + r, locale))}</button>`).join('');
+  const head = ['clauseNo', 'clauseText', 'risk', 'lawRefs', 'riskPoint', 'suggestion', 'judgments'].map((k) => `<th scope="col">${esc(t('finding.' + k, locale))}</th>`).join('');
+  const body = rows.map((f) => `<tr data-risk="${esc(f.risk || 'medium')}"><td>${esc(f.clauseNo)}</td><td class="clause-text">${esc(f.clauseText)}</td><td>${riskBadge(f.risk, locale)}</td>
+    <td>${list(f.lawRefs)}</td><td>${esc(f.riskPoint)}</td><td>${esc(f.suggestion)}</td><td>${list(f.judgmentCitations)}</td></tr>`).join('');
+  const table = rows.length ? `<div class="table-wrap"><table class="assess-table findings-table"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>` : `<p class="empty">${esc(t('finding.none', locale))}</p>`;
+  return `<div class="findings-toolbar"><div id="findings-filter" role="group" aria-label="${esc(t('finding.risk', locale))}">${filters}</div>
+    <button type="button" id="findings-export" class="secondary">${esc(t('finding.export', locale))}</button></div>${table}`;
+}
+
+/** 風險條款 CSV（含 BOM，RFC 4180，防公式注入，規則同 checklistCsv）。 */
+export function findingsCsv(findings, locale) {
+  const head = ['clauseNo', 'clauseText', 'risk', 'lawRefs', 'riskPoint', 'suggestion', 'judgments'].map((k) => t('finding.' + k, locale)).join(',');
+  const lines = (findings || []).map((f) => [f.clauseNo, f.clauseText, t('risk.' + (f.risk || 'medium'), locale), (f.lawRefs || []).join('；'), f.riskPoint, f.suggestion, (f.judgmentCitations || []).join('；')].map(csvCell).join(','));
+  return '﻿' + [head, ...lines].join('\r\n');
+}
+
+/** 合規摘要面板：契約類型、當事人、審查範疇、整體風險、優先修改建議與免責聲明。 */
+function summaryPanel(result, locale) {
+  const c = result.compliance || {}, b = result.contract || {};
+  const h3 = (key) => `<h3>${esc(t(key, locale))}</h3>`;
+  const parties = (b.parties || []).map((p) => `${p.role}：${p.name}`);
+  return `${h3('summary.contractType')}<p>${esc(c.contractType || b.contractType || '')}</p>
+    ${parties.length ? h3('summary.parties') + list(parties) : ''}
+    ${h3('summary.scopes')}${list(c.scopes || [], (s) => t('contract.scope.' + s, locale))}
+    ${h3('summary.overall')}<p>${riskBadge(c.overallRisk, locale)}</p>
+    ${h3('summary.priorities')}${list(c.priorities)}
+    <p class="disclaimer">${ICONS.info}<span>${esc(c.disclaimer || '')}</span></p>`;
+}
+
+/** 合約模式進行中的中間成果：契約摘要（類型、條款數、摘要）。 */
+SECTION_HTML.contract = (b, locale) => `<p><b>${esc(t('summary.contractType', locale))}</b>：${esc(b.contractType || '')}（${(b.clauses || []).length}）</p><p>${esc(b.summary || '')}</p>`;
+/** 合約模式進行中的中間成果：風險條款清單（不含篩選、匯出，僅表格本體）。 */
+SECTION_HTML.findings = (f, locale) => findingsTable(f?.findings, locale);
+
 /** 司法院官方三張表的欄位順序（i18n 鍵尾碼＝後端 record 欄名）。 */
 const ISSUE_COLUMNS = ['no', 'issue', 'plaintiff', 'plaintiffEvidence', 'defendant', 'defendantEvidence', 'basis'];
 const CLAIM_COLUMNS = ['no', 'basis', 'claim'];
@@ -193,20 +238,28 @@ function renderDocument(doc, locale) {
     </article>`;
 }
 
-/** 進行中／等待回答時的「目前成果」：只列出已產生的段落（brainstorm → research → analysis），無任何段落回空字串。 */
-export function renderSections(result, locale) {
+/** 修訂條款版面（M1 里程碑僅顯示未產生提示，M2 補逐條對照表）。 */
+function renderRevised(revised, locale) {
+  return revised?.items?.length ? '' : `<p class="doc-missing">${ICONS.info}<span>${esc(t('doc.missing', locale))}</span></p>`;
+}
+
+/** 進行中／等待回答時的「目前成果」：案件模式列出 brainstorm → research → analysis，合約模式列出 contract → research → findings；
+ *  只列出已產生的段落，無任何段落回空字串。 */
+export function renderSections(result, locale, mode = 'case') {
   if (!result) return '';
-  const present = ['brainstorm', 'research', 'analysis'].filter((k) => result[k]);
+  const keys = mode === 'contract' ? ['contract', 'research', 'findings'] : ['brainstorm', 'research', 'analysis'];
+  const present = keys.filter((k) => result[k]);
   if (!present.length) return '';
+  const label = (k) => (k === 'contract' ? t('summary.contractType', locale) : t('result.tab.' + k, locale));
   const blocks = present.map((k) => `<details class="partial" data-section="${k}" open>
-      <summary>${esc(t('result.tab.' + k, locale))}</summary>${SECTION_HTML[k](result[k], locale, result.assessment)}</details>`).join('');
+      <summary>${esc(label(k))}</summary>${SECTION_HTML[k](result[k], locale, result.assessment)}</details>`).join('');
   return `<section class="partials"><h2>${esc(t('progress.partial', locale))}</h2>${blocks}</section>`;
 }
 
 /** 結果頁：勾選輸出各自一個分頁排前（Graph 骨架由 graphView 接圖、書狀公文版面），輔助分頁殿後；所有模型文字經 esc。 */
-export function renderResult({ status, activeTab = 'graph', outputs }, locale) {
+export function renderResult({ status, activeTab = 'graph', outputs, mode = status?.mode || 'case', riskFilter = 'all' }, locale) {
   const r = status.result || {};
-  const TABS = tabsFor(outputs, !!r.assessment?.checklist?.length);
+  const TABS = tabsFor(outputs, !!r.assessment?.checklist?.length, mode, r);
   if (!TABS.includes(activeTab)) activeTab = TABS[0];
   const tabs = TABS.map((k) =>
     `<button type="button" role="tab" id="tab-${k}" aria-controls="panel-${k}" aria-selected="${k === activeTab}" class="tab ${k === activeTab ? 'active' : ''}" data-tab="${k}">${esc(tabLabel(k, locale))}</button>`).join('');
@@ -225,10 +278,14 @@ export function renderResult({ status, activeTab = 'graph', outputs }, locale) {
     analysis: SECTION_HTML.analysis(r.analysis || {}, locale, r.assessment),
     research: SECTION_HTML.research(r.research || {}, locale),
     brainstorm: SECTION_HTML.brainstorm(r.brainstorm || {}, locale),
-    checklist: checklistTable(r.assessment?.checklist, locale)
+    checklist: checklistTable(r.assessment?.checklist, locale),
+    findings: findingsTable(r.compliance?.findings || r.findings?.findings, locale, riskFilter),
+    summary: summaryPanel(r, locale),
+    laws: SECTION_HTML.research(r.research || {}, locale)
   };
-  // 各書狀分頁：以 type 對應後端 result.documents；缺件時顯示未產生提示
+  // 各書狀分頁：以 type 對應後端 result.documents；缺件時顯示未產生提示；doc-revised 為合約模式的修訂條款版面（M1 僅顯示未產生提示）
   for (const k of TABS) {
+    if (k === 'doc-revised') { panels[k] = renderRevised(r.revised, locale); continue; }
     if (!k.startsWith('doc-')) continue;
     const type = k.slice(4);
     panels[k] = renderDocument((r.documents || []).find((d) => d.type === type), locale);
