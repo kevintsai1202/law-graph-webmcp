@@ -5,6 +5,31 @@ import * as graphView from './graphView.js';
 import { createWebMcpBoot } from './webmcpBoot.js';
 import { mountInspector } from './inspector.js';
 import { renderLogin, bindLogin } from './login.js';
+import { createGraphAssetLoader } from './graphAssets.js';
+
+/** 只有顯示結果圖時才下載 3D 套件。 */
+const loadGraphAssets = createGraphAssetLoader();
+/** 重繪序號：舊載入結果不可覆蓋切頁後的新畫布。 */
+let graphRenderId = 0;
+/** 載入圖形依賴並渲染；失敗保留其他結果分頁並提供明確提示。 */
+async function renderGraph(data) {
+  const canvas = document.getElementById('network-canvas');
+  if (!canvas) return;
+  const requestId = ++graphRenderId;
+  canvas.textContent = app.getLocale() === 'zh-TW' ? '正在載入關聯圖…' : 'Loading graph…';
+  try {
+    await loadGraphAssets();
+    if (requestId !== graphRenderId || document.getElementById('network-canvas') !== canvas) return;
+    graphView.render(data);
+  } catch (error) {
+    if (requestId !== graphRenderId || document.getElementById('network-canvas') !== canvas) return;
+    canvas.textContent = app.getLocale() === 'zh-TW'
+      ? '關聯圖載入失敗，請重新整理後再試。其他結果分頁仍可閱讀。'
+      : 'The graph could not load. Refresh to retry; other result tabs remain available.';
+    canvas.setAttribute('role', 'alert');
+    console.error('Graph loading failed', error);
+  }
+}
 
 /** 瀏覽器入口：注入真實依賴並掛載；暴露到 window 供 E2E 與 console 除錯使用。 */
 const app = createApp({
@@ -102,7 +127,7 @@ app.onChange(async (state, kind) => {
     syncTools(state.view);
   }
   if (kind === 'RESULT_RENDERED') {
-    if (state.last?.result?.graph && document.getElementById('network-canvas')) graphView.render(state.last.result.graph);
+    if (state.last?.result?.graph) await renderGraph(state.last.result.graph);
     syncTools('RESULT');
   }
 });
@@ -110,9 +135,11 @@ app.onChange(async (state, kind) => {
 // 先完成示範案例與既有案件的初始化，再讓 Agent 看見與當前狀態一致的工具。
 // 以 async IIFE 包裝而非 top-level await：打包成 classic script（app-bundle.js）時 IIFE 格式不支援 TLA。
 (async () => {
+  const identityReady = refreshMe();
   await app.mount();
   updateSemanticBadge();
-  await refreshMe();
+  await identityReady;
+  updateLoginSlot();
   await syncTools(app.getState().view);
   // 示範案例與既有案件都就緒後才放行早期註冊的工具，避免 Agent 讀到尚未渲染的頁面
   boot.markReady();

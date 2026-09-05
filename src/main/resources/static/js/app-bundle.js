@@ -962,6 +962,7 @@
     const hadAuthCallback = consumeAuthCallbackQuery();
     let authRedirected = hadAuthCallback;
     async function refreshAuthStatus() {
+      const usageReady = refreshUsage();
       if (typeof client?.authStatus === "function") {
         try {
           semanticAuth = await client.authStatus();
@@ -969,24 +970,14 @@
           semanticAuth = null;
         }
       }
-      await refreshUsage();
+      await usageReady;
       return semanticAuth;
     }
     async function refreshUsage() {
-      if (typeof client?.usage === "function") {
-        try {
-          usage = await client.usage();
-        } catch {
-          usage = null;
-        }
-      }
-      if (typeof client?.quota === "function") {
-        try {
-          quota = await client.quota();
-        } catch {
-          quota = null;
-        }
-      }
+      [usage, quota] = await Promise.all([
+        Promise.resolve().then(() => client?.usage?.()).catch(() => null),
+        Promise.resolve().then(() => client?.quota?.()).catch(() => null)
+      ]);
       return usage;
     }
     const listeners = /* @__PURE__ */ new Set();
@@ -1378,8 +1369,8 @@
         sel.value = locale2;
         sel.addEventListener("change", () => setLocale2(sel.value));
       }
-      await refreshAuthStatus();
-      samples = await client.samples(locale2).catch(() => []);
+      const [, loadedSamples] = await Promise.all([refreshAuthStatus(), client.samples(locale2).catch(() => [])]);
+      samples = loadedSamples;
       const saved = storage.getItem("caseId");
       if (saved) {
         try {
@@ -1434,7 +1425,7 @@
   }
 
   // src/main/resources/static/js/caseClient.js
-  function createCaseClient(fetchImpl = globalThis.fetch, base = "") {
+  function createCaseClient(fetchImpl = globalThis.fetch, base = "", { entryTimeoutMs = 8e3 } = {}) {
     async function call(path, init) {
       const isForm = typeof FormData !== "undefined" && init?.body instanceof FormData;
       const res = await fetchImpl(base + path, { ...!isForm && { headers: { "Content-Type": "application/json" } }, ...init });
@@ -1446,6 +1437,9 @@
         throw e;
       }
       return body;
+    }
+    function entry(path) {
+      return call(path, { signal: AbortSignal.timeout(entryTimeoutMs) });
     }
     return {
       /** 有附件時改用 multipart；無附件維持既有 JSON 契約與 WebMCP 相容性。 */
@@ -1471,15 +1465,15 @@
       },
       status: (id) => call(`/api/cases/${encodeURIComponent(id)}`),
       answer: (id, answers) => call(`/api/cases/${encodeURIComponent(id)}/answers`, { method: "POST", body: JSON.stringify({ answers }) }),
-      samples: (locale2) => call(`/api/samples?locale=${encodeURIComponent(locale2)}`),
+      samples: (locale2) => entry(`/api/samples?locale=${encodeURIComponent(locale2)}`),
       verify: (ref) => call(`/api/laws/verify?ref=${encodeURIComponent(ref)}`),
-      authStatus: () => call("/api/auth/tw-legal-rag/status"),
+      authStatus: () => entry("/api/auth/tw-legal-rag/status"),
       /** 今日 token 用量與是否停用。 */
-      usage: () => call("/api/usage"),
+      usage: () => entry("/api/usage"),
       /** 呼叫端今日案件配額（已用／上限／剩餘）。 */
-      quota: () => call("/api/quota"),
+      quota: () => entry("/api/quota"),
       /** 目前登入者（Google）；未登入 loggedIn=false。 */
-      me: () => call("/api/me"),
+      me: () => entry("/api/me"),
       /** 登出：Spring Security 的 POST /logout 會 302 回首頁，這裡只需送出請求。 */
       logout: () => fetchImpl(base + "/logout", { method: "POST", redirect: "manual" }),
       /**
@@ -2070,12 +2064,13 @@
     const gathered = Graph.graphData();
     Graph.d3Force("isolatedGravity", isolatedGravity());
     Graph.d3Force("isolatedGravity").links(gathered.links);
-    setTimeout(() => {
-      try {
-        Graph?.d3ReheatSimulation();
-      } catch {
-      }
-    }, 0);
+    let reheated = false;
+    const renderedGraph = Graph;
+    renderedGraph.onEngineTick(() => {
+      if (reheated) return;
+      reheated = true;
+      renderedGraph.d3ReheatSimulation();
+    });
     const syncSize = () => Graph.width(el.clientWidth).height(el.clientHeight);
     syncSize();
     resizeObserver = new ResizeObserver(syncSize);
@@ -2622,7 +2617,59 @@
     });
   }
 
+  // src/main/resources/static/js/graphAssets.js
+  function createGraphAssetLoader({ doc = globalThis.document, runtime = globalThis, timeoutMs = 15e3 } = {}) {
+    let pending = null;
+    const assets = [["THREE", "/vendor/three.min.js"], ["SpriteText", "/vendor/three-spritetext.min.js"], ["ForceGraph3D", "/vendor/3d-force-graph.min.js"]];
+    function load(name, src) {
+      if (runtime[name]) return Promise.resolve();
+      return new Promise((resolve, reject) => {
+        const script = doc.createElement("script");
+        const timer = setTimeout(() => finish(new Error(`Loading timed out: ${src}`)), timeoutMs);
+        function finish(error) {
+          clearTimeout(timer);
+          script.onload = script.onerror = null;
+          if (error) {
+            script.remove();
+            reject(error);
+          } else resolve();
+        }
+        script.src = src;
+        script.onload = () => finish(runtime[name] ? null : new Error(`Missing graph dependency: ${name}`));
+        script.onerror = () => finish(new Error(`Unable to load: ${src}`));
+        doc.head.appendChild(script);
+      });
+    }
+    return () => {
+      if (!pending) pending = (async () => {
+        for (const [name, src] of assets) await load(name, src);
+      })().catch((error) => {
+        pending = null;
+        throw error;
+      });
+      return pending;
+    };
+  }
+
   // src/main/resources/static/js/main.js
+  var loadGraphAssets = createGraphAssetLoader();
+  var graphRenderId = 0;
+  async function renderGraph(data) {
+    const canvas = document.getElementById("network-canvas");
+    if (!canvas) return;
+    const requestId = ++graphRenderId;
+    canvas.textContent = app.getLocale() === "zh-TW" ? "\u6B63\u5728\u8F09\u5165\u95DC\u806F\u5716\u2026" : "Loading graph\u2026";
+    try {
+      await loadGraphAssets();
+      if (requestId !== graphRenderId || document.getElementById("network-canvas") !== canvas) return;
+      render(data);
+    } catch (error) {
+      if (requestId !== graphRenderId || document.getElementById("network-canvas") !== canvas) return;
+      canvas.textContent = app.getLocale() === "zh-TW" ? "\u95DC\u806F\u5716\u8F09\u5165\u5931\u6557\uFF0C\u8ACB\u91CD\u65B0\u6574\u7406\u5F8C\u518D\u8A66\u3002\u5176\u4ED6\u7D50\u679C\u5206\u9801\u4ECD\u53EF\u95B1\u8B80\u3002" : "The graph could not load. Refresh to retry; other result tabs remain available.";
+      canvas.setAttribute("role", "alert");
+      console.error("Graph loading failed", error);
+    }
+  }
   var app = createApp({
     root: document,
     client: createCaseClient(fetch.bind(globalThis)),
@@ -2704,14 +2751,16 @@
       syncTools(state.view);
     }
     if (kind === "RESULT_RENDERED") {
-      if (state.last?.result?.graph && document.getElementById("network-canvas")) render(state.last.result.graph);
+      if (state.last?.result?.graph) await renderGraph(state.last.result.graph);
       syncTools("RESULT");
     }
   });
   (async () => {
+    const identityReady = refreshMe();
     await app.mount();
     updateSemanticBadge();
-    await refreshMe();
+    await identityReady;
+    updateLoginSlot();
     await syncTools(app.getState().view);
     boot.markReady();
     inspector = mountInspector(document, webmcp, t, () => app.getLocale());

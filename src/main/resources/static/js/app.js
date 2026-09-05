@@ -59,6 +59,7 @@ export function createApp({ root, client, storage, navigatorLanguage, partialCol
 
   /** 向後端查詢語意 MCP 的授權狀態，並一併更新今日 token 用量。 */
   async function refreshAuthStatus() {
+    const usageReady = refreshUsage();
     if (typeof client?.authStatus === 'function') {
       try {
         semanticAuth = await client.authStatus();
@@ -66,26 +67,16 @@ export function createApp({ root, client, storage, navigatorLanguage, partialCol
         semanticAuth = null;
       }
     }
-    await refreshUsage();
+    await usageReady;
     return semanticAuth;
   }
 
   /** 向後端查詢今日 token 用量與本人案件配額；失敗時視為未知、不阻擋畫面。 */
   async function refreshUsage() {
-    if (typeof client?.usage === 'function') {
-      try {
-        usage = await client.usage();
-      } catch {
-        usage = null;
-      }
-    }
-    if (typeof client?.quota === 'function') {
-      try {
-        quota = await client.quota();
-      } catch {
-        quota = null;
-      }
-    }
+    [usage, quota] = await Promise.all([
+      Promise.resolve().then(() => client?.usage?.()).catch(() => null),
+      Promise.resolve().then(() => client?.quota?.()).catch(() => null)
+    ]);
     return usage;
   }
   /** onChange 訂閱者：(state, kind) => void；kind 為 'STATE' 或 'RESULT_RENDERED'。 */
@@ -534,8 +525,8 @@ export function createApp({ root, client, storage, navigatorLanguage, partialCol
     // 語系選單已自頁首移除（語系改由瀏覽器語言決定）；保留相容：若頁面仍有選單就綁定。
     const sel = root.querySelector('#lang-select');
     if (sel) { sel.value = locale; sel.addEventListener('change', () => setLocale(sel.value)); }
-    await refreshAuthStatus();
-    samples = await client.samples(locale).catch(() => []);
+    const [, loadedSamples] = await Promise.all([refreshAuthStatus(), client.samples(locale).catch(() => [])]);
+    samples = loadedSamples;
     const saved = storage.getItem('caseId');
     if (saved) {
       try {

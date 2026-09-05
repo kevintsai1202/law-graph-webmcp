@@ -441,9 +441,15 @@ export function render(data) {
   const gathered = Graph.graphData();
   Graph.d3Force('isolatedGravity', isolatedGravity());
   Graph.d3Force('isolatedGravity').links(gathered.links);
-  // 模擬是用預設力啟動的，改完力參數後 alpha 可能已冷卻，節點會糾在一起直到使用者拖曳才彈開；
-  // 延到下一輪事件迴圈（layout 已建立）再重新加熱，讓新的斥力與連線距離立刻生效。
-  setTimeout(() => { try { Graph?.d3ReheatSimulation(); } catch { /* 已被重新 render 或銷毀 */ } }, 0);
+  // 套件用非同步方式建立 layout；setTimeout(0) 仍可能搶先把 engineRunning 設為 true，
+  // 下一個影格便對尚未建立的 layout 呼叫 tick。等第一次有效 tick 才重新加熱。
+  let reheated = false;
+  const renderedGraph = Graph;
+  renderedGraph.onEngineTick(() => {
+    if (reheated) return;
+    reheated = true;
+    renderedGraph.d3ReheatSimulation();
+  });
   const syncSize = () => Graph.width(el.clientWidth).height(el.clientHeight);
   syncSize();
   resizeObserver = new ResizeObserver(syncSize); resizeObserver.observe(el);

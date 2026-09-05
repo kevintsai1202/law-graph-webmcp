@@ -1,5 +1,5 @@
 /** REST 封裝；fetchImpl 可注入以便測試。 */
-export function createCaseClient(fetchImpl = globalThis.fetch, base = '') {
+export function createCaseClient(fetchImpl = globalThis.fetch, base = '', { entryTimeoutMs = 8000 } = {}) {
   /** 共用呼叫：JSON 或 FormData 進、JSON 出；非 2xx 丟出帶 status／code 的 Error。 */
   async function call(path, init) {
     const isForm = typeof FormData !== 'undefined' && init?.body instanceof FormData;
@@ -10,6 +10,10 @@ export function createCaseClient(fetchImpl = globalThis.fetch, base = '') {
       e.status = res.status; e.code = body.error; throw e;
     }
     return body;
+  }
+  /** 入口唯讀查詢設逾時；不套用到耗時分析與案件提交，避免誤判提交結果。 */
+  function entry(path) {
+    return call(path, { signal: AbortSignal.timeout(entryTimeoutMs) });
   }
   return {
     /** 有附件時改用 multipart；無附件維持既有 JSON 契約與 WebMCP 相容性。 */
@@ -34,15 +38,15 @@ export function createCaseClient(fetchImpl = globalThis.fetch, base = '') {
     },
     status: (id) => call(`/api/cases/${encodeURIComponent(id)}`),
     answer: (id, answers) => call(`/api/cases/${encodeURIComponent(id)}/answers`, { method: 'POST', body: JSON.stringify({ answers }) }),
-    samples: (locale) => call(`/api/samples?locale=${encodeURIComponent(locale)}`),
+    samples: (locale) => entry(`/api/samples?locale=${encodeURIComponent(locale)}`),
     verify: (ref) => call(`/api/laws/verify?ref=${encodeURIComponent(ref)}`),
-    authStatus: () => call('/api/auth/tw-legal-rag/status'),
+    authStatus: () => entry('/api/auth/tw-legal-rag/status'),
     /** 今日 token 用量與是否停用。 */
-    usage: () => call('/api/usage'),
+    usage: () => entry('/api/usage'),
     /** 呼叫端今日案件配額（已用／上限／剩餘）。 */
-    quota: () => call('/api/quota'),
+    quota: () => entry('/api/quota'),
     /** 目前登入者（Google）；未登入 loggedIn=false。 */
-    me: () => call('/api/me'),
+    me: () => entry('/api/me'),
     /** 登出：Spring Security 的 POST /logout 會 302 回首頁，這裡只需送出請求。 */
     logout: () => fetchImpl(base + '/logout', { method: 'POST', redirect: 'manual' }),
     /**

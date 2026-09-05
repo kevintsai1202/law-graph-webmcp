@@ -2,6 +2,22 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createCaseClient } from '../src/main/resources/static/js/caseClient.js';
 
+test('入口請求逾時可中止，案件提交不套用入口逾時', async () => {
+  const calls = [];
+  const client = createCaseClient(async (path, init) => {
+    calls.push({ path, init });
+    if (!init.signal) return { ok: true, json: async () => ({ caseId: 'created' }) };
+    return new Promise((resolve, reject) => init.signal.addEventListener('abort', () => reject(init.signal.reason)));
+  }, '', { entryTimeoutMs: 15 });
+  // AbortSignal 的計時器不保留 Node 行程，測試期間明確維持事件迴圈。
+  const keepAlive = setInterval(() => {}, 100);
+  try {
+    await assert.rejects(client.me(), { name: 'TimeoutError' });
+    assert.equal((await client.start('fictional case', 'en')).caseId, 'created');
+    assert.equal(calls[1].init.signal, undefined);
+  } finally { clearInterval(keepAlive); }
+});
+
 // 用途：以假 fetch 驗證 REST 封裝的路徑、payload、錯誤物件與輪詢停止條件。
 function fakeFetch(routes) {
   const calls = [];

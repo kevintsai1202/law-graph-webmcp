@@ -89,6 +89,14 @@ The front end follows the **Trust & Authority** pattern from `ui-ux-pro-max` (`d
 
 ## Run locally
 
+### Entry-flow regression checks
+
+The homepage loads independently of the 3D libraries. Those libraries are downloaded in dependency order only when a graph result is displayed, with a 15-second timeout per script and a visible failure message. Entry metadata requests (`me`, quota, usage, semantic authorization, samples) have an 8-second timeout; identity is fetched independently, and the other metadata requests run concurrently. Case submissions retain their existing timeout behavior.
+
+For local browser verification without Google credentials or LLM calls, run `npm run bundle` and `node e2e/stub-server.mjs 8091 --entry`. This mode uses a **simulated** login redirect and a fixed fictional completed case. Add `--fail-graph` to return 503 for graph libraries, or `--slow-entry` to leave metadata requests unanswered. Verify anonymous entry, simulated login (quota 1 → 5), form POST logout (5 → 1), reload, and graph failure with readable text result tabs. The fixture binds only to loopback. It does not verify a real Google OAuth callback.
+
+Run `npm test` for the frontend regression tests. The focused backend checks are `mvn -Dtest=DailyCaseQuotaControllerTest,AccessPolicyTest test` with Java 21. On Windows, if Java fails before test execution with `Unable to establish loopback connection` / `UnixDomainSockets ... Invalid argument: connect`, set a short existing socket directory using `-DargLine=-Djdk.net.unixdomain.tmpdir=D:/GitHub/webmcp/test` (adjust to an existing short path on your machine).
+
 Requires Java 21, Node 20+, Docker and an OpenAI key.
 
 ```powershell

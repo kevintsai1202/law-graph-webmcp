@@ -41,11 +41,8 @@
       <div id="auth-slot" class="auth-slot"></div>
     </div>
   </header>
-  <main id="stage" tabindex="-1"></main>
-  <!-- 3D 渲染器依賴（自 law-powers 單檔抽出，見 scripts/extract-renderer.mjs），須在應用層之前載入 -->
-  <script src="vendor/three.min.js"></script>
-  <script src="vendor/three-spritetext.min.js"></script>
-  <script src="vendor/3d-force-graph.min.js"></script>
+  <main id="stage" tabindex="-1"><p role="status">正在載入 / Loading…</p></main>
+  <!-- 3D 依賴由結果頁按需載入，避免大型腳本阻塞首頁與登入入口。 -->
   <!-- 應用層改用單一 classic script（npm run bundle 由 js/main.js 打包）：
        避免 type="module" 的延遲載入／模組隔離造成部分 Agent host（Site tools）偵測不到工具註冊。
        js/*.js 模組原始碼仍為單一事實來源，node 測試直接吃模組；改碼後須重跑 npm run bundle。 -->
