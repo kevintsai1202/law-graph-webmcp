@@ -539,3 +539,14 @@ button svg { width: 18px; height: 18px; flex: 0 0 auto; }
 #insp-list .insp-empty { color: var(--color-text-sub); border-style: dashed; }
 .insp-note { margin: 0; font-size: 0.76rem; color: var(--color-text-sub); line-height: 1.5; }
 #insp-state { margin: 0; font-size: 0.84rem; font-weight: 600; color: var(--color-heading); }
+
+/* 首頁能力入口 */
+.home { display: grid; gap: var(--space-4); }
+.home-title { font-size: 1.6rem; }
+.home-lead { color: var(--color-text-sub); }
+.capabilities { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: var(--space-4); }
+.capability { display: grid; gap: var(--space-3); cursor: pointer; transition: transform .15s, box-shadow .15s; }
+.capability:hover, .capability:focus-visible { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(30, 58, 138, .12); outline: none; }
+.capability .cap-icon svg { width: 40px; height: 40px; color: var(--color-primary, #1e3a8a); }
+.capability .cap-steps { font-size: .8rem; color: var(--color-text-sub); }
+.capability button { justify-self: start; }

@@ -2,7 +2,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { esc } from '../src/main/resources/static/js/views/util.js';
 import { bindInput, renderInput } from '../src/main/resources/static/js/views/input.js';
-import { renderProgress, renderCancel, STEPS } from '../src/main/resources/static/js/views/progress.js';
+import { renderProgress, renderCancel, STEPS, STEPS_BY_MODE } from '../src/main/resources/static/js/views/progress.js';
+import { renderHome } from '../src/main/resources/static/js/views/home.js';
 import { renderQuestions } from '../src/main/resources/static/js/views/questions.js';
 import { renderResult, renderSections, claimStatus, checklistCsv } from '../src/main/resources/static/js/views/result.js';
 
@@ -537,4 +538,20 @@ test('input 案情框失焦時縮成預覽（超長由 CSS 以 … 截斷），�
   assert.equal(focused, 1);
   // 標記含預覽元素
   assert.match(renderInput({ samples: [] }, 'zh-TW'), /id="case-preview" hidden/);
+});
+
+// 用途：首頁能力卡片與雙模式進度列（Task 11）
+test('home 顯示兩張能力卡片，各帶 data-mode 與開始鈕', () => {
+  const html = renderHome('zh-TW');
+  assert.match(html, /class="capability[^"]*" data-mode="case"/);
+  assert.match(html, /class="capability[^"]*" data-mode="contract"/);
+  assert.match(html, /案件分析/); assert.match(html, /合約法規審查/);
+  assert.equal((html.match(/data-mode="/g) || []).length >= 4, true, '卡片與按鈕都帶 data-mode');
+});
+test('progress 依 mode 切換步驤與文案', () => {
+  assert.deepEqual(STEPS_BY_MODE.contract, ['LOAD', 'QUESTIONS', 'RESEARCH', 'REVIEW', 'SUMMARY', 'REVISE', 'GRAPH']);
+  const html = renderProgress({ step: 'REVIEW', mode: 'contract' }, 'zh-TW');
+  assert.match(html, /data-step="REVIEW"[^>]*aria-current="step"/);
+  assert.match(html, /逐條檢查是否違法或不公平/);
+  assert.match(renderProgress({ step: 'RESEARCH' }, 'zh-TW'), /class="step done"[^>]*data-step="BRAINSTORM"/);
 });
