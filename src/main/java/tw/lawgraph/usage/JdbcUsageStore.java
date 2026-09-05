@@ -29,14 +29,19 @@ public final class JdbcUsageStore implements UsageStore {
                   completion_tokens BIGINT NOT NULL,
                   updated_at TIMESTAMP NOT NULL
                 )""");
+        // 舊表（M3 之前建立）也要能補上 LLM 呼叫統計欄位；ADD COLUMN IF NOT EXISTS 對新舊表都安全。
+        jdbc.execute("ALTER TABLE usage_daily ADD COLUMN IF NOT EXISTS llm_calls BIGINT DEFAULT 0 NOT NULL");
+        jdbc.execute("ALTER TABLE usage_daily ADD COLUMN IF NOT EXISTS cached_tokens BIGINT DEFAULT 0 NOT NULL");
+        jdbc.execute("ALTER TABLE usage_daily ADD COLUMN IF NOT EXISTS reasoning_tokens BIGINT DEFAULT 0 NOT NULL");
         LOGGER.info("usage_daily 資料表就緒（JdbcUsageStore）");
     }
 
     @Override
     public Optional<DailyUsage> load(LocalDate day) {
         List<DailyUsage> rows = jdbc.query(
-                "SELECT prompt_tokens, completion_tokens FROM usage_daily WHERE usage_day = ?",
-                (rs, i) -> new DailyUsage(day, rs.getLong("prompt_tokens"), rs.getLong("completion_tokens")),
+                "SELECT prompt_tokens, completion_tokens, llm_calls, cached_tokens, reasoning_tokens FROM usage_daily WHERE usage_day = ?",
+                (rs, i) -> new DailyUsage(day, rs.getLong("prompt_tokens"), rs.getLong("completion_tokens"),
+                        rs.getLong("llm_calls"), rs.getLong("cached_tokens"), rs.getLong("reasoning_tokens")),
                 day.toString());
         return rows.stream().findFirst();
     }
@@ -46,12 +51,16 @@ public final class JdbcUsageStore implements UsageStore {
     public void save(DailyUsage usage) {
         Timestamp now = Timestamp.from(Instant.now());
         int updated = jdbc.update(
-                "UPDATE usage_daily SET prompt_tokens = ?, completion_tokens = ?, updated_at = ? WHERE usage_day = ?",
-                usage.promptTokens(), usage.completionTokens(), now, usage.day().toString());
+                "UPDATE usage_daily SET prompt_tokens = ?, completion_tokens = ?, llm_calls = ?, cached_tokens = ?, "
+                        + "reasoning_tokens = ?, updated_at = ? WHERE usage_day = ?",
+                usage.promptTokens(), usage.completionTokens(), usage.llmCalls(), usage.cachedTokens(),
+                usage.reasoningTokens(), now, usage.day().toString());
         if (updated == 0) {
             jdbc.update(
-                    "INSERT INTO usage_daily (usage_day, prompt_tokens, completion_tokens, updated_at) VALUES (?, ?, ?, ?)",
-                    usage.day().toString(), usage.promptTokens(), usage.completionTokens(), now);
+                    "INSERT INTO usage_daily (usage_day, prompt_tokens, completion_tokens, llm_calls, cached_tokens, "
+                            + "reasoning_tokens, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                    usage.day().toString(), usage.promptTokens(), usage.completionTokens(), usage.llmCalls(),
+                    usage.cachedTokens(), usage.reasoningTokens(), now);
         }
     }
 

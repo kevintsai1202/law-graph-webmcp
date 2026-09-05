@@ -34,7 +34,9 @@ public final class FileUsageStore implements UsageStore {
         try {
             Map<?, ?> map = JSON.readValue(Files.readString(path, StandardCharsets.UTF_8), Map.class);
             if (!day.toString().equals(String.valueOf(map.get("date")))) return Optional.empty();
-            return Optional.of(new DailyUsage(day, toLong(map.get("promptTokens")), toLong(map.get("completionTokens"))));
+            // 舊檔沒有這三個欄位時 toLong(null) 回 0，向下相容。
+            return Optional.of(new DailyUsage(day, toLong(map.get("promptTokens")), toLong(map.get("completionTokens")),
+                    toLong(map.get("llmCalls")), toLong(map.get("cachedTokens")), toLong(map.get("reasoningTokens"))));
         } catch (Exception exception) {
             LOGGER.warn("無法載入 token 用量檔，改以 0 起算。錯誤類型={}", exception.getClass().getSimpleName());
             return Optional.empty();
@@ -48,6 +50,9 @@ public final class FileUsageStore implements UsageStore {
             data.put("date", usage.day().toString());
             data.put("promptTokens", usage.promptTokens());
             data.put("completionTokens", usage.completionTokens());
+            data.put("llmCalls", usage.llmCalls());
+            data.put("cachedTokens", usage.cachedTokens());
+            data.put("reasoningTokens", usage.reasoningTokens());
             if (path.getParent() != null) Files.createDirectories(path.getParent());
             Path temp = path.resolveSibling(path.getFileName() + ".tmp");
             Files.writeString(temp, JSON.writeValueAsString(data), StandardCharsets.UTF_8);

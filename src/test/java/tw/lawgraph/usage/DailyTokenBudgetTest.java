@@ -9,6 +9,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneId;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -85,6 +86,21 @@ class DailyTokenBudgetTest {
 
         var nextDay = new DailyTokenBudget(2_000_000, false, new FileUsageStore(file.toString()), at("2026-09-05T02:00:00Z"));
         assertEquals(0, nextDay.usedTokens());
+    }
+
+    /** addLlmCall 累加呼叫次數／快取／推理 tokens；observeProcessUsage 回傳的是本次增量而非累計值。 */
+    @Test
+    void addLlmCallAccumulatesAndObserveReturnsDelta() {
+        var budget = new DailyTokenBudget(0, false, UsageStore.inMemory(), Clock.systemUTC());
+
+        budget.addLlmCall(100, 20);
+        budget.addLlmCall(50, 0);
+
+        assertEquals(2, budget.snapshot().llmCalls());
+        assertEquals(150, budget.snapshot().cachedTokens());
+        assertEquals(20, budget.snapshot().reasoningTokens());
+        assertArrayEquals(new long[]{30, 10}, budget.observeProcessUsage("p", 30, 10));
+        assertArrayEquals(new long[]{5, 0}, budget.observeProcessUsage("p", 35, 10));
     }
 
     /** 可調整時間的測試時鐘。 */

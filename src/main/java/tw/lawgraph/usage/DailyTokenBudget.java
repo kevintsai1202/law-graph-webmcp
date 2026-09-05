@@ -33,6 +33,12 @@ public class DailyTokenBudget {
     private long promptTokens;
     /** 今日 completion tokens。 */
     private long completionTokens;
+    /** 今日 LLM 呼叫次數（透過 LlmUsageStats 累計）。 */
+    private long llmCalls;
+    /** 今日 prompt cache 命中 tokens。 */
+    private long cachedTokens;
+    /** 今日 reasoning tokens。 */
+    private long reasoningTokens;
     /** 每個 agent process 最近一次觀測到的累計用量，用來換算增量。 */
     private final Map<String, long[]> lastSeenByProcess = new ConcurrentHashMap<>();
 
@@ -56,13 +62,13 @@ public class DailyTokenBudget {
      * 以某個 agent process 的「累計」用量更新今日總量：只把相對上一次觀測的增量加進來，
      * 因為 Embabel 的 AgentProcess 用量是該流程從頭到現在的總和。
      */
-    public void observeProcessUsage(String processId, long cumulativePrompt, long cumulativeCompletion) {
+    public long[] observeProcessUsage(String processId, long cumulativePrompt, long cumulativeCompletion) {
         long[] last = lastSeenByProcess.getOrDefault(processId, new long[]{0, 0});
         long deltaPrompt = Math.max(0, cumulativePrompt - last[0]);
         long deltaCompletion = Math.max(0, cumulativeCompletion - last[1]);
         lastSeenByProcess.put(processId, new long[]{cumulativePrompt, cumulativeCompletion});
-        if (deltaPrompt == 0 && deltaCompletion == 0) return;
-        add(deltaPrompt, deltaCompletion);
+        if (deltaPrompt != 0 || deltaCompletion != 0) add(deltaPrompt, deltaCompletion);
+        return new long[]{deltaPrompt, deltaCompletion};
     }
 
     /** 直接累加今日用量（供測試與非 Embabel 路徑使用）。 */
@@ -75,6 +81,17 @@ public class DailyTokenBudget {
             if (dailyLimit > 0 && usedTokensLocked() >= dailyLimit) {
                 LOGGER.warn("每日 token 上限已到：used={} limit={} date={}", usedTokensLocked(), dailyLimit, date);
             }
+        }
+    }
+
+    /** 累加一次 LLM 呼叫的快取／推理 tokens 統計（由 LlmUsageStats 呼叫）。 */
+    public void addLlmCall(long cached, long reasoning) {
+        synchronized (lock) {
+            rolloverIfNeeded();
+            llmCalls += 1;
+            cachedTokens += Math.max(0, cached);
+            reasoningTokens += Math.max(0, reasoning);
+            save();
         }
     }
 
@@ -97,7 +114,7 @@ public class DailyTokenBudget {
         synchronized (lock) {
             rolloverIfNeeded();
             return new Snapshot(date.toString(), promptTokens, completionTokens, usedTokensLocked(), dailyLimit, paused,
-                    exhausted(), store.name());
+                    exhausted(), store.name(), llmCalls, cachedTokens, reasoningTokens);
         }
     }
 
@@ -117,6 +134,9 @@ public class DailyTokenBudget {
             date = now;
             promptTokens = 0;
             completionTokens = 0;
+            llmCalls = 0;
+            cachedTokens = 0;
+            reasoningTokens = 0;
             lastSeenByProcess.clear();
             load();
         }
@@ -128,9 +148,15 @@ public class DailyTokenBudget {
             store.load(date).ifPresentOrElse(usage -> {
                 promptTokens = usage.promptTokens();
                 completionTokens = usage.completionTokens();
+                llmCalls = usage.llmCalls();
+                cachedTokens = usage.cachedTokens();
+                reasoningTokens = usage.reasoningTokens();
             }, () -> {
                 promptTokens = 0;
                 completionTokens = 0;
+                llmCalls = 0;
+                cachedTokens = 0;
+                reasoningTokens = 0;
             });
         } catch (RuntimeException exception) {
             LOGGER.warn("無法載入今日 token 用量（{}），改以 0 起算。錯誤類型={}", store.name(),
@@ -141,13 +167,21 @@ public class DailyTokenBudget {
     /** 保存今日累計；儲存失敗只記錄，不影響主流程。 */
     private void save() {
         try {
-            store.save(new UsageStore.DailyUsage(date, promptTokens, completionTokens));
+            store.save(new UsageStore.DailyUsage(date, promptTokens, completionTokens, llmCalls, cachedTokens,
+                    reasoningTokens));
         } catch (RuntimeException exception) {
             LOGGER.warn("無法保存今日 token 用量（{}）。錯誤類型={}", store.name(), exception.getClass().getSimpleName());
         }
     }
 
-    /** 對外快照：不含任何秘密。 */
+    /** 對外快照：不含任何秘密；llmCalls／cachedTokens／reasoningTokens 為 M3 新增欄位。 */
     public record Snapshot(String date, long promptTokens, long completionTokens, long usedTokens, long dailyLimit,
-                           boolean paused, boolean exhausted, String store) {}
+                           boolean paused, boolean exhausted, String store, long llmCalls, long cachedTokens,
+                           long reasoningTokens) {
+        /** 相容既有 8 參數呼叫端：不提供 LLM 呼叫統計時三欄一律為 0。 */
+        public Snapshot(String date, long promptTokens, long completionTokens, long usedTokens, long dailyLimit,
+                         boolean paused, boolean exhausted, String store) {
+            this(date, promptTokens, completionTokens, usedTokens, dailyLimit, paused, exhausted, store, 0, 0, 0);
+        }
+    }
 }

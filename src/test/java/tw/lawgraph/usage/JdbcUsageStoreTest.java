@@ -57,4 +57,22 @@ class JdbcUsageStoreTest {
                 + new JdbcUsageStore(dataSource).load(LocalDate.of(2026, 9, 4)).orElseThrow().completionTokens(),
                 "前一日歷史紀錄應保留");
     }
+
+    /** 舊表（M3 之前建立，沒有 llm_calls／cached_tokens／reasoning_tokens 欄位）也要能自動補欄並落地新統計。 */
+    @Test
+    void persistsLlmCallColumnsAndMigratesOldTable() {
+        var dataSource = h2("usage_llm");
+        new org.springframework.jdbc.core.JdbcTemplate(dataSource).execute(
+                "CREATE TABLE usage_daily (usage_day VARCHAR(10) PRIMARY KEY, prompt_tokens BIGINT NOT NULL, "
+                        + "completion_tokens BIGINT NOT NULL, updated_at TIMESTAMP NOT NULL)");
+        var store = new JdbcUsageStore(dataSource); // 舊表存在也要能 ALTER 補欄
+        var day = LocalDate.of(2026, 9, 5);
+
+        store.save(new UsageStore.DailyUsage(day, 10, 5, 3, 4, 2));
+        var loaded = store.load(day).orElseThrow();
+
+        assertEquals(3, loaded.llmCalls());
+        assertEquals(4, loaded.cachedTokens());
+        assertEquals(2, loaded.reasoningTokens());
+    }
 }

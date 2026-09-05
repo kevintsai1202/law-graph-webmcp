@@ -15,8 +15,14 @@ public interface UsageStore {
     /** 儲存實作名稱，供 /api/usage 與 log 顯示。 */
     String name();
 
-    /** 單日累計紀錄。 */
-    record DailyUsage(LocalDate day, long promptTokens, long completionTokens) {}
+    /** 單日累計紀錄；llmCalls／cachedTokens／reasoningTokens 為 M3 新增的 LLM 呼叫統計欄位。 */
+    record DailyUsage(LocalDate day, long promptTokens, long completionTokens, long llmCalls, long cachedTokens,
+                       long reasoningTokens) {
+        /** 相容既有呼叫端：不提供 LLM 呼叫統計時三欄一律為 0。 */
+        public DailyUsage(LocalDate day, long promptTokens, long completionTokens) {
+            this(day, promptTokens, completionTokens, 0, 0, 0);
+        }
+    }
 
     /** 不落地的儲存：測試或明確停用持久化時使用。 */
     static UsageStore inMemory() {
