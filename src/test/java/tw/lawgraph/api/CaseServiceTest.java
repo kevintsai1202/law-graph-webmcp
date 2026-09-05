@@ -112,6 +112,8 @@ class CaseServiceTest {
     @Test void sweepKillsStuckStepAndReportsTimeout() {
         var clock = mock(Clock.class);
         when(clock.millis()).thenReturn(0L, 301_000L);
+        // recordStart 需要 instant()；不 stub 會回 null 讓啟動事件寫入失敗
+        when(clock.instant()).thenReturn(Instant.parse("2026-09-05T02:00:00Z"));
         var timed = new CaseService(platform, new StepWatchdog(Duration.ofSeconds(300)), clock);
         timed.start("x", Locale.ZH_TW, List.of());
         timed.sweep();
@@ -132,6 +134,7 @@ class CaseServiceTest {
     @Test void sweepIgnoresWaitingProcesses() {
         var clock = mock(Clock.class);
         when(clock.millis()).thenReturn(0L, 900_000L);
+        when(clock.instant()).thenReturn(Instant.parse("2026-09-05T02:00:00Z"));
         var timed = new CaseService(platform, new StepWatchdog(Duration.ofSeconds(300)), clock);
         timed.start("x", Locale.EN, List.of());
         when(process.getStatus()).thenReturn(AgentProcessStatusCode.WAITING);
@@ -215,13 +218,30 @@ class CaseServiceTest {
     }
 
     /** case_event 寫入失敗不得讓案件無法啟動（統計不能擋流程）。 */
-    @Test void startSurvivesEventStoreFailure() {
+    /** 啟動事件寫不進去等於配額不計次，必須直接拒絕啟動，流程不得開跑。 */
+    @Test void startFailsWhenEventStoreUnavailable() {
         var events = mock(UsageEventStore.class);
         org.mockito.Mockito.doThrow(new IllegalStateException("db down"))
                 .when(events).recordStart(any(tw.lawgraph.usage.CaseEvent.class));
         var starting = new CaseService(platform, new StepWatchdog(Duration.ofSeconds(300)), events);
 
-        assertEquals("p1", starting.start("A hit B", Locale.EN, List.of()).caseId());
-        verify(platform).start(process);
+        assertThrows(QuotaStoreUnavailableException.class, () -> starting.start("A hit B", Locale.EN, List.of()));
+        verify(platform, never()).start(process);
+    }
+
+    /** 沒有人輪詢 status() 的已完成案件，巡檢時也要回寫終態，且只寫一次。 */
+    @Test void sweepRecordsFinishForCompletedCaseWithoutStatusPolling() {
+        var events = mock(UsageEventStore.class);
+        var sweeping = new CaseService(platform, new StepWatchdog(Duration.ofSeconds(300)),
+                Clock.fixed(Instant.parse("2026-09-05T02:00:00Z"), ZoneOffset.UTC), events);
+        when(process.getStatus()).thenReturn(AgentProcessStatusCode.RUNNING);
+        sweeping.start("A hit B", Locale.EN, List.of());
+
+        when(process.getStatus()).thenReturn(AgentProcessStatusCode.COMPLETED);
+        sweeping.sweep();
+        verify(events, times(1)).recordFinish(eq("p1"), eq("COMPLETED"), any(Instant.class));
+
+        sweeping.sweep();
+        verify(events, times(1)).recordFinish(anyString(), anyString(), any(Instant.class));
     }
 }

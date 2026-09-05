@@ -101,6 +101,8 @@ public class CaseService {
             if (process == null || timedOut.containsKey(caseId)) continue;
             if (process.getStatus() != AgentProcessStatusCode.RUNNING) {
                 watchdog.forget(caseId);
+                // 沒有人輪詢 status() 的案件也要在此回寫終態，否則統計會永遠停在 RUNNING。
+                recordTerminalStatus(caseId, process.getStatus());
                 continue;
             }
             String step = StatusMapper.deriveStep(snapshot(caseId, process));
@@ -109,6 +111,15 @@ public class CaseService {
                 process.kill();
                 recordFinish(caseId, "FAILED");
             }
+        }
+    }
+
+    /** 巡檢時把 Embabel 終態對應成 case_event 狀態並回寫；非終態（例如 WAITING）不處理。 */
+    private void recordTerminalStatus(String caseId, AgentProcessStatusCode code) {
+        switch (code) {
+            case COMPLETED -> recordFinish(caseId, "COMPLETED");
+            case FAILED, TERMINATED, KILLED, STUCK -> recordFinish(caseId, "FAILED");
+            default -> { }
         }
     }
 
@@ -163,14 +174,18 @@ public class CaseService {
         Agent agent = platform.agents().stream().filter(c -> agentName.equals(c.getName()))
                 .findFirst().orElseThrow(() -> new IllegalStateException(agentName + " not deployed"));
         AgentProcess process = platform.createAgentProcessFrom(agent, new ProcessOptions(), input);
+        // 先寫啟動事件；失敗會丟 QuotaStoreUnavailableException，此時流程尚未 start 也未登錄語系／模式。
+        recordStart(process.getId(), mode, context);
         locales.put(process.getId(), locale);
         modes.put(process.getId(), mode);
-        recordStart(process.getId(), mode, context);
         platform.start(process);
         return status(process.getId());
     }
 
-    /** 寫入案件啟動事件（同時是當日配額計數依據）；統計失敗不得讓已建立的案件無法啟動。 */
+    /**
+     * 寫入案件啟動事件（同時是當日配額計數依據）。
+     * 寫入失敗必須讓啟動整個失敗：這一列就是配額計數本身，漏記等於該次分析不計次、配額形同免費。
+     */
     private void recordStart(String caseId, String mode, CaseStartContext context) {
         try {
             events.recordStart(new tw.lawgraph.usage.CaseEvent(caseId,
@@ -179,7 +194,8 @@ public class CaseService {
                     context.model() == null || context.model().isBlank() ? "default" : context.model(),
                     "RUNNING", 0, 0, clock.instant(), null));
         } catch (RuntimeException exception) {
-            LOGGER.warn("無法記錄案件啟動事件 caseId={} 錯誤類型={}", caseId, exception.getClass().getSimpleName());
+            LOGGER.warn("無法記錄案件啟動事件，拒絕啟動 caseId={} 錯誤類型={}", caseId, exception.getClass().getSimpleName());
+            throw new QuotaStoreUnavailableException(exception);
         }
     }
 

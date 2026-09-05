@@ -3,12 +3,15 @@ package tw.lawgraph.usage;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.assertj.MockMvcTester;
+import tw.lawgraph.api.RateLimiter;
 import tw.lawgraph.auth.MemberStore;
 import tw.lawgraph.auth.SecurityConfig;
 
+import java.time.Clock;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -18,8 +21,14 @@ import static org.mockito.Mockito.*;
 
 /** GET /api/stats：每日次數與 tokens 統計端點的切片測試。 */
 @WebMvcTest(controllers = StatsController.class)
-@Import({SecurityConfig.class})
+@Import({SecurityConfig.class, StatsControllerTest.Limits.class})
 class StatsControllerTest {
+    /** 這組測試不驗限流，給一個足夠寬鬆的上限。 */
+    @org.springframework.boot.test.context.TestConfiguration
+    static class Limits {
+        @Bean RateLimiter statsRateLimiter() { return new RateLimiter(1000, Clock.systemUTC()); }
+    }
+
     @Autowired MockMvcTester mvc;
     @MockitoBean UsageEventStore events;
     @MockitoBean MemberStore members;

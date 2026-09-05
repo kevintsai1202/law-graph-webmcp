@@ -53,6 +53,24 @@ class UsageEventStoreTest {
         assertEquals(0, store.countToday("sub-1", d));
     }
 
+    /** 刪帳號用的 anonymizeBefore：只清 day 之前的列，當天的身分雜湊必須保留，否則重登即可重置當日配額。 */
+    @ParameterizedTest
+    @MethodSource("stores")
+    void anonymizeBeforeKeepsTodayRows(UsageEventStore store) {
+        var d = LocalDate.of(2026, 9, 5);
+        store.recordStart(start("today-1", d, "case", "member", "mh"));
+        store.recordStart(start("old-1", d.minusDays(1), "case", "member", "mh"));
+
+        store.anonymizeBefore("mh", d);
+
+        assertEquals(1, store.countToday("mh", d), "當天的列必須保留身分雜湊");
+        assertEquals(0, store.countToday("mh", d.minusDays(1)), "昨天以前的列必須已去識別化");
+
+        // 保存期限清理的全量去識別化會連當天一起清掉
+        store.anonymize("mh");
+        assertEquals(0, store.countToday("mh", d));
+    }
+
     @ParameterizedTest
     @MethodSource("stores")
     void startIsIdempotent(UsageEventStore store) {

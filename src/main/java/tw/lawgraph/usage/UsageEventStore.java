@@ -25,8 +25,16 @@ public interface UsageEventStore {
     /** 依日期區間（含起訖）回傳每日聚合統計，無資料的日子補 0，依日期升冪排序。 */
     List<DailyStats> dailyStats(LocalDate from, LocalDate to);
 
-    /** 將指定身分雜湊的所有事件之 identity_hash 欄位清空（GDPR／個資去識別化）。 */
-    void anonymize(String identityHash);
+    /**
+     * 將指定身分雜湊、且 usage_day 早於 day 的事件之 identity_hash 欄位清空（GDPR／個資去識別化）。
+     * 保留 day 當天（含）之後的列是刻意的：否則同一人「刪帳號→重新登入」即可把當天配額歸零。
+     */
+    void anonymizeBefore(String identityHash, LocalDate day);
+
+    /** 將指定身分雜湊的所有事件去識別化（保存期限清理用，連當天一起清）。 */
+    default void anonymize(String identityHash) {
+        anonymizeBefore(identityHash, LocalDate.MAX);
+    }
 
     /** 實作名稱（例如 "jdbc"、"memory"），供設定／記錄之用。 */
     String name();

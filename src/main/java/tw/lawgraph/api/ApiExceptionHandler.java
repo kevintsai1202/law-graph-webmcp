@@ -11,7 +11,7 @@ import java.util.Map;
 @RestControllerAdvice
 public class ApiExceptionHandler {
     /** 建立錯誤 JSON。 */
-    static Map<String, String> error(String code, String message) { return Map.of("error", code, "message", message); }
+    public static Map<String, String> error(String code, String message) { return Map.of("error", code, "message", message); }
 
     /** 將找不到案件轉成 404。 */
     @ExceptionHandler(CaseNotFoundException.class) @ResponseStatus(HttpStatus.NOT_FOUND)

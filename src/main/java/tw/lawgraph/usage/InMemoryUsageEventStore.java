@@ -60,10 +60,10 @@ public final class InMemoryUsageEventStore implements UsageEventStore {
         return result;
     }
 
-    /** 將符合 identityHash 的所有事件之 identityHash 置為 null。 */
+    /** 將符合 identityHash 且日期早於 day 的事件之 identityHash 置為 null，當天（含）之後的列保留。 */
     @Override
-    public void anonymize(String identityHash) {
-        events.replaceAll((id, e) -> identityHash.equals(e.identityHash())
+    public void anonymizeBefore(String identityHash, LocalDate day) {
+        events.replaceAll((id, e) -> identityHash.equals(e.identityHash()) && e.day().isBefore(day)
                 ? new CaseEvent(e.caseId(), e.day(), e.mode(), e.identityKind(), null, e.model(), e.status(),
                         e.promptTokens(), e.completionTokens(), e.startedAt(), e.finishedAt())
                 : e);

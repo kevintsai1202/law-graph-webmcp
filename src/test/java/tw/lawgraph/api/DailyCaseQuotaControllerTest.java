@@ -141,13 +141,15 @@ class DailyCaseQuotaControllerTest {
         assertThat(contexts.get(0).identityHash()).matches("[0-9a-f]{64}");
     }
 
-    /** 登入者的統計脈絡以 member 身分與 Google sub 記錄。 */
+    /** 登入者的統計脈絡以 member 身分與 "user:<sub>" 的 SHA-256 雜湊記錄（不落地 sub 原文）。 */
     @Test void memberStartPassesMemberIdentityKind() {
         var login = oauth2Login().attributes(a -> { a.put("sub", "g-123"); a.put("email", "k@example.com"); });
         assertThat(mvc.post().uri("/api/cases").contentType(MediaType.APPLICATION_JSON).content(BODY).with(login)).hasStatus(201);
         assertThat(contexts).hasSize(1);
         assertThat(contexts.get(0).identityKind()).isEqualTo("member");
-        assertThat(contexts.get(0).identityHash()).isEqualTo("g-123");
+        assertThat(contexts.get(0).identityHash())
+                .isEqualTo(tw.lawgraph.usage.IdentityHash.of("user:g-123"))
+                .isNotEqualTo("g-123");
     }
 
     /** 配額計數來源（資料庫）壞掉時明確回 503，不得靜默放行。 */

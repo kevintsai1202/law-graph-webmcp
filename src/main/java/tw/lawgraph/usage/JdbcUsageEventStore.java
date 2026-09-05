@@ -124,7 +124,18 @@ public final class JdbcUsageEventStore implements UsageEventStore {
         return result;
     }
 
-    /** 將 identity_hash 置空以去識別化，使該身分不再被 countToday 計入。 */
+    /** 將 day 之前的 identity_hash 置空以去識別化；當天（含）之後的列保留，避免刪帳號重登即重置當日配額。 */
+    @Override
+    public void anonymizeBefore(String identityHash, LocalDate day) {
+        jdbc.update("UPDATE case_event SET identity_hash = NULL WHERE identity_hash = ? AND usage_day < ?",
+                identityHash, day.toString());
+    }
+
+    /**
+     * 全量去識別化（保存期限清理用）。不沿用預設的 anonymizeBefore(hash, LocalDate.MAX)：
+     * usage_day 是 VARCHAR，LocalDate.MAX 轉字串為 "+999999999-12-31"，字典序反而小於 "2026-…"，
+     * 條件會全部不成立，因此這裡直接省略日期條件。
+     */
     @Override
     public void anonymize(String identityHash) {
         jdbc.update("UPDATE case_event SET identity_hash = NULL WHERE identity_hash = ?", identityHash);

@@ -1,6 +1,7 @@
 package tw.lawgraph.api;
 
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -50,7 +51,7 @@ public class CaseController {
     static final String MODEL_HEADER = "X-LawGraph-Model";
 
     /** 注入案件服務、IP 限流器、附件解析、每日 token 預算與測試模型名稱。 */
-    public CaseController(CaseService service, RateLimiter limiter, DailyCaseQuota quota, QuotaIdentityResolver identities,
+    public CaseController(CaseService service, @Qualifier("rateLimiter") RateLimiter limiter, DailyCaseQuota quota, QuotaIdentityResolver identities,
                           tw.lawgraph.auth.AccessPolicy accessPolicy,
                           CaseFileExtractor fileExtractor, tw.lawgraph.usage.DailyTokenBudget budget,
                           @org.springframework.beans.factory.annotation.Value("${lawgraph.test-model:gpt-5.4-nano}") String testModel) {
@@ -182,7 +183,7 @@ public class CaseController {
     }
 
     /** Cloudflare 後優先採用 CF-Connecting-IP；其餘代理靠 server.forward-headers-strategy 還原 X-Forwarded-For。 */
-    static String clientIp(HttpServletRequest http) {
+    public static String clientIp(HttpServletRequest http) {
         String cloudflareIp = http.getHeader("CF-Connecting-IP");
         return cloudflareIp != null ? cloudflareIp : http.getRemoteAddr();
     }
@@ -192,6 +193,11 @@ public class CaseController {
     static class ApiConfig {
         /** 依設定建立每小時限流器。 */
         @Bean RateLimiter rateLimiter(@Value("${lawgraph.rate-limit-per-hour:10}") int perHour) {
+            return new RateLimiter(perHour, Clock.systemUTC());
+        }
+
+        /** 統計端點 /api/stats 專用限流器（與案件 API 分開計數）。 */
+        @Bean RateLimiter statsRateLimiter(@Value("${lawgraph.stats-rate-limit-per-hour:120}") int perHour) {
             return new RateLimiter(perHour, Clock.systemUTC());
         }
 

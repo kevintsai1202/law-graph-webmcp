@@ -38,9 +38,12 @@ public class MemberRetentionJob {
         List<String> stale = members.inactiveSubs(cutoff);
         for (String sub : stale) {
             try {
-                events.anonymize(sub);
+                // 與配額計數同一把雜湊函式；保存期限清理是全量去識別化（含當天）。
+                events.anonymize(tw.lawgraph.usage.IdentityHash.of("user:" + sub));
             } catch (RuntimeException e) {
-                LOGGER.warn("會員 {} 的事件去識別化失敗：{}", sub, e.toString());
+                // 不記 sub（個資），只記雜湊前 8 碼以便對照。
+                LOGGER.warn("會員 {} 的事件去識別化失敗：{}",
+                        tw.lawgraph.usage.IdentityHash.of("user:" + sub).substring(0, 8), e.getClass().getSimpleName());
             }
         }
         int deleted = stale.isEmpty() ? 0 : members.deleteInactiveBefore(cutoff);

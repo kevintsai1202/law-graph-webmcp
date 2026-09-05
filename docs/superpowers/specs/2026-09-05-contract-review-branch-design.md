@@ -127,8 +127,8 @@
 **資料表**（DDL 標準 SQL，測試以 H2 驗證）：
 
 - `case_event`：`case_id VARCHAR PK`、`usage_day VARCHAR(10)`、`mode VARCHAR(16)`、`identity_kind VARCHAR(16)`（anonymous／member）、`identity_hash VARCHAR(64)`（SHA-256，供配額計數，不存原始 IP／sub）、`model VARCHAR(64)`、`status VARCHAR(16)`（RUNNING／COMPLETED／FAILED）、`prompt_tokens BIGINT`、`completion_tokens BIGINT`、`started_at TIMESTAMP`、`finished_at TIMESTAMP NULL`。索引 `(usage_day)`、`(identity_hash, usage_day)`。
-- `member`：`google_sub VARCHAR(64) PK`、`email VARCHAR(255)`、`display_name VARCHAR(255)`、`picture_url VARCHAR(1024)`、`first_login_at TIMESTAMP`、`last_login_at TIMESTAMP`、`login_count INT`、`blocked BOOLEAN`、`blocked_reason VARCHAR(255)`。不存 access／id token。每次 OAuth 登入成功（`OAuth2LoginSuccessHandler`／`OidcUserService` 包裝）upsert 一列並累加 `login_count`；`AccessPolicy` 命中時寫入 `blocked`。`case_event.identity_hash` 對會員改存 `google_sub`（`identity_kind=member`），匿名維持 IP 雜湊。
-- 會員資料保存期限：`last_login_at` 起 12 個月無活動即刪除（每日排程 `MemberRetentionJob`，`LAWGRAPH_MEMBER_RETENTION_DAYS` 預設 365），個資告知只對**首次建立的帳號**顯示一次：`member` 新增 `notice_acknowledged_at TIMESTAMP NULL`；登入成功時若是新建列，`GET /api/me` 回 `firstLogin=true`，前端在頂欄下方顯示可關閉的告知卡（收集目的：身分識別與配額；欄位：Google email、名稱、頭像；保存期限；刪除方式，i18n `privacy.notice.*`），按「我知道了」呼叫 `POST /api/me/notice-ack` 寫入時間戳，之後登入不再顯示；登入按鈕旁不放告知文字；提供 `DELETE /api/me` 讓已登入者自行刪除帳號與其 case_event 關聯（identity_hash 置空）。
+- `member`：`google_sub VARCHAR(64) PK`、`email VARCHAR(255)`、`display_name VARCHAR(255)`、`picture_url VARCHAR(1024)`、`first_login_at TIMESTAMP`、`last_login_at TIMESTAMP`、`login_count INT`、`blocked BOOLEAN`、`blocked_reason VARCHAR(255)`。不存 access／id token。每次 OAuth 登入成功（`OAuth2LoginSuccessHandler`／`OidcUserService` 包裝）upsert 一列並累加 `login_count`；`AccessPolicy` 命中時寫入 `blocked`。`case_event.identity_hash` 對會員存 `"user:<google_sub>"` 的 SHA-256 雜湊（`identity_kind=member`），匿名為 `"ip:<ip>"` 的 SHA-256 雜湊；兩者用同一個雜湊函式，資料庫不落地任何原文。
+- 會員資料保存期限：`last_login_at` 起 12 個月無活動即刪除（每日排程 `MemberRetentionJob`，`LAWGRAPH_MEMBER_RETENTION_DAYS` 預設 365），個資告知只對**首次建立的帳號**顯示一次：`member` 新增 `notice_acknowledged_at TIMESTAMP NULL`；登入成功時若是新建列，`GET /api/me` 回 `firstLogin=true`，前端在頂欄下方顯示可關閉的告知卡（收集目的：身分識別與配額；欄位：Google email、名稱、頭像；保存期限；刪除方式，i18n `privacy.notice.*`），按「我知道了」呼叫 `POST /api/me/notice-ack` 寫入時間戳，之後登入不再顯示；登入按鈕旁不放告知文字；提供 `DELETE /api/me` 讓已登入者自行刪除帳號與其 case_event 關聯（identity_hash 置空）——但只清「今天之前」的列，當日的列保留身分雜湊，否則刪帳號後重新登入即可把當日配額歸零；保存期限排程 `MemberRetentionJob` 才做全量去識別化（含當天）。
 - `usage_daily`：保留並新增欄位 `llm_calls BIGINT`、`cached_tokens BIGINT`、`reasoning_tokens BIGINT`（`ALTER TABLE ... ADD COLUMN IF NOT EXISTS`，H2 與 PostgreSQL 皆支援）。
 
 **元件**：
@@ -137,7 +137,7 @@
 - `TokenUsageListener` 除累加 `DailyTokenBudget` 外，依 `AgentProcessEvent` 的 process id 呼叫 `recordTokens`；流程結束事件呼叫 `recordFinish`。
 - `DailyCaseQuota` 改以 `UsageEventStore.countToday` 為準（有 DB 時），記憶體實作保留給無 DB 環境；`tryAcquire` 成功即 `recordStart`。
 - `LlmUsageStats.record` 同步把 calls／cached／reasoning 累加進 `usage_daily`（透過 `UsageStore` 擴充 `DailyUsage` 欄位）。
-- `StatsController`：`GET /api/stats?days=30`（上限 90）回 `{ days: [{day, total, byMode:{case,contract}, byIdentity:{anonymous,member}, completed, failed, promptTokens, completionTokens, totalTokens}], today: {...}, members: {total, activeToday} }`；速率限制沿用 `RateLimiter`。
+- `StatsController`：`GET /api/stats?days=30`（上限 90）回 `{ days: [{day, total, byMode:{case,contract}, byIdentity:{anonymous,member}, completed, failed, promptTokens, completionTokens, totalTokens}], today: {...}, members: {total, activeToday} }`；速率限制以專屬 `statsRateLimiter`（`lawgraph.stats-rate-limit-per-hour`，預設 120／IP／小時）擋下，超限回 `429 RATE_LIMITED`。
 - 無 DB（`LawGraphDatabase.optional()` 為空）時全部退回記憶體實作並在啟動 log WARN 一次；正式環境已設 `LAWGRAPH_DB_URL`。
 
 ## 6. 錯誤處理

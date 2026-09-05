@@ -101,7 +101,7 @@ class DailyCaseQuotaTest {
         @Override public void recordFinish(String caseId, String status, Instant finishedAt) { throw new IllegalStateException("db down"); }
         @Override public int countToday(String identityHash, LocalDate day) { throw new IllegalStateException("db down"); }
         @Override public List<tw.lawgraph.usage.DailyStats> dailyStats(LocalDate from, LocalDate to) { throw new IllegalStateException("db down"); }
-        @Override public void anonymize(String identityHash) { throw new IllegalStateException("db down"); }
+        @Override public void anonymizeBefore(String identityHash, java.time.LocalDate day) { throw new IllegalStateException("db down"); }
         @Override public String name() { return "broken"; }
     }
 

@@ -27,8 +27,10 @@ class MemberRetentionJobTest {
         assertEquals(1, deleted);
         assertTrue(store.find("old").isEmpty());
         assertTrue(store.find("fresh").isPresent());
-        verify(events).anonymize("old");
-        verify(events, never()).anonymize("fresh");
+        // 去識別化以雜湊 key 呼叫，不得傳入 sub 原文
+        verify(events).anonymize(tw.lawgraph.usage.IdentityHash.of("user:old"));
+        verify(events, never()).anonymize(tw.lawgraph.usage.IdentityHash.of("user:fresh"));
+        verify(events, never()).anonymize("old");
     }
 
     /** 沒有逾期會員時不做任何事。 */

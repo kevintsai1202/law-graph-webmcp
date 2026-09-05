@@ -40,6 +40,8 @@ embabel:
 lawgraph:
   skills-dir: ${LAWGRAPH_SKILLS_DIR:skills/law-powers/skills}
   rate-limit-per-hour: 10
+  # 統計端點 /api/stats 每個來源 IP 每小時查詢上限；此端點會做全表聚合，須避免被連續抓取拖垮資料庫。
+  stats-rate-limit-per-hour: ${LAWGRAPH_STATS_RATE_LIMIT_PER_HOUR:120}
   # 匿名使用者（以 IP 計）每日最多可分析的案件數，台北時間跨日歸零；0 代表不限制。本站免費開放，為了讓更多人用得到才設上限。
   daily-cases-per-user: ${LAWGRAPH_DAILY_CASES_PER_USER:1}
   # 以 Google 登入者的每日上限（以 Google 帳號計數，不受 IP 影響）。

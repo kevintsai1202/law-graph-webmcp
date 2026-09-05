@@ -61,18 +61,20 @@ class MeControllerMemberTest {
         assertThat(mvc.post().uri("/api/me/notice-ack")).hasStatus(401);
     }
 
-    /** 刪除帳號：member 列消失、事件去識別化，回 204。 */
+    /** 刪除帳號：member 列消失、今天之前的事件去識別化（當天保留以免重置配額），回 204。 */
     @Test void deleteAccountRemovesMemberAndAnonymizesEvents() {
         members.recordLogin("s1", "k@example.com", "Kevin", null, Instant.parse("2026-09-05T02:00:00Z"));
         assertThat(mvc.delete().uri("/api/me").with(login())).hasStatus(204);
         assertThat(members.find("s1")).isEmpty();
-        verify(events).anonymize("s1");
+        verify(events).anonymizeBefore(tw.lawgraph.usage.IdentityHash.of("user:s1"),
+                java.time.LocalDate.now(MemberStore.ZONE));
     }
 
     /** 事件去識別化失敗時整筆不刪：回 503 ACCOUNT_DELETE_FAILED，且會員列必須保留。 */
     @Test void deleteAccountFailsLoudlyWhenAnonymizeFails() {
         members.recordLogin("s1", "k@example.com", "Kevin", null, Instant.parse("2026-09-05T02:00:00Z"));
-        org.mockito.Mockito.doThrow(new IllegalStateException("db down")).when(events).anonymize("s1");
+        org.mockito.Mockito.doThrow(new IllegalStateException("db down")).when(events)
+                .anonymizeBefore(org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.any());
         var rejected = mvc.delete().uri("/api/me").with(login()).exchange();
         assertThat(rejected).hasStatus(503);
         assertThat(rejected).bodyJson().extractingPath("$.error").isEqualTo("ACCOUNT_DELETE_FAILED");

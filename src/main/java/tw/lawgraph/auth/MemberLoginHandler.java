@@ -45,9 +45,11 @@ public class MemberLoginHandler implements AuthenticationSuccessHandler {
                 // 每次登入都依名單同步封鎖狀態：命中就封鎖，未命中就解除（名單移除後要能恢復使用）。
                 if (policy.isBlocked(email)) store.block(sub, AccessPolicy.ERROR_CODE);
                 else store.unblock(sub);
-                if (result != null && result.created()) LOGGER.info("新會員首次登入：sub={}", sub);
+                // 不記 sub／email（個資），只記身分雜湊前 8 碼供對照。
+                if (result != null && result.created())
+                    LOGGER.info("新會員首次登入：id={}", tw.lawgraph.usage.IdentityHash.of("user:" + sub).substring(0, 8));
             } catch (RuntimeException e) {
-                LOGGER.warn("會員登入記錄失敗，不影響登入：{}", e.toString());
+                LOGGER.warn("會員登入記錄失敗，不影響登入：{}", e.getClass().getSimpleName());
             }
         }
         response.sendRedirect("/");

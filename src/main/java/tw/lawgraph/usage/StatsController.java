@@ -1,14 +1,20 @@
 package tw.lawgraph.usage;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.CacheControl;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import tw.lawgraph.api.ApiExceptionHandler;
+import tw.lawgraph.api.CaseController;
+import tw.lawgraph.api.RateLimiter;
 import tw.lawgraph.auth.MemberStore;
 
 import java.time.Clock;
@@ -30,23 +36,32 @@ public class StatsController {
     private final MemberStore members;
     /** 「今天」的判定時鐘，測試可注入固定時鐘。 */
     private final Clock clock;
+    /** 統計端點專用限流器（每 IP 每小時）；本端點雖唯讀但會掃全表聚合，須防止被連續抓取拖垮資料庫。 */
+    private final RateLimiter limiter;
 
     /** 正式環境建構子：以台北時區的系統時鐘判定日期。 */
     @Autowired
-    public StatsController(UsageEventStore events, MemberStore members) {
-        this(events, members, Clock.system(MemberStore.ZONE));
+    public StatsController(UsageEventStore events, MemberStore members,
+                           @Qualifier("statsRateLimiter") RateLimiter limiter) {
+        this(events, members, Clock.system(MemberStore.ZONE), limiter);
     }
 
     /** 測試用建構子：可注入固定時鐘以驗證日期夾住與邊界行為。 */
-    StatsController(UsageEventStore events, MemberStore members, Clock clock) {
+    StatsController(UsageEventStore events, MemberStore members, Clock clock, RateLimiter limiter) {
         this.events = events;
         this.members = members;
         this.clock = clock;
+        this.limiter = limiter;
     }
 
     /** GET /api/stats?days=30：days 夾住在 [1,90]，回傳每日列表、today 摘要與會員概況。 */
     @GetMapping("/api/stats")
-    public ResponseEntity<StatsView> stats(@RequestParam(defaultValue = "30") int days) {
+    public ResponseEntity<?> stats(@RequestParam(defaultValue = "30") int days, HttpServletRequest http) {
+        // 超過每小時上限即回 429，避免統計端點被當成免費的全表掃描
+        if (!limiter.tryAcquire(CaseController.clientIp(http))) {
+            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                    .body(ApiExceptionHandler.error("RATE_LIMITED", "統計查詢過於頻繁，請稍後再試。"));
+        }
         int clampedDays = Math.max(1, Math.min(90, days));
         LocalDate today = LocalDate.now(clock);
         LocalDate from = today.minusDays(clampedDays - 1L);
@@ -64,7 +79,7 @@ public class StatsController {
         try {
             return new Members(members.count(), members.countActiveOn(today));
         } catch (RuntimeException e) {
-            log.warn("MemberStore 查詢失敗，統計回應以 -1/-1 佔位: {}", e.toString());
+            log.warn("MemberStore 查詢失敗，統計回應以 -1/-1 佔位: {}", e.getClass().getSimpleName());
             return new Members(-1, -1);
         }
     }

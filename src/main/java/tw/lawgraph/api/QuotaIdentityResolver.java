@@ -21,10 +21,11 @@ public class QuotaIdentityResolver {
 
         /**
          * 寫進 case_event 與配額計數用的身分識別：
-         * 會員取 Google sub 原值（本來就不是個資明碼且需可跨裝置累計），匿名者把 IP 雜湊掉避免落地原始 IP。
+         * 會員與匿名者一律以同一個 SHA-256 函式雜湊（會員為 "user:<sub>"、匿名為 "ip:<ip>"），
+         * 資料庫不落地任何可直接識別的原文。
          */
         public String hash() {
-            return member ? key.substring("user:".length()) : IdentityHash.of(key);
+            return IdentityHash.of(key);
         }
     }
 

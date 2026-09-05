@@ -14,9 +14,11 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
 import tw.lawgraph.api.AccountDeletionException;
+import tw.lawgraph.usage.IdentityHash;
 import tw.lawgraph.usage.UsageEventStore;
 
 import java.time.Instant;
+import java.time.LocalDate;
 
 /**
  * 揭露目前登入者給前端右上角選單：未登入回 loggedIn=false 與登入路徑。
@@ -72,7 +74,7 @@ public class MeController {
     }
 
     /**
-     * DELETE /api/me：先去識別化使用事件、再刪除會員資料，最後登出；未登入回 401。
+     * DELETE /api/me：先去識別化今天之前的使用事件、再刪除會員資料，最後登出；未登入回 401。
      * 順序不可顛倒——若先刪會員而去識別化失敗，就會留下無人可對應卻仍可識別的事件；
      * 因此去識別化失敗時整筆不刪，改以 503 ACCOUNT_DELETE_FAILED 明確告知。
      */
@@ -81,9 +83,10 @@ public class MeController {
         if (user == null) return ResponseEntity.status(401).build();
         String sub = subject(user);
         try {
-            events.anonymize(sub);
+            // 只去識別化今天之前的事件：當天的列保留身分雜湊，避免刪帳號後重新登入即重置當日配額。
+            events.anonymizeBefore(IdentityHash.of("user:" + sub), LocalDate.now(MemberStore.ZONE));
         } catch (RuntimeException e) {
-            LOGGER.warn("刪除帳號時事件去識別化失敗，中止刪除：{}", e.toString());
+            LOGGER.warn("刪除帳號時事件去識別化失敗，中止刪除：{}", e.getClass().getSimpleName());
             throw new AccountDeletionException(e);
         }
         members.delete(sub);
