@@ -157,3 +157,22 @@ test('start 於 multipart（有附件）分支帶 extra.mode 時附上 mode／pa
   await client.start('A hit B', 'en', [], [fakeFile]);
   assert.equal(calls[1].init.body.get('mode'), null);
 });
+
+test('poll 可指定 skipWaitingIf：符合的過期 WAITING 不通知也不停止，直到狀態改變', async () => {
+  const statuses = [
+    { status: 'WAITING', questions: [{ id: 'q1' }] },
+    { status: 'WAITING', questions: [{ id: 'q1' }] },
+    { status: 'RUNNING', step: 'RESEARCH' },
+    { status: 'COMPLETED' }
+  ];
+  let i = 0;
+  const c = createCaseClient(async () => ({ ok: true, json: async () => statuses[Math.min(i++, statuses.length - 1)] }));
+  const seen = [];
+  // 未實作時 poll 會在第一個 WAITING 停下、永不完成，故以 300ms 保險收尾讓測試明確失敗而非掛住
+  await new Promise((res) => {
+    const guard = setTimeout(res, 300);
+    c.poll('p1', (s) => { seen.push(s.status); if (s.status === 'COMPLETED') { clearTimeout(guard); res(); } }, 5,
+      { skipWaitingIf: (s) => s.questions?.map((q) => q.id).join() === 'q1' });
+  });
+  assert.deepEqual(seen, ['RUNNING', 'COMPLETED']);
+});

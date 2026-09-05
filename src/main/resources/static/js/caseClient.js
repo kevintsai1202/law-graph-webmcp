@@ -73,13 +73,18 @@ export function createCaseClient(fetchImpl = globalThis.fetch, base = '', { entr
      * 短暫的 5xx／網路錯誤（例如部署換容器的一分鐘）不立刻判失敗：改以 failureIntervalMs 重試，
      * 連續失敗達 maxFailures 才回 FAILED／NETWORK；404（案件不存在）則立即失敗。
      */
-    poll(id, onStatus, intervalMs = 2000, { maxFailures = 3, failureIntervalMs = 10000 } = {}) {
+    /**
+     * 輪詢案件狀態：COMPLETED／FAILED／WAITING 停止。
+     * skipWaitingIf(s)：回 true 的 WAITING 視為「剛回答完、後端尚未接手」的過期狀態——不通知、不停止，繼續輪詢到狀態改變。
+     */
+    poll(id, onStatus, intervalMs = 2000, { maxFailures = 3, failureIntervalMs = 10000, skipWaitingIf = null } = {}) {
       let stopped = false; let timer = null; let failures = 0;
       const tick = async () => {
         if (stopped) return;
         try {
           const s = await call(`/api/cases/${encodeURIComponent(id)}`);
           failures = 0;
+          if (s.status === 'WAITING' && skipWaitingIf?.(s)) { timer = setTimeout(tick, intervalMs); return; }
           onStatus(s);
           if (s.status === 'COMPLETED' || s.status === 'FAILED' || s.status === 'WAITING') { stopped = true; return; }
         } catch (e) {

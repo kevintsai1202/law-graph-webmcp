@@ -55,6 +55,11 @@ public class CaseService {
     private final Map<String, String> timedOut = new ConcurrentHashMap<>();
     /** caseId → 啟動時的流程模式（case／contract）。 */
     private final Map<String, String> modes = new ConcurrentHashMap<>();
+    /**
+     * 已收到回答的等待物件 id。platform.start 是非同步的，回答寫入後流程可能仍短暫停在 WAITING、
+     * 等待物件也還在 blackboard；記下已答者，狀態查詢才不會把同一組問題再回給前端（前端會重畫並停止輪詢）。
+     */
+    private final java.util.Set<String> answeredAwaitables = ConcurrentHashMap.newKeySet();
     /** case_event 事件儲存：案件結束時回寫終態。 */
     private final tw.lawgraph.usage.UsageEventStore events;
     /** 已回寫過終態的案件，確保每個案件只寫一次。 */
@@ -227,7 +232,8 @@ public class CaseService {
         if (process == null || !locales.containsKey(caseId)) throw new CaseNotFoundException(caseId);
         if (process.getStatus() != AgentProcessStatusCode.WAITING) throw new CaseNotWaitingException(caseId);
         BaseQuestionsAwaitable<?> awaitable = pendingAwaitable(process.getBlackboard());
-        if (awaitable == null) throw new CaseNotWaitingException(caseId);
+        // 等待物件不存在或已回答過（流程尚未接手的空窗期重送）都視為「目前沒有可回答的問題」
+        if (awaitable == null || !answeredAwaitables.add(awaitable.getId())) throw new CaseNotWaitingException(caseId);
         awaitable.onResponse(new AnswersResponse(awaitable.getId(), answers), process);
         platform.start(process);
         return status(caseId);
@@ -237,13 +243,18 @@ public class CaseService {
     private StatusSnapshot snapshot(String caseId, AgentProcess process) {
         Blackboard blackboard = process.getBlackboard();
         BaseQuestionsAwaitable<?> awaitable = pendingAwaitable(blackboard);
-        List<Question> pending = process.getStatus() == AgentProcessStatusCode.WAITING && awaitable != null
-                ? awaitable.questions() : null;
+        AgentProcessStatusCode code = process.getStatus();
+        // 已回答但流程尚未接手：對外視為 RUNNING，不再帶出同一組問題
+        if (code == AgentProcessStatusCode.WAITING && (awaitable == null || answeredAwaitables.contains(awaitable.getId()))) {
+            code = AgentProcessStatusCode.RUNNING;
+            awaitable = null;
+        }
+        List<Question> pending = code == AgentProcessStatusCode.WAITING ? awaitable.questions() : null;
         Object failure = process.getFailureInfo();
         String timeout = timedOut.get(caseId);
         // 條款分批審查失敗需以錯誤碼形式傳給前端，否則客戶端只看得到一段例外字串
         String failureCode = failureCode(timeout, failure);
-        return new StatusSnapshot(caseId, locales.get(caseId), process.getStatus(),
+        return new StatusSnapshot(caseId, locales.get(caseId), code,
                 blackboard.last(BrainstormResult.class), pending, blackboard.last(UserAnswers.class),
                 blackboard.last(ResearchResult.class), blackboard.last(AnalysisResult.class),
                 blackboard.last(CaseAssessment.class),

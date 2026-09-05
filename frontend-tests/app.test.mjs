@@ -424,3 +424,27 @@ test('離開統計頁：已完成的合約案件會被還原成結果頁而非�
     assert.equal(h.storage.getItem('caseId'), 'c7');
   } finally { h.restore(); }
 });
+
+test('回答送出後若後端仍回同一組問題的過期 WAITING，畫面改為進行中並持續輪詢，不能停在原表單', async () => {
+  const stale = { caseId: 'c1', status: 'WAITING', step: 'QUESTIONS', questions: [{ id: 'q1', text: '?', why: 'w' }] };
+  let pollOpts = null;
+  const client = {
+    async samples() { return []; },
+    async authStatus() { return { enabled: false }; },
+    async answer() { return stale; },
+    poll(id, onStatus, intervalMs, opts) { pollOpts = opts; return () => {}; },
+    verify() {}
+  };
+  const app = createApp({ root: mountRoot(), client, storage: fakeStorage(), navigatorLanguage: 'zh-TW' });
+  await app.mount();
+  app.dispatch({ type: 'START', caseId: 'c1' });
+  app.dispatch({ type: 'STATUS', status: stale });
+  assert.equal(app.getState().view, 'QUESTIONS');
+  const s = await app.answer([{ questionId: 'q1', answer: 'x' }]);
+  assert.equal(s.status, 'RUNNING');
+  assert.equal(app.getState().view, 'RUNNING');
+  assert.equal(app.getState().last.questions, null);
+  // 輪詢要能略過同一組問題的過期 WAITING；換了一組新問題則正常停下
+  assert.equal(pollOpts.skipWaitingIf(stale), true);
+  assert.equal(pollOpts.skipWaitingIf({ status: 'WAITING', questions: [{ id: 'r2q1' }] }), false);
+});

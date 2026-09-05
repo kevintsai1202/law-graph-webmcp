@@ -270,7 +270,7 @@ export function createApp({ root, client, storage, navigatorLanguage, partialCol
   }
 
   /** 開始（或重新開始）輪詢指定案件。 */
-  function beginPolling(caseId, { resumed = false } = {}) {
+  function beginPolling(caseId, { resumed = false, skipWaitingIf = null } = {}) {
     if (stopPolling) stopPolling();
     stopPolling = client.poll(caseId, (s) => {
       // 續接（F5／重開頁面）時若案件已不存在（服務重啟後記憶體案件清空），直接清除記錄回到輸入頁，不當成分析失敗。
@@ -281,7 +281,7 @@ export function createApp({ root, client, storage, navigatorLanguage, partialCol
         return;
       }
       dispatch({ type: 'STATUS', status: s });
-    });
+    }, undefined, skipWaitingIf ? { skipWaitingIf } : undefined);
   }
 
   /** 啟動新案件；回傳 CaseStatus（空白文字回 null）。 */
@@ -353,6 +353,11 @@ export function createApp({ root, client, storage, navigatorLanguage, partialCol
   /** 送出回答並續接輪詢。 */
   /** 送出人工回答並續接輪詢；失敗（例如服務重啟後案件已不存在）要顯示失敗頁，不能按了沒反應。 */
   async function answer(answers) {
+    /** 這次回答的題目 id 集合（排序後串接）；用來辨識後端回傳的是否還是同一組題目。 */
+    const answeredKey = answers.map((a) => a.questionId).sort().join('|');
+    /** 後端非同步接手流程前，狀態可能仍是帶同一組題目的 WAITING：這是過期狀態，不能當成新問題重畫。 */
+    const isStaleWaiting = (st) => st?.status === 'WAITING'
+      && (st.questions || []).map((q) => q.id).sort().join('|') === answeredKey;
     let s;
     try {
       s = await client.answer(state.caseId, answers);
@@ -363,8 +368,9 @@ export function createApp({ root, client, storage, navigatorLanguage, partialCol
       } });
       throw error;
     }
+    if (isStaleWaiting(s)) s = { ...s, status: 'RUNNING', step: s.step || 'QUESTIONS', questions: null };
     dispatch({ type: 'STATUS', status: s });
-    beginPolling(state.caseId);
+    beginPolling(state.caseId, { skipWaitingIf: isStaleWaiting });
     return s;
   }
 

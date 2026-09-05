@@ -1591,7 +1591,7 @@
       ${error?.code === "DAILY_CASE_LIMIT" ? `<p class="alt">${esc(t("quota.reason", loc))} <a href="${LAW_POWERS_URL}" target="_blank" rel="noopener">${esc(t("usage.exhausted.action", loc))} \u2197</a></p>` : ""}
       <div class="actions"><button id="retry" type="button" class="primary">${ICONS.refresh}${esc(t("failed.retry", loc))}</button></div></section>`;
     }
-    function beginPolling(caseId, { resumed = false } = {}) {
+    function beginPolling(caseId, { resumed = false, skipWaitingIf = null } = {}) {
       if (stopPolling) stopPolling();
       stopPolling = client.poll(caseId, (s) => {
         if (resumed && s?.status === "FAILED" && s?.error?.code === "CASE_NOT_FOUND") {
@@ -1601,7 +1601,7 @@
           return;
         }
         dispatch({ type: "STATUS", status: s });
-      });
+      }, void 0, skipWaitingIf ? { skipWaitingIf } : void 0);
     }
     async function start(text, outputs, files = [], motionRequest = "", extra = {}) {
       if ((!text || !text.trim()) && (!Array.isArray(files) || !files.length)) return null;
@@ -1651,6 +1651,8 @@
       return smp ? start(smp.text, outputs, [], "", extra) : null;
     }
     async function answer(answers) {
+      const answeredKey = answers.map((a) => a.questionId).sort().join("|");
+      const isStaleWaiting = (st) => st?.status === "WAITING" && (st.questions || []).map((q) => q.id).sort().join("|") === answeredKey;
       let s;
       try {
         s = await client.answer(state.caseId, answers);
@@ -1663,8 +1665,9 @@
         } });
         throw error;
       }
+      if (isStaleWaiting(s)) s = { ...s, status: "RUNNING", step: s.step || "QUESTIONS", questions: null };
       dispatch({ type: "STATUS", status: s });
-      beginPolling(state.caseId);
+      beginPolling(state.caseId, { skipWaitingIf: isStaleWaiting });
       return s;
     }
     function captureQuestionDraft() {
@@ -2086,7 +2089,11 @@
        * 短暫的 5xx／網路錯誤（例如部署換容器的一分鐘）不立刻判失敗：改以 failureIntervalMs 重試，
        * 連續失敗達 maxFailures 才回 FAILED／NETWORK；404（案件不存在）則立即失敗。
        */
-      poll(id, onStatus, intervalMs = 2e3, { maxFailures = 3, failureIntervalMs = 1e4 } = {}) {
+      /**
+       * 輪詢案件狀態：COMPLETED／FAILED／WAITING 停止。
+       * skipWaitingIf(s)：回 true 的 WAITING 視為「剛回答完、後端尚未接手」的過期狀態——不通知、不停止，繼續輪詢到狀態改變。
+       */
+      poll(id, onStatus, intervalMs = 2e3, { maxFailures = 3, failureIntervalMs = 1e4, skipWaitingIf = null } = {}) {
         let stopped = false;
         let timer = null;
         let failures = 0;
@@ -2095,6 +2102,10 @@
           try {
             const s = await call(`/api/cases/${encodeURIComponent(id)}`);
             failures = 0;
+            if (s.status === "WAITING" && skipWaitingIf?.(s)) {
+              timer = setTimeout(tick, intervalMs);
+              return;
+            }
             onStatus(s);
             if (s.status === "COMPLETED" || s.status === "FAILED" || s.status === "WAITING") {
               stopped = true;

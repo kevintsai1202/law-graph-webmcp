@@ -97,6 +97,29 @@ class CaseServiceTest {
         verify(platform, times(2)).start(process); assertNotNull(status);
     }
 
+    /**
+     * platform.start 是非同步：回答寫入後流程可能還停在 WAITING、等待物件仍在 blackboard。
+     * 此時回傳的狀態不得再是 WAITING（前端會重畫同一組問題並停止輪詢，看起來像「按了沒反應」），要視為 RUNNING。
+     */
+    @Test void answerMasksStaleWaitingUntilProcessResumes() {
+        service.start("x", Locale.EN, List.of());
+        var awaitable = new SecondRoundQuestionsAwaitable(List.of(new Question("r2q1", "?", "why")));
+        when(process.getStatus()).thenReturn(AgentProcessStatusCode.WAITING);
+        when(blackboard.last(SecondRoundQuestionsAwaitable.class)).thenReturn(awaitable);
+        var afterAnswer = service.answer("p1", List.of(new Answer("r2q1", "second")));
+        assertEquals("RUNNING", afterAnswer.status());
+        assertEquals(null, afterAnswer.questions());
+        // 後續輪詢在流程真正接手前也不得回到 WAITING
+        assertEquals("RUNNING", service.status("p1").status());
+        // 同一等待物件不可重複回答
+        assertThrows(CaseNotWaitingException.class, () -> service.answer("p1", List.of(new Answer("r2q1", "again"))));
+        // 流程接手後進入下一輪新的等待物件，才恢復 WAITING
+        var third = new tw.lawgraph.agent.ThirdRoundQuestionsAwaitable(List.of(new Question("r3q1", "?", "why")));
+        when(blackboard.last(tw.lawgraph.agent.ThirdRoundQuestionsAwaitable.class)).thenReturn(third);
+        assertEquals("WAITING", service.status("p1").status());
+        assertEquals("r3q1", service.status("p1").questions().get(0).id());
+    }
+
     /** 第二輪 WAITING 必須把答案寫成獨立型別，避免被第一輪 UserAnswers 吞掉。 */
     @Test void answerSecondRoundUsesDistinctPayloadAndResumes() {
         service.start("x", Locale.EN, List.of());
