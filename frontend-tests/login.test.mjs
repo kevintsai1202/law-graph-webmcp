@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { renderLogin } from '../src/main/resources/static/js/login.js';
+import { renderLogin, bindLogin } from '../src/main/resources/static/js/login.js';
 
 // 用途：右上角登入區三種狀態（未啟用／未登入／已登入）的呈現契約。
 test('後端未啟用 Google 登入時整塊不顯示', () => {
@@ -33,4 +33,18 @@ test('登入者為使用授權排除方：顯示拒絕訊息與登出，不顯�
   assert.match(html, /經兆國際法律事務所/);
   assert.match(html, /id="logout-btn"/);
   assert.doesNotMatch(html, /<img class="avatar"/);
+});
+
+test('登出按鈕以表單 POST /logout 送出，不用 fetch＋reload', () => {
+  const submitted = [];
+  const form = { method: '', action: '', hidden: false, submit() { submitted.push(this.action + ':' + this.method); } };
+  const appended = [];
+  globalThis.document = { createElement: () => form, body: { appendChild: (n) => appended.push(n) } };
+  const btn = { disabled: false, listeners: new Map(), addEventListener(t, l) { this.listeners.set(t, l); } };
+  bindLogin({ querySelector: () => btn });
+  btn.listeners.get('click')();
+  delete globalThis.document;
+  assert.equal(btn.disabled, true);
+  assert.deepEqual(submitted, ['/logout:POST']);
+  assert.equal(appended.length, 1);
 });

@@ -37,6 +37,19 @@ if (cssOverride) await page.route('**/css/app.css*', (r) => r.fulfill({ path: cs
 const all = [];
 page.on('response', (r) => all.push(`${r.status()} ${r.request().resourceType()} ${r.url().replace(url, '/')}`));
 await page.goto(url, { waitUntil: 'networkidle' });
+// --logout-first：模擬右上角登出（POST /logout 後整頁重載），看重載後首頁是否卡住
+if (process.argv.includes('--logout-first')) {
+  const r = await page.evaluate(async () => { const res = await fetch('/logout', { method: 'POST', redirect: 'manual' }); return { type: res.type, status: res.status }; });
+  console.log('logout response:', JSON.stringify(r));
+  // 重載後只等 DOM，再列出 8 秒內仍未完成的請求（找出卡住的那一個）
+  const pending = new Map();
+  page.on('request', (q) => pending.set(q, q.url()));
+  page.on('requestfinished', (q) => pending.delete(q));
+  page.on('requestfailed', (q) => pending.delete(q));
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.waitForTimeout(8000);
+  console.log('pending after 8s:', JSON.stringify([...pending.values()].map((u) => u.replace(url, '/'))));
+}
 await page.waitForTimeout(3000);
 const info = await page.evaluate(() => ({
   title: document.querySelector('h1')?.textContent,

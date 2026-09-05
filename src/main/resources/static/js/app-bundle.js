@@ -2584,13 +2584,21 @@
   }
   function bindLogin(root, { logout } = {}) {
     const btn = root.querySelector("#logout-btn");
-    if (btn) btn.addEventListener("click", async () => {
+    if (!btn) return;
+    btn.addEventListener("click", () => {
       btn.disabled = true;
-      try {
-        await logout?.();
-      } finally {
-        globalThis.location?.reload?.();
+      if (typeof logout === "function") {
+        logout();
+        return;
       }
+      const doc = globalThis.document;
+      if (!doc?.createElement) return;
+      const form = doc.createElement("form");
+      form.method = "POST";
+      form.action = "/logout";
+      form.hidden = true;
+      doc.body.appendChild(form);
+      form.submit();
     });
   }
 
@@ -2615,7 +2623,7 @@
     if (!authSlot) return;
     authSlot.replaceChildren();
     authSlot.insertAdjacentHTML("afterbegin", renderLogin(me, app.getQuota?.(), app.getLocale()));
-    bindLogin(authSlot, { logout: () => app.client?.logout?.() });
+    bindLogin(authSlot);
   };
   var refreshMe = async () => {
     try {

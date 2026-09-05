@@ -37,7 +37,7 @@ const updateLoginSlot = () => {
   if (!authSlot) return;
   authSlot.replaceChildren();
   authSlot.insertAdjacentHTML('afterbegin', renderLogin(me, app.getQuota?.(), app.getLocale()));
-  bindLogin(authSlot, { logout: () => app.client?.logout?.() });
+  bindLogin(authSlot); // 登出走表單 POST（見 login.js），不傳 fetch 版 logout
 };
 
 /** 讀取登入身分後重繪登入區；失敗不影響其他功能。 */

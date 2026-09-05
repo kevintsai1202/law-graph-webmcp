@@ -32,11 +32,20 @@ export function renderLogin(me, quota, locale) {
   </a>`;
 }
 
-/** 綁定登出：POST /logout 後整頁重載，讓配額與選單同步更新。 */
+/**
+ * 綁定登出：以表單 POST /logout，讓瀏覽器自己跟隨 302 回首頁。
+ * 不用 fetch(redirect:'manual')＋reload：實測（e2e/diagnose-logout.mjs）那種做法會讓重載後的頁面腳本不執行、停在空白首頁。
+ */
 export function bindLogin(root, { logout } = {}) {
   const btn = root.querySelector('#logout-btn');
-  if (btn) btn.addEventListener('click', async () => {
+  if (!btn) return;
+  btn.addEventListener('click', () => {
     btn.disabled = true;
-    try { await logout?.(); } finally { globalThis.location?.reload?.(); }
+    if (typeof logout === 'function') { logout(); return; }
+    const doc = globalThis.document;
+    if (!doc?.createElement) return;
+    const form = doc.createElement('form');
+    form.method = 'POST'; form.action = '/logout'; form.hidden = true;
+    doc.body.appendChild(form); form.submit();
   });
 }
