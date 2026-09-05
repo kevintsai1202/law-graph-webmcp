@@ -179,3 +179,59 @@ test('mount 依 hash 進入對應模式輸入頁；續接時讀 storage.mode', a
   await resumed.mount();
   assert.equal(resumed.getMode(), 'contract'); assert.equal(resumed.getState().view, 'RUNNING');
 });
+
+/** 建立帶有輸出勾選框的根節點替身，供 setOutputs 測試代勾可見表單。 */
+function outputsRoot(values) {
+  const base = mountRoot();
+  const boxes = values.map((value) => ({ value, checked: false, dispatchEvent() {} }));
+  return {
+    querySelector: (selector) => base.querySelector(selector),
+    querySelectorAll: (selector) => (selector === 'input[name="outputs"]' ? boxes : []),
+    boxes
+  };
+}
+
+test('setOutputs 依模式驗證：合約模式接受 revised、拒絕 graph', async () => {
+  const client = { samples: async () => [], poll: () => () => {}, usage: async () => null, quota: async () => null, authStatus: async () => null };
+  const root = outputsRoot(['revised']);
+  const app = createApp({ root, client, storage: fakeStorage(), navigatorLanguage: 'zh-TW', locationLike: { hash: '', pathname: '/', search: '' } });
+  await app.mount();
+  await app.selectMode('contract');
+
+  const ok = app.setOutputs(['revised']);
+  assert.equal(ok.ok, true);
+  assert.deepEqual(ok.applied, ['revised']);
+  assert.equal(root.boxes[0].checked, true);
+
+  const bad = app.setOutputs(['graph']);
+  assert.equal(bad.ok, false);
+  assert.equal(bad.error, 'INVALID_OUTPUTS');
+  assert.deepEqual(bad.validOutputs, ['revised']);
+});
+
+test('完成頁把 hash 改回 #/ 會回首頁並清除案件記錄', async () => {
+  const originalAdd = globalThis.addEventListener;
+  /** 攔截 app 註冊的 hashchange 監聽器，測試中直接觸發。 */
+  let onHashChange = null;
+  globalThis.addEventListener = (type, handler) => { if (type === 'hashchange') onHashChange = handler; };
+  try {
+    const client = { samples: async () => [], poll: () => () => {}, usage: async () => null, quota: async () => null, authStatus: async () => null };
+    const storage = fakeStorage();
+    const loc = { hash: '', pathname: '/', search: '' };
+    const app = createApp({ root: mountRoot(), client, storage, navigatorLanguage: 'zh-TW', locationLike: loc });
+    await app.mount();
+    await app.selectMode('contract');
+    storage.setItem('caseId', 'c5'); storage.setItem('mode', 'contract');
+    app.dispatch({ type: 'START', caseId: 'c5', mode: 'contract' });
+    app.dispatch({ type: 'STATUS', status: { caseId: 'c5', status: 'COMPLETED', mode: 'contract', result: {} } });
+    assert.equal(app.getState().view, 'RESULT');
+
+    loc.hash = '#/';
+    assert.equal(typeof onHashChange, 'function');
+    await onHashChange();
+    assert.equal(app.getState().view, 'HOME');
+    assert.equal(storage.getItem('caseId'), null);
+  } finally {
+    globalThis.addEventListener = originalAdd;
+  }
+});

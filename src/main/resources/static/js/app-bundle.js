@@ -45,6 +45,7 @@
       "home.start": "Start",
       "home.steps.case": "Facts \xB7 Questions \xB7 Research \xB7 Subsumption \xB7 Defenses \xB7 Documents \xB7 Graph",
       "home.steps.contract": "Load \xB7 Questions \xB7 Research \xB7 Clause review \xB7 Summary \xB7 Revision \xB7 Graph",
+      "home.leaveConfirm": "Leave this case and return home? The analysis will be discarded.",
       "progress.contract.LOAD": "Reading the contract",
       "progress.contract.QUESTIONS": "Clarifying questions",
       "progress.contract.RESEARCH": "Statute & case-law research",
@@ -292,6 +293,7 @@
       "home.start": "\u958B\u59CB",
       "home.steps.case": "\u6848\u60C5 \xB7 \u88DC\u554F \xB7 \u6AA2\u7D22 \xB7 \u6DB5\u652C \xB7 \u6297\u8FAF \xB7 \u66F8\u72C0 \xB7 \u95DC\u4FC2\u5716",
       "home.steps.contract": "\u8F09\u5165 \xB7 \u88DC\u554F \xB7 \u6AA2\u7D22 \xB7 \u9010\u689D\u5BE9\u67E5 \xB7 \u6458\u8981 \xB7 \u4FEE\u8A02 \xB7 \u7FA9\u52D9\u5716",
+      "home.leaveConfirm": "\u8981\u96E2\u958B\u9019\u500B\u6848\u4EF6\u56DE\u9996\u9801\u55CE\uFF1F\u5206\u6790\u7D50\u679C\u5C07\u88AB\u653E\u68C4\u3002",
       "progress.contract.LOAD": "\u8B80\u53D6\u5951\u7D04\u8207\u5207\u5206\u689D\u6B3E",
       "progress.contract.QUESTIONS": "\u88DC\u5145\u8CC7\u8A0A\uFF08\u7B49\u5F85\u4F60\u7684\u56DE\u7B54\uFF09",
       "progress.contract.RESEARCH": "\u627E\u6CD5\u689D\u8207\u5224\u6C7A\uFF08\u5F37\u884C\u898F\u5B9A\u8207\u5BE6\u52D9\u898B\u89E3\u6AA2\u7D22\uFF09",
@@ -1531,10 +1533,11 @@
         return { ok: false, error: "INPUT_NOT_VISIBLE", message: "Output checkboxes are only visible on the input page." };
       }
       const requested = Array.isArray(outputs) ? outputs : [];
-      if (!requested.some((output) => OUTPUT_OPTIONS.includes(output))) {
-        return { ok: false, error: "INVALID_OUTPUTS", validOutputs: [...OUTPUT_OPTIONS], message: "outputs must contain at least one valid option." };
+      const valid = outputOptionsFor(mode());
+      if (!requested.some((output) => valid.includes(output))) {
+        return { ok: false, error: "INVALID_OUTPUTS", validOutputs: [...valid], message: "outputs must contain at least one valid option." };
       }
-      const applied = normalizeOutputs(requested);
+      const applied = normalizeOutputs(requested, mode());
       const boxes = [...root.querySelectorAll('input[name="outputs"]')];
       if (!boxes.length) {
         return { ok: false, error: "INPUT_NOT_VISIBLE", message: "Output checkboxes are not rendered yet." };
@@ -1656,14 +1659,14 @@
       }
       const initial = parseHash(locationLike?.hash);
       bindHashChange();
+      const saved = storage.getItem("caseId");
+      const savedMode = saved ? storage.getItem("mode") || "case" : null;
       const [, loadedSamples] = await Promise.all([
         refreshAuthStatus(),
-        Promise.resolve().then(() => client.samples(locale2, initial.mode || "case")).catch(() => [])
+        Promise.resolve().then(() => client.samples(locale2, savedMode || initial.mode || "case")).catch(() => [])
       ]);
       samples = loadedSamples;
-      const saved = storage.getItem("caseId");
       if (saved) {
-        const savedMode = storage.getItem("mode") || "case";
         try {
           selectedOutputs = normalizeOutputs(JSON.parse(storage.getItem("outputs")), savedMode);
         } catch {
@@ -1681,10 +1684,29 @@
       hashListenerBound = true;
       globalThis.addEventListener?.("hashchange", () => {
         const parsed = parseHash(locationLike?.hash);
-        if (state.view === States.HOME && parsed.view === "INPUT") selectMode(parsed.mode);
-        else if (parsed.view === "HOME" && state.view === States.INPUT) goHome();
-        else if (state.view === States.INPUT && parsed.view === "INPUT" && parsed.mode !== mode()) selectMode(parsed.mode);
+        if (state.view === States.HOME && parsed.view === "INPUT") return selectMode(parsed.mode);
+        if (parsed.view === "HOME" && state.view !== States.HOME) return leaveToHome();
+        if (state.view === States.INPUT && parsed.view === "INPUT" && parsed.mode !== mode()) return selectMode(parsed.mode);
+        return void 0;
       });
+    }
+    function leaveToHome() {
+      if (state.view === States.INPUT) {
+        goHome();
+        return Promise.resolve();
+      }
+      if (state.view === States.RUNNING || state.view === States.QUESTIONS) {
+        if (stopPolling) {
+          stopPolling();
+          stopPolling = null;
+        }
+        if (globalThis.confirm?.(t("home.leaveConfirm", locale2)) === false) {
+          if (locationLike) locationLike.hash = hashFor(state);
+          if (state.caseId) beginPolling(state.caseId, { resumed: true });
+          return Promise.resolve();
+        }
+      }
+      return reset();
     }
     return {
       mount: mount2,

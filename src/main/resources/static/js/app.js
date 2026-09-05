@@ -449,10 +449,12 @@ export function createApp({ root, client, storage, navigatorLanguage, partialCol
       return { ok: false, error: 'INPUT_NOT_VISIBLE', message: 'Output checkboxes are only visible on the input page.' };
     }
     const requested = Array.isArray(outputs) ? outputs : [];
-    if (!requested.some((output) => OUTPUT_OPTIONS.includes(output))) {
-      return { ok: false, error: 'INVALID_OUTPUTS', validOutputs: [...OUTPUT_OPTIONS], message: 'outputs must contain at least one valid option.' };
+    // 有效選項隨模式而異（合約模式只有 revised）；合約模式允許不勾任何輸出，故只擋「含無效值且無任何有效值」
+    const valid = outputOptionsFor(mode());
+    if (!requested.some((output) => valid.includes(output))) {
+      return { ok: false, error: 'INVALID_OUTPUTS', validOutputs: [...valid], message: 'outputs must contain at least one valid option.' };
     }
-    const applied = normalizeOutputs(requested);
+    const applied = normalizeOutputs(requested, mode());
     const boxes = [...root.querySelectorAll('input[name="outputs"]')];
     if (!boxes.length) {
       return { ok: false, error: 'INPUT_NOT_VISIBLE', message: 'Output checkboxes are not rendered yet.' };
@@ -597,15 +599,16 @@ export function createApp({ root, client, storage, navigatorLanguage, partialCol
     // 初次載入依網址 hash 決定要進哪一條流程；未指定時停在首頁
     const initial = parseHash(locationLike?.hash);
     bindHashChange();
+    const saved = storage.getItem('caseId');
+    // 續接時示範案例要載入儲存的模式（放棄案件回輸入頁才不會拿到另一條流程的範例）
+    const savedMode = saved ? (storage.getItem('mode') || 'case') : null;
     const [, loadedSamples] = await Promise.all([
       refreshAuthStatus(),
-      Promise.resolve().then(() => client.samples(locale, initial.mode || 'case')).catch(() => [])
+      Promise.resolve().then(() => client.samples(locale, savedMode || initial.mode || 'case')).catch(() => [])
     ]);
     samples = loadedSamples;
-    const saved = storage.getItem('caseId');
     if (saved) {
       // 續接進行中的案件：模式與輸出選擇都要沿用上次送出的值，結果分頁才會正確
-      const savedMode = storage.getItem('mode') || 'case';
       try {
         selectedOutputs = normalizeOutputs(JSON.parse(storage.getItem('outputs')), savedMode);
       } catch {
@@ -624,13 +627,34 @@ export function createApp({ root, client, storage, navigatorLanguage, partialCol
   function bindHashChange() {
     if (hashListenerBound) return;
     hashListenerBound = true;
+    // 回傳監聽器內的 Promise（reset 為非同步），讓測試可以 await 這次 hash 變更的處理結果
     globalThis.addEventListener?.('hashchange', () => {
       const parsed = parseHash(locationLike?.hash);
-      if (state.view === States.HOME && parsed.view === 'INPUT') selectMode(parsed.mode);
-      else if (parsed.view === 'HOME' && state.view === States.INPUT) goHome();
+      if (state.view === States.HOME && parsed.view === 'INPUT') return selectMode(parsed.mode);
+      if (parsed.view === 'HOME' && state.view !== States.HOME) return leaveToHome();
       // 直接在兩條輸入頁之間切換 hash（例如 #/contract → #/case），也要重新載入該模式的示範案例
-      else if (state.view === States.INPUT && parsed.view === 'INPUT' && parsed.mode !== mode()) selectMode(parsed.mode);
+      if (state.view === States.INPUT && parsed.view === 'INPUT' && parsed.mode !== mode()) return selectMode(parsed.mode);
+      return undefined;
     });
+  }
+
+  /**
+   * 品牌連結／上一頁把 hash 改回 #/ 時離開目前流程回首頁。
+   * 輸入頁直接回首頁；已完成或已失敗的案件可安全捨棄；進行中或等待回答則先向使用者確認，
+   * 取消時要把 hash 寫回目前流程，否則網址與畫面會不一致。
+   */
+  function leaveToHome() {
+    if (state.view === States.INPUT) { goHome(); return Promise.resolve(); }
+    if (state.view === States.RUNNING || state.view === States.QUESTIONS) {
+      if (stopPolling) { stopPolling(); stopPolling = null; }
+      if (globalThis.confirm?.(t('home.leaveConfirm', locale)) === false) {
+        if (locationLike) locationLike.hash = hashFor(state);
+        // 使用者選擇留下：重新續接輪詢，不讓案件停在半途
+        if (state.caseId) beginPolling(state.caseId, { resumed: true });
+        return Promise.resolve();
+      }
+    }
+    return reset();
   }
 
   return {
