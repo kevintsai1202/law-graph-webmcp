@@ -204,6 +204,53 @@ curl -s -X POST localhost:8080/api/cases -H 'Content-Type: application/json' \
 
 首頁 `#/` 列出兩張能力卡；選擇後導向 `#/case` 或 `#/contract` 對應的輸入頁。合約結果頁分頁：**findings**（逐條發現）／**summary**（整體風險摘要）／**laws**（引用法規白名單），與案件分析頁共用同一份結果檢視框架。
 
+## 統計與會員資料（M3）
+
+### 資料表
+
+| 表 | 用途 | 主要欄位 |
+|---|---|---|
+| `usage_daily` | 每日 LLM 用量與暫停旗標（沿用 M0/M1） | day, prompt_tokens, completion_tokens, paused |
+| `case_event` | 每一次案件／合約審閱呼叫的快照，`GET /api/stats` 的聚合來源，也是配額計數來源 | caseId, day, mode(`case`/`contract`), identityKind(`anonymous`/`member`), identityHash, model, status(`RUNNING`/`COMPLETED`/`FAILED`), promptTokens, completionTokens, startedAt, finishedAt |
+| `member` | 以 Google 登入建立的會員，只留顯示與配額所需最小個資 | googleSub(主鍵), email, displayName, pictureUrl, firstLoginAt, lastLoginAt, loginCount, blocked, blockedReason, noticeAcknowledgedAt |
+
+三者皆有 `LAWGRAPH_DB_URL` 才落地 PostgreSQL；未設定資料庫時 `case_event` 與 `member` 一律退回記憶體實作並於啟動時 WARN log（「未設定資料庫，會員資料只存記憶體，重啟歸零」），配額與統計仍可運作，但重啟／重佈後歸零。
+
+### `GET /api/stats?days=N`
+
+唯讀彙總，days 夾在 `[1,90]`（預設 30），回應快取 60 秒：
+
+```json
+{
+  "from": "2026-08-06", "to": "2026-09-05",
+  "days": [{ "day": "2026-09-05", "total": 12,
+             "byMode": { "case": 9, "contract": 3 },
+             "byIdentity": { "anonymous": 4, "member": 8 },
+             "completed": 10, "failed": 1,
+             "promptTokens": 45000, "completionTokens": 12000, "totalTokens": 57000 }],
+  "today": { /* 同上，當日這一列 */ },
+  "members": { "total": 37, "activeToday": 5 },
+  "store": "jdbc"
+}
+```
+
+`store` 為 `"jdbc"`（有 DB）或 `"memory"`（無 DB，InMemory 退回）。會員查詢失敗不影響整體回應，`members` 以 `-1/-1` 佔位並記警告。**配額以 `case_event` 計數**（非記憶體計數器），只要設定 `LAWGRAPH_DB_URL`，服務重佈／重啟後配額與統計數字都不會歸零。
+
+### `/api/me`：首登告知、確認、刪除帳號
+
+- `GET /api/me` 回傳目前登入者摘要，多一個 `firstLogin: boolean` 欄位——`true` 代表該會員的 `noticeAcknowledgedAt` 為 null（尚未確認過首次登入的個資蒐集告知），前端顯示告知卡。
+- `POST /api/me/notice-ack`：登入者確認已閱讀告知，寫入 `noticeAcknowledgedAt`；未登入回 401。之後同一使用者重新整理／再次登入不會再看到告知卡。
+- `DELETE /api/me`：刪除帳號。順序固定為「先去識別化 `case_event`（`events.anonymize(sub)`）→ 再刪除 `member` 資料 → 登出並清 session」；去識別化失敗時整筆不刪，回 503 `ACCOUNT_DELETE_FAILED`，避免留下無人可對應卻仍可識別的事件。
+
+### 個資保存期限
+
+`lawgraph.member.retention-days`（環境變數 `LAWGRAPH_MEMBER_RETENTION_DAYS`，預設 365）：`MemberRetentionJob` 每日台北時間 03:30 執行，找出 `lastLoginAt` 超過保存天數未再登入的會員，先去識別化其 `case_event`，再刪除會員資料本身。
+
+### `#/stats` 頁與 `getUsageStats` 工具
+
+- 前端導覽列新增「統計」連結（`#stats-link`），導向 `#/stats` 頁，顯示近 30 日每日次數／模式／身分別／完成失敗數／token 用量與會員概況；統計頁為唯讀分頁，離開時若有進行中案件會回到該案件畫面而不被捨棄。
+- WebMCP 工具 `getUsageStats({ days })`：唯讀彙總統計，`days` 夾在 `[1,90]`（預設 30），於 HOME／INPUT／RESULT 三個頁面狀態皆曝光（進行中頁面不加，避免干擾流程）；應用層未提供 `getStats` 時明確回 `{ ok: false, error: 'NOT_AVAILABLE' }`，後端失敗回 `STATS_UNAVAILABLE` 而非丟出例外。
+
 ## Limitations
 
 - The configured `MODEL` output quality varies; the hard rules remove unverifiable nodes rather than "fix" them, so graphs can be small. Choose a stronger model in `.env` when quality matters more than cost.

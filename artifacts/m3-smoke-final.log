@@ -1,0 +1,20 @@
+
+Running 15 tests using 1 worker
+
+  ok  1 e2e\smoke.spec.mjs:40:1 › 選單上有 Law Powers 技能常駐連結，切換語系後文字跟著變 (8.4s)
+  ok  2 e2e\smoke.spec.mjs:50:1 › input view lists six sample cards and switches locale (3.4s)
+  ok  3 e2e\smoke.spec.mjs:60:1 › modern upload component shows file details and supports removal (4.1s)
+  ok  4 e2e\smoke.spec.mjs:92:1 › WebMCP startCase enters the progress view before a slow start response returns (3.4s)
+  ok  5 e2e\smoke.spec.mjs:130:1 › WebMCP startCase accepts the visible sample title and stringified arguments (2.9s)
+  ok  6 e2e\smoke.spec.mjs:170:1 › WebMCP setOutputSelection ticks visible output checkboxes without starting the case (2.0s)
+  ok  7 e2e\smoke.spec.mjs:186:1 › WebMCP 工具在 <head> 的 webmcp-bundle.js 載入時即註冊，早於應用層 app-bundle.js (2.6s)
+  ok  8 e2e\smoke.spec.mjs:212:1 › WebMCP getOutputOptions／getInputForm 回報輸入頁可見內容：9 個可勾輸出、字數與送出狀態 (3.4s)
+  ok  9 e2e\smoke.spec.mjs:237:1 › 每個頁面狀態的 WebMCP 工具與 Inspector 清單一致 (4.8s)
+  ok 10 e2e\smoke.spec.mjs:332:1 › waiting view shows brainstorm results above the questions, then collapses them after a few seconds (7.6s)
+  ok 11 e2e\smoke.spec.mjs:345:1 › waiting view offers a cancel button that returns to the input view (2.9s)
+  ok 12 e2e\smoke.spec.mjs:358:1 › inspector is read-only: shows state and tool list, no run controls; tools still work via WebMCP layer (4.9s)
+  ok 13 e2e\smoke.spec.mjs:382:1 › 首頁顯示兩張能力卡片；點合約審查進入合約輸入頁並可看示範合約 (2.2s)
+  ok 14 e2e\smoke.spec.mjs:393:1 › 合約 COMPLETED 狀態顯示風險條款清單與篩選 (3.1s)
+  ok 15 e2e\smoke.spec.mjs:416:1 › HOME 狀態下 WebMCP 工具清單含 selectCapability 與 startContractReview (1.8s)
+
+  15 passed (59.7s)
