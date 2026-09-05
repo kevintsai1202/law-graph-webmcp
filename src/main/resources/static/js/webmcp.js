@@ -351,8 +351,15 @@ export function createWebMcp({ app, graphView, modelContext, ready = Promise.res
       app.setRiskFilter?.(risk); return { ok: true, risk };
     },
     /** 近 N 日站台使用統計（1～90 日，預設 30）；應用層未提供時明確回不可用。 */
-    getUsageStats: async ({ days } = {}) => truncate(
-      await app.getStats?.(Math.min(90, Math.max(1, Number(days) || 30))) ?? { ok: false, error: 'NOT_AVAILABLE' }, 4000)
+    getUsageStats: async ({ days } = {}) => {
+      if (typeof app.getStats !== 'function') return { ok: false, error: 'NOT_AVAILABLE' };
+      try {
+        return truncate(await app.getStats(Math.min(90, Math.max(1, Number(days) || 30))), 4000);
+      } catch (e) {
+        // 後端未提供或逾時：明確回報失敗，不讓 Agent 誤以為統計為空
+        return { ok: false, error: 'STATS_UNAVAILABLE', message: e?.message || String(e) };
+      }
+    }
   };
 
   /** 註冊串行化：早期啟動器與應用層可能同時呼叫 syncForState，排隊避免舊註冊插隊覆蓋。 */

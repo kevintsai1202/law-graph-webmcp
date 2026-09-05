@@ -664,11 +664,11 @@ export function createApp({ root, client, storage, navigatorLanguage, partialCol
     globalThis.addEventListener?.('hashchange', () => {
       const parsed = parseHash(locationLike?.hash);
       if (parsed.view === 'STATS') return showStats();
-      // 離開統計頁時，若案件仍在進行（或等待回答）就回到該案件畫面，不當成捨棄案件
-      if (state.view === States.STATS && state.caseId && state.last
-        && state.last.status !== 'COMPLETED' && state.last.status !== 'FAILED'
-        && (parsed.view === 'INPUT' || parsed.view === 'HOME')) {
-        dispatch({ type: 'STATUS', status: state.last });
+      // 離開統計頁：有案件記錄就回到該案件畫面（看統計不該捨棄案件），否則依目的地進輸入頁或首頁
+      if (state.view === States.STATS) {
+        if (state.caseId && state.last) { dispatch({ type: 'STATUS', status: state.last, leaveStats: true }); return undefined; }
+        if (parsed.view === 'INPUT') return selectMode(parsed.mode);
+        goHome();
         return undefined;
       }
       if (state.view === States.HOME && parsed.view === 'INPUT') return selectMode(parsed.mode);

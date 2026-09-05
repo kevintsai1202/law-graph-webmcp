@@ -589,10 +589,12 @@
         return { ...initialState };
       case "START":
         return { view: States.RUNNING, caseId: event.caseId, last: null, mode: normalizeMode(event.mode ?? state.mode) };
+      // 統計頁為唯讀分頁：輪詢回報只更新 last／mode，不把使用者踢回案件畫面；
+      // 離開統計頁時由 app.js 帶 leaveStats 旗標的同一事件還原案件畫面
       case "STATUS":
         return {
           ...state,
-          view: VIEW_BY_STATUS[event.status.status] || state.view,
+          view: state.view === States.STATS && !event.leaveStats ? States.STATS : VIEW_BY_STATUS[event.status.status] || state.view,
           last: event.status,
           mode: event.status.mode ? normalizeMode(event.status.mode) : state.mode
         };
@@ -1255,21 +1257,22 @@
   }
 
   // src/main/resources/static/js/views/stats.js
+  var day = (row) => String(row?.day || "");
   function bars(rows, pick, labelKey, locale2) {
     const max = Math.max(1, ...rows.map(pick));
-    return `<div class="bars" role="img" aria-label="${esc(t(labelKey, locale2))}">${rows.map((r) => `<div class="bar-row"><span class="bar-day">${esc(r.day.slice(5))}</span><span class="bar" style="width:${Math.round(pick(r) / max * 100)}%" aria-label="${esc(r.day)} ${pick(r).toLocaleString(locale2)}"></span><span class="bar-value">${pick(r).toLocaleString(locale2)}</span></div>`).join("")}</div>`;
+    return `<div class="bars" data-chart="${esc(t(labelKey, locale2))}">${rows.map((r) => `<div class="bar-row"><span class="bar-day">${esc(day(r).slice(5))}</span><span class="bar" style="width:${Math.round(pick(r) / max * 100)}%" aria-label="${esc(day(r))} ${pick(r).toLocaleString(locale2)}"></span><span class="bar-value">${pick(r).toLocaleString(locale2)}</span></div>`).join("")}</div>`;
   }
   function renderStats(data, locale2) {
     if (!data) return `<section class="stats card"><p role="status">${esc(t("stats.loading", locale2))}</p></section>`;
     if (data.error) return `<section class="stats card" role="alert"><p>${esc(t("stats.error", locale2))}</p></section>`;
-    const asc = [...data.days || []].sort((a, b) => a.day.localeCompare(b.day)), desc = [...asc].reverse(), today = data.today || desc[0] || {};
+    const asc = [...data.days || []].sort((a, b) => day(a).localeCompare(day(b))), desc = [...asc].reverse(), today = data.today || desc[0] || {};
     const n = (v) => Number(v || 0).toLocaleString(locale2);
     const tile = (title, big, sub) => `<div class="stat-tile"><span class="stat-title">${esc(title)}</span><strong class="stat-big">${esc(big)}</strong><span class="stat-sub">${esc(sub)}</span></div>`;
     const head = ["day", "total", "case", "contract", "completed", "failed", "prompt", "completion", "tokens"].map((k) => `<th scope="col">${esc(t("stats.col." + k, locale2))}</th>`).join("");
-    const rows = desc.map((r) => `<tr data-day="${esc(r.day)}"><td>${esc(r.day)}</td><td>${n(r.total)}</td><td>${n(r.byMode?.case)}</td><td>${n(r.byMode?.contract)}</td><td>${n(r.completed)}</td><td>${n(r.failed)}</td><td>${n(r.promptTokens)}</td><td>${n(r.completionTokens)}</td><td>${n(r.totalTokens)}</td></tr>`).join("");
+    const rows = desc.map((r) => `<tr data-day="${esc(day(r))}"><td>${esc(day(r))}</td><td>${n(r.total)}</td><td>${n(r.byMode?.case)}</td><td>${n(r.byMode?.contract)}</td><td>${n(r.completed)}</td><td>${n(r.failed)}</td><td>${n(r.promptTokens)}</td><td>${n(r.completionTokens)}</td><td>${n(r.totalTokens)}</td></tr>`).join("");
     return `<section class="stats"><h2>${esc(t("stats.title", locale2))}</h2><p class="home-lead">${esc(t("stats.lead", locale2))}</p>
     <div id="stats-today" class="stat-tiles">
-      ${tile(t("stats.todayCases", locale2), n(today.total), `${t("home.case.title", locale2)} ${n(today.byMode?.case)} \xB7 ${t("home.contract.title", locale2)} ${n(today.byMode?.contract)} \xB7 ${t("stats.member", locale2)} ${n(today.byIdentity?.member)}`)}
+      ${tile(t("stats.todayCases", locale2), n(today.total), `${t("home.case.title", locale2)} ${n(today.byMode?.case)} \xB7 ${t("home.contract.title", locale2)} ${n(today.byMode?.contract)} \xB7 ${t("stats.anonymous", locale2)} ${n(today.byIdentity?.anonymous)} \xB7 ${t("stats.member", locale2)} ${n(today.byIdentity?.member)}`)}
       ${tile(t("stats.todayTokens", locale2), n(today.totalTokens), `prompt ${n(today.promptTokens)} \xB7 completion ${n(today.completionTokens)}`)}
       ${tile(t("stats.members", locale2), n(data.members?.total), `${t("stats.activeToday", locale2)} ${n(data.members?.activeToday)}`)}
     </div>
@@ -1830,8 +1833,13 @@
       globalThis.addEventListener?.("hashchange", () => {
         const parsed = parseHash(locationLike?.hash);
         if (parsed.view === "STATS") return showStats();
-        if (state.view === States.STATS && state.caseId && state.last && state.last.status !== "COMPLETED" && state.last.status !== "FAILED" && (parsed.view === "INPUT" || parsed.view === "HOME")) {
-          dispatch({ type: "STATUS", status: state.last });
+        if (state.view === States.STATS) {
+          if (state.caseId && state.last) {
+            dispatch({ type: "STATUS", status: state.last, leaveStats: true });
+            return void 0;
+          }
+          if (parsed.view === "INPUT") return selectMode(parsed.mode);
+          goHome();
           return void 0;
         }
         if (state.view === States.HOME && parsed.view === "INPUT") return selectMode(parsed.mode);
@@ -3041,10 +3049,14 @@
         return { ok: true, risk };
       },
       /** 近 N 日站台使用統計（1～90 日，預設 30）；應用層未提供時明確回不可用。 */
-      getUsageStats: async ({ days } = {}) => truncate(
-        await app2.getStats?.(Math.min(90, Math.max(1, Number(days) || 30))) ?? { ok: false, error: "NOT_AVAILABLE" },
-        4e3
-      )
+      getUsageStats: async ({ days } = {}) => {
+        if (typeof app2.getStats !== "function") return { ok: false, error: "NOT_AVAILABLE" };
+        try {
+          return truncate(await app2.getStats(Math.min(90, Math.max(1, Number(days) || 30))), 4e3);
+        } catch (e) {
+          return { ok: false, error: "STATS_UNAVAILABLE", message: e?.message || String(e) };
+        }
+      }
     };
     let syncQueue = Promise.resolve();
     function syncForState(view) {

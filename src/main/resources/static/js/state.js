@@ -16,8 +16,11 @@ export function reduce(state, event) {
     case 'SELECT_MODE': return { view: States.INPUT, caseId: null, last: null, mode: normalizeMode(event.mode) };
     case 'GO_HOME': return { ...initialState };
     case 'START': return { view: States.RUNNING, caseId: event.caseId, last: null, mode: normalizeMode(event.mode ?? state.mode) };
-    case 'STATUS': return { ...state, view: VIEW_BY_STATUS[event.status.status] || state.view, last: event.status,
-      mode: event.status.mode ? normalizeMode(event.status.mode) : state.mode };
+    // 統計頁為唯讀分頁：輪詢回報只更新 last／mode，不把使用者踢回案件畫面；
+    // 離開統計頁時由 app.js 帶 leaveStats 旗標的同一事件還原案件畫面
+    case 'STATUS': return { ...state,
+      view: state.view === States.STATS && !event.leaveStats ? States.STATS : (VIEW_BY_STATUS[event.status.status] || state.view),
+      last: event.status, mode: event.status.mode ? normalizeMode(event.status.mode) : state.mode };
     // 統計頁為唯讀分頁：保留 mode／caseId，離開後才能回到原本的案件畫面
     case 'SHOW_STATS': return { ...state, view: States.STATS };
     case 'RESET': return { ...initialState };

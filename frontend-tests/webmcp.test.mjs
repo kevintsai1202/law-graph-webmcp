@@ -342,3 +342,12 @@ test('app 未提供 getStats 時 getUsageStats 明確回不可用', async () => 
   const w = createWebMcp({ app: { getState: () => ({ view: 'HOME' }), getLocale: () => 'en' }, graphView: {}, modelContext: undefined });
   assert.deepEqual(await w.execute('getUsageStats', {}), { ok: false, error: 'NOT_AVAILABLE' });
 });
+
+test('getUsageStats 在後端失敗時回 STATS_UNAVAILABLE 而非丟例外', async () => {
+  const app = {
+    getState: () => ({ view: 'HOME' }), getLocale: () => 'en',
+    getStats: async () => { throw new Error('504'); }
+  };
+  const w = createWebMcp({ app, graphView: {}, modelContext: undefined });
+  assert.deepEqual(await w.execute('getUsageStats', {}), { ok: false, error: 'STATS_UNAVAILABLE', message: '504' });
+});

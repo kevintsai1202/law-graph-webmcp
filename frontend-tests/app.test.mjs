@@ -298,3 +298,79 @@ test('統計頁為唯讀分頁：進行中的案件在返回 #/case 時直接回
     globalThis.addEventListener = originalAdd;
   }
 });
+
+/** 建立可手動觸發 hashchange 的環境；回傳 { app, loc, hashTo, restore }。 */
+function withHashChange(client, storage = fakeStorage(), hash = '') {
+  const originalAdd = globalThis.addEventListener;
+  let onHashChange = null;
+  globalThis.addEventListener = (type, handler) => { if (type === 'hashchange') onHashChange = handler; };
+  const loc = { hash, pathname: '/', search: '' };
+  const app = createApp({ root: mountRoot(), client, storage, navigatorLanguage: 'zh-TW', locationLike: loc });
+  return { app, loc, storage, hashTo: async (next) => { loc.hash = next; return onHashChange(); }, restore: () => { globalThis.addEventListener = originalAdd; } };
+}
+
+test('統計頁不被輪詢踢回：案件輪詢期間停在 STATS，但 last 持續更新', async () => {
+  let onStatus = null;
+  const client = {
+    samples: async () => [], usage: async () => null, quota: async () => null, authStatus: async () => null,
+    poll: (id, cb) => { onStatus = cb; return () => {}; },
+    stats: async () => ({ days: [] })
+  };
+  const storage = fakeStorage();
+  storage.setItem('caseId', 'c1'); storage.setItem('mode', 'case');
+  const h = withHashChange(client, storage);
+  try {
+    // 由 mount 續接案件才會真的啟動輪詢，測試才拿得到 poll 的回呼
+    await h.app.mount();
+    onStatus?.({ caseId: 'c1', status: 'RUNNING', step: 'BRAINSTORM', mode: 'case' });
+    assert.equal(h.app.getState().view, 'RUNNING');
+    await h.hashTo('#/stats');
+    assert.equal(h.app.getState().view, 'STATS');
+    // 模擬輪詢兩次回報：畫面必須留在統計頁
+    onStatus?.({ caseId: 'c1', status: 'RUNNING', step: 'RESEARCH', mode: 'case' });
+    onStatus?.({ caseId: 'c1', status: 'RUNNING', step: 'ANALYSIS', mode: 'case' });
+    assert.equal(h.app.getState().view, 'STATS');
+    assert.equal(h.app.getState().last.step, 'ANALYSIS');
+  } finally { h.restore(); }
+});
+
+test('離開統計頁：沒有案件時回到該模式輸入頁，不會卡在統計頁', async () => {
+  const client = {
+    samples: async () => [], usage: async () => null, quota: async () => null, authStatus: async () => null,
+    poll: () => () => {}, stats: async () => ({ days: [] })
+  };
+  const h = withHashChange(client);
+  try {
+    await h.app.mount();
+    await h.hashTo('#/stats');
+    assert.equal(h.app.getState().view, 'STATS');
+    await h.hashTo('#/case');
+    assert.equal(h.app.getState().view, 'INPUT');
+    assert.equal(h.app.getMode(), 'case');
+    // 回首頁同理
+    await h.hashTo('#/stats');
+    await h.hashTo('#/');
+    assert.equal(h.app.getState().view, 'HOME');
+  } finally { h.restore(); }
+});
+
+test('離開統計頁：已完成的合約案件會被還原成結果頁而非捨棄', async () => {
+  const client = {
+    samples: async () => [], usage: async () => null, quota: async () => null, authStatus: async () => null,
+    poll: () => () => {}, stats: async () => ({ days: [] })
+  };
+  const h = withHashChange(client);
+  try {
+    await h.app.mount();
+    await h.app.selectMode('contract');
+    h.storage.setItem('caseId', 'c7'); h.storage.setItem('mode', 'contract');
+    h.app.dispatch({ type: 'START', caseId: 'c7', mode: 'contract' });
+    h.app.dispatch({ type: 'STATUS', status: { caseId: 'c7', status: 'COMPLETED', mode: 'contract', result: {} } });
+    assert.equal(h.app.getState().view, 'RESULT');
+    await h.hashTo('#/stats');
+    assert.equal(h.app.getState().view, 'STATS');
+    await h.hashTo('#/contract');
+    assert.equal(h.app.getState().view, 'RESULT');
+    assert.equal(h.storage.getItem('caseId'), 'c7');
+  } finally { h.restore(); }
+});

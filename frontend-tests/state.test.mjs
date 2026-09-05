@@ -35,3 +35,15 @@ test('SHOW_STATS 進入統計頁但保留 mode 與 caseId，離開後才能回�
   assert.equal(stats.mode, 'contract');
   assert.equal(reduce(initialState, { type: 'SHOW_STATS' }).view, 'STATS');
 });
+
+test('統計頁不被輪詢踢回：STATUS 只更新 last，帶 leaveStats 才還原案件畫面', () => {
+  const running = reduce(initialState, { type: 'START', caseId: 'c1', mode: 'case' });
+  const stats = reduce(running, { type: 'SHOW_STATS' });
+  const polled = reduce(stats, { type: 'STATUS', status: { caseId: 'c1', status: 'RUNNING', step: 'RESEARCH' } });
+  assert.equal(polled.view, States.STATS);
+  assert.equal(polled.last.step, 'RESEARCH');
+  const done = reduce(polled, { type: 'STATUS', status: { caseId: 'c1', status: 'COMPLETED', result: {} } });
+  assert.equal(done.view, States.STATS, '完成回報也不得把使用者從統計頁踢走');
+  const restored = reduce(done, { type: 'STATUS', status: done.last, leaveStats: true });
+  assert.equal(restored.view, States.RESULT);
+});
