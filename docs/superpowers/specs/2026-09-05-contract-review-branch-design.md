@@ -103,7 +103,7 @@
 
 - `ContractInput(text, locale, party, scopes, outputs, model)`：`party` ∈ {`partyA`,`partyB`,`unknown`}；`scopes` 白名單 {`commercial`,`labor`,`privacy`,`corporate`}；`outputs` 白名單 {`revised`}。建構時正規化。
 - `ContractBrainstorm(contractType, scopes, parties: List<ContractParty>, clauses: List<Clause>, questions: List<Question>, summary)`；`ContractParty(name, role)`；`Clause(clauseNo, text)`。
-- `ClauseFinding(clauseNo, clauseText, risk: Risk, lawBasis: List<LawRef>, riskPoint, suggestion, judgments: List<JudgmentRef>)`。
+- `ClauseFinding(clauseNo, clauseText, risk: Risk, lawRefs: List<String>, riskPoint, suggestion, judgmentCitations: List<String>)`：引用以字串逐字複製 research.laws[].ref／judgments[].citation，由 Java 依白名單過濾（比要模型填整個 LawRef 物件更不易幻覺）。
 - `ClauseFindings(findings)`（批次合併結果）。
 - `ComplianceReport(contractType, scopes, overallRisk: Risk, findings, priorities: List<String>, disclaimer)`。
 - `RevisedClauses(items: List<RevisedClause>)`；`RevisedClause(clauseNo, original, revised, rationale)`。
