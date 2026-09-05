@@ -15,10 +15,10 @@ class SamplesControllerTest {
     /** 各語系回四筆，未知語系回英文。 */
     @Test void returnsFourSamplesPerLocaleWithStableIds() {
         assertThat(mvc.get().uri("/api/samples?locale=zh-TW")).hasStatusOk()
-                .bodyJson().extractingPath("$.length()").isEqualTo(4);
+                .bodyJson().extractingPath("$.length()").isEqualTo(6);
         assertThat(mvc.get().uri("/api/samples?locale=en")).hasStatusOk()
-                .bodyJson().extractingPath("$[0].id").isEqualTo("settop-box");
+                .bodyJson().extractingPath("$[0].id").isEqualTo("family-house-sale");
         assertThat(mvc.get().uri("/api/samples?locale=xx")).hasStatusOk()
-                .bodyJson().extractingPath("$[0].id").isEqualTo("settop-box");
+                .bodyJson().extractingPath("$[0].id").isEqualTo("family-house-sale");
     }
 }

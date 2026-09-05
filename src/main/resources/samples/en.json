@@ -1,6 +1,38 @@
 [
-  {"id":"settop-box","title":"Set-top box public transmission","summary":"A distributor sold Android boxes streaming TV channels without licence.","text":"Between 2020 and 2021, Company X imported Android set-top boxes preloaded with an app showing more than 200 local channels for free. Broadcasters say the streams came from unlicensed servers and X advertised free lifetime viewing. X says it sold hardware supplied from Hong Kong. The CEO was convicted and appealed; the broadcasters seek civil damages. The exact number sold is disputed."},
-  {"id":"car-accident","title":"Intersection traffic accident","summary":"Two drivers dispute fault and damages after an intersection collision.","text":"Driver A entered an urban intersection and collided with Driver B, who says A crossed on a red light. B suffered a fractured wrist, missed six weeks of work and seeks medical expenses, lost income and emotional damages. A says B was speeding and did not brake. Police drew a scene diagram, but the signal timing and each driver's visibility remain disputed. We represent B and need to assess tort liability, vehicle liability, comparative negligence and limitation periods."},
-  {"id":"rental-deposit","title":"Rental deposit and early termination","summary":"A tenant seeks return of a deposit after leaving early.","text":"Tenant T rented an apartment for one year and paid two months' deposit. After four months T moved out, alleging repeated water leaks and mould that the landlord did not repair. Landlord L says T left without the contractual thirty-day notice and deducts repainting, cleaning and one month's rent from the deposit. Messages show repair requests, but the lease clause and handover condition are disputed. We represent T and need to assess termination, deductions and return of the deposit."},
-  {"id":"probation-dismissal","title":"Dismissal after probation","summary":"An employee challenges termination at the end of a probation period.","text":"Employee E joined Company C under a contract describing a three-month probation period. Near the end of month three, a manager said performance was below expectations and employment would end immediately. E had received informal coaching but no written warning or improvement plan. C says probation allowed simple termination; E seeks wages, severance and a declaration that dismissal was unlawful. The exact notice given and payroll treatment remain unclear."}
+  {
+    "id": "family-house-sale",
+    "title": "Family home sold; sham-sale claim dismissed",
+    "summary": "Children sued to unwind a relative's below-market sale of the elderly owner's house and lost at first instance.",
+    "text": "A, an elderly owner with mild dementia, held title to the family home. In 2023 A's eldest son B, who lived with A, transferred the house by sale to B's friend C for about one third of market value. A says A never agreed and received no money. A's daughter D sued in A's name to declare the sale void as a sham transaction (collusive false declaration of intent), cancel C's registration and recover the house. The trial court dismissed the claim, noting the complaint was AI-generated, mixed up legal theories and offered no proof that the sale was a sham; it advised retaining counsel and clarifying the elements of a collusive false declaration. A's side plans to appeal, holding A's medical diagnosis, a copy of a power of attorney signed by B on A's behalf, and incomplete payment records from C. Assess the appeal strategy, the burden of proving a sham sale or unauthorised disposition, and what evidence could be added."
+  },
+  {
+    "id": "road-rage-ambush",
+    "title": "Road rage: knife attack, then a fatal ambush",
+    "summary": "An older driver stabbed a young driver; the young driver later ambushed him from behind and he died.",
+    "text": "Late one night in 2025 young driver A and older driver B argued at the roadside after a traffic dispute. B fetched a knife from his car, stabbed A in the arm and abdomen and drove off. A stayed at the scene; about ten minutes later B drove back, and A got out, attacked B from behind, tackled him to the ground and punched him once more before noticing B was unresponsive. B died in hospital. CCTV recorded both the stabbing and the ambush; A has medical records of multiple stab wounds; the autopsy attributes B's death mainly to head impact with the ground. A claims self-defence and emotional agitation; prosecutors are investigating assault resulting in death. Analyse B's assault liability and A's criminal exposure (self-defence, excessive defence or retaliation, assault resulting in death versus negligent homicide), civil claims by B's family against A and A's claims against B's estate, and sentencing and settlement considerations."
+  },
+  {
+    "id": "settop-box",
+    "title": "Set-top box public transmission",
+    "summary": "A distributor sold Android boxes streaming TV channels without licence.",
+    "text": "Between 2020 and 2021, Company X imported Android set-top boxes preloaded with an app showing more than 200 local channels for free. Broadcasters say the streams came from unlicensed servers and X advertised free lifetime viewing. X says it sold hardware supplied from Hong Kong. The CEO was convicted and appealed; the broadcasters seek civil damages. The exact number sold is disputed."
+  },
+  {
+    "id": "car-accident",
+    "title": "Intersection traffic accident",
+    "summary": "Two drivers dispute fault and damages after an intersection collision.",
+    "text": "Driver A entered an urban intersection and collided with Driver B, who says A crossed on a red light. B suffered a fractured wrist, missed six weeks of work and seeks medical expenses, lost income and emotional damages. A says B was speeding and did not brake. Police drew a scene diagram, but the signal timing and each driver's visibility remain disputed. We represent B and need to assess tort liability, vehicle liability, comparative negligence and limitation periods."
+  },
+  {
+    "id": "rental-deposit",
+    "title": "Rental deposit and early termination",
+    "summary": "A tenant seeks return of a deposit after leaving early.",
+    "text": "Tenant T rented an apartment for one year and paid two months' deposit. After four months T moved out, alleging repeated water leaks and mould that the landlord did not repair. Landlord L says T left without the contractual thirty-day notice and deducts repainting, cleaning and one month's rent from the deposit. Messages show repair requests, but the lease clause and handover condition are disputed. We represent T and need to assess termination, deductions and return of the deposit."
+  },
+  {
+    "id": "probation-dismissal",
+    "title": "Dismissal after probation",
+    "summary": "An employee challenges termination at the end of a probation period.",
+    "text": "Employee E joined Company C under a contract describing a three-month probation period. Near the end of month three, a manager said performance was below expectations and employment would end immediately. E had received informal coaching but no written warning or improvement plan. C says probation allowed simple termination; E seeks wages, severance and a declaration that dismissal was unlawful. The exact notice given and payroll treatment remain unclear."
+  }
 ]
