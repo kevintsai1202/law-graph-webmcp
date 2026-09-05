@@ -189,8 +189,7 @@ public class ContractReviewAgent {
         return TaiwanTerminology.sanitize(filterCitations(new ClauseFindings(merged, notes), research));
     }
 
-    /** 步驟 SUMMARY（本里程碑的 goal）：整體風險由 Java 依 findings 取最高，findings 以審查結果為準。 */
-    @AchievesGoal(description = "A compliance report rating every clause of the contract")
+    /** 步驟 SUMMARY：整體風險由 Java 依 findings 取最高，findings 以審查結果為準。goal 已移至 buildContractGraph。 */
     @Action
     public ComplianceReport summarizeCompliance(ContractInput input, ContractBrainstorm brainstorm, ClauseFindings findings, OperationContext context) {
         ComplianceReport draft = llm(context).withReference(skills).withSystemPrompt(LegalPrompts.system(input.locale()))
@@ -201,5 +200,26 @@ public class ContractReviewAgent {
                 draft.scopes().isEmpty() ? brainstorm.scopes() : draft.scopes(),
                 ComplianceReport.highest(findings.findings()), findings.findings(), draft.priorities(), draft.disclaimer());
         return TaiwanTerminology.sanitize(fixed);
+    }
+
+    /** 步驟 REVISE：勾選 revised 才呼叫 LLM 產生高／中風險條款修訂版；否則回空、零成本。 */
+    @Action
+    public RevisedClauses reviseClauses(ContractInput input, ContractBrainstorm brainstorm, ComplianceReport report, OperationContext context) {
+        if (!input.wantsRevised()) return RevisedClauses.EMPTY;
+        RevisedClauses drafted = llm(context).withReference(skills).withSystemPrompt(LegalPrompts.system(input.locale()))
+                .createObject(ContractPrompts.revise(input, brainstorm, report), RevisedClauses.class);
+        if (drafted == null) return RevisedClauses.EMPTY;
+        return new RevisedClauses(drafted.items().stream().map(i -> new RevisedClauses.RevisedClause(i.clauseNo(),
+                TaiwanTerminology.sanitize(i.original()), TaiwanTerminology.sanitize(i.revised()), TaiwanTerminology.sanitize(i.rationale()))).toList());
+    }
+
+    /** 步驟 GRAPH（本里程碑的 goal）：契約義務三層圖；clause 節點風險由伺服器依報告覆寫。revised 參數確保修訂先完成。 */
+    @AchievesGoal(description = "A compliance report and obligation graph for the contract")
+    @Action
+    public GraphOutcome buildContractGraph(ContractInput input, ContractBrainstorm brainstorm, ResearchResult research,
+                                           ComplianceReport report, RevisedClauses revised, OperationContext context) {
+        GraphData raw = llm(context).withReference(skills).withSystemPrompt(LegalPrompts.system(input.locale()))
+                .createObject(ContractPrompts.graph(input, brainstorm, research, report), GraphData.class);
+        return ContractGraphRules.apply(raw == null ? new GraphData(List.of(), List.of()) : raw, research, report);
     }
 }
