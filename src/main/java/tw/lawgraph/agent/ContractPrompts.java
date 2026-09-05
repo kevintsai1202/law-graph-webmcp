@@ -86,5 +86,32 @@ public final class ContractPrompts {
                 """.formatted(partyLabel(input.party()), brainstorm.contractType(), toJson(brainstorm), toJson(findings), input.locale().code());
     }
 
+    /** 修訂版條款：只針對 high／medium，保留原條號，理由引用白名單法規。 */
+    public static String revise(ContractInput input, ContractBrainstorm brainstorm, ComplianceReport report) {
+        return """
+                Activate skill "compliance-verification" step 3 (修改建議) and produce replacement wording. Output only a RevisedClauses object.
+                Our side: %s. Contract type: %s.
+                <findings>%s</findings>
+                For every finding with risk high or medium (skip low): items[] {clauseNo (copy), original (copy clauseText verbatim), revised (complete replacement clause text in formal Taiwan contract drafting register, ready to paste; keep the clause numbering style), rationale (one sentence citing the lawRefs of that finding verbatim; never cite anything else)}.
+                Revised wording must protect our side while staying enforceable under Taiwan law; if the clause is void as a whole, replace it with a lawful clause that achieves the legitimate purpose. Taiwan legal terms only. Respond in %s.
+                """.formatted(partyLabel(input.party()), brainstorm.contractType(), toJson(report), input.locale().code());
+    }
+
+    /** 契約義務關係圖：contract→clause→obligation 三層、當事人、法條；clause.risk 由伺服器覆寫。 */
+    public static String graph(ContractInput input, ContractBrainstorm brainstorm, ResearchResult research, ComplianceReport report) {
+        return """
+                Activate skill "legal-graph" and build the contract obligation graph (契約→條款→義務三層模型). Output only the requested object (nodes, edges).
+                <brainstorm>%s</brainstorm>
+                <research>%s</research>
+                <report>%s</report>
+                Rules for this environment:
+                - Node groups (lower-case, exactly one of): contract, clause, obligation, party, law, judgment. One contract node (label = contractType). One clause node per finding, label = clauseNo + short title, and set "family" to the contract label. One obligation node per duty a clause imposes ({duty: main|collateral|incidental}). One party node per brainstorm.parties entry with "role".
+                - Do NOT set "risk" or "description" on clause nodes; the server fills them from the report.
+                - Every law node must carry "ref" copied verbatim from research.laws[].ref; every judgment node "jid" from research.judgments[].jid. Unlisted ones are deleted.
+                - Edge labels (Chinese, exact): 包含 (contract→clause), 課予 (clause→obligation), 負擔 (party→obligation, debtor), 得請求 (obligation→party, creditor), 對價 (obligation↔obligation), 違約效果 (clause→obligation), 適用 (contract/clause→law), 引用 (clause→judgment), 當事人 (party→contract). Use "from"/"to".
+                - Write labels in %s; identifiers keep their original form.
+                """.formatted(toJson(brainstorm), toJson(research), toJson(report), input.locale().code());
+    }
+
     private static String toJson(Object value) { return JSON.writeValueAsString(value); }
 }

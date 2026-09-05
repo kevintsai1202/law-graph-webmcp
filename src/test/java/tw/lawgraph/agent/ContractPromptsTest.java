@@ -43,6 +43,20 @@ class ContractPromptsTest {
         assertTrue(p.contains("priorities"));
     }
 
+    @Test void reviseTargetsHighAndMediumOnly() {
+        var report = new ComplianceReport("勞動契約", List.of("labor"), Risk.high, List.of(), List.of(), null);
+        String p = ContractPrompts.revise(input, brainstorm, report);
+        assertTrue(p.contains("RevisedClauses")); assertTrue(p.contains("high or medium"));
+    }
+    @Test void graphPromptRequiresContractGroupsAndRefs() {
+        var report = new ComplianceReport("勞動契約", List.of("labor"), Risk.high, List.of(), List.of(), null);
+        var research = new ResearchResult(List.of(), List.of(), List.of());
+        String p = ContractPrompts.graph(input, brainstorm, research, report);
+        assertTrue(p.startsWith("Activate skill \"legal-graph\""));
+        assertTrue(p.contains("contract, clause, obligation")); assertTrue(p.contains("research.laws[].ref"));
+        assertTrue(p.contains("包含")); assertTrue(p.contains("課予"));
+    }
+
     @Test void partyLabels() {
         assertEquals("甲方", ContractPrompts.partyLabel("partyA"));
         assertEquals("乙方", ContractPrompts.partyLabel("partyB"));
