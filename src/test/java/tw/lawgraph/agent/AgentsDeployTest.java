@@ -38,5 +38,16 @@ class AgentsDeployTest {
         for (Agent agent : agents) {
             assertFalse(agent.getGoals().isEmpty(), agent.getName() + " 沒有任何 goal");
         }
+        // goal description 直接來自 @AchievesGoal 文字，錯了代表 GOAP 規劃目標被改動
+        assertTrue(goalDescriptions(agents, LegalGraphAgent.AGENT_NAME).stream().anyMatch(d -> d.contains("relationship graph")),
+                "案件 agent 缺少關係圖 goal：" + goalDescriptions(agents, LegalGraphAgent.AGENT_NAME));
+        assertTrue(goalDescriptions(agents, ContractReviewAgent.AGENT_NAME).stream().anyMatch(d -> d.contains("obligation graph")),
+                "合約 agent 缺少義務圖 goal：" + goalDescriptions(agents, ContractReviewAgent.AGENT_NAME));
+    }
+
+    /** 取出指定 agent 的所有 goal description。 */
+    private static List<String> goalDescriptions(List<Agent> agents, String agentName) {
+        return agents.stream().filter(a -> agentName.equals(a.getName()))
+                .flatMap(a -> a.getGoals().stream()).map(com.embabel.agent.core.Goal::getDescription).toList();
     }
 }

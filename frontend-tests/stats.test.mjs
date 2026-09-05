@@ -21,3 +21,10 @@ test('統計頁：今日卡、表格倒序、長條寬度依最大值', () => {
   assert.match(renderStats(null, 'zh-TW'), /載入中/);
   assert.match(renderStats({ error: 'x' }, 'en'), /could not be loaded/i);
 });
+
+// 用途：members 統計不可得時後端回 -1，前端須顯示破折號而非「-1」
+test('統計頁：members 為 -1 時顯示破折號', () => {
+  const html = renderStats({ ...data, members: { total: -1, activeToday: -1 } }, 'zh-TW');
+  assert.doesNotMatch(html, /-1/);
+  assert.match(html, /—/);
+});

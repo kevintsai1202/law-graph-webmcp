@@ -43,31 +43,52 @@ public final class ContractGraphRules {
                 n.family(), n.favorable(), f.risk().name(), n.duty(), n.role());
     }
 
-    /** 以審查結果為 clause 節點上色：先比對覆寫，再補建缺漏節點，最後套用共用白名單規則。 */
+    /** 產生不與既有 id 衝突的合成節點 id：clause-N，重複時往後加 -2、-3。 */
+    private static String uniqueId(String base, java.util.Set<String> used) {
+        String id = base;
+        int suffix = 1;
+        while (used.contains(id)) id = base + "-" + (++suffix);
+        used.add(id);
+        return id;
+    }
+
+    /** 以審查結果為 clause 節點上色：先比對覆寫，再逐 finding 補建缺漏節點，最後套用共用白名單規則。 */
     public static GraphOutcome apply(GraphData raw, ResearchResult research, ComplianceReport report) {
         List<String> notes = new ArrayList<>();
         List<GraphNode> nodes = new ArrayList<>();
         List<GraphEdge> edges = new ArrayList<>(raw.edges());
-        boolean hasClause = false;
+        List<GraphNode> clauseNodes = new ArrayList<>();
         for (GraphNode n : raw.nodes()) {
             if ("clause".equals(n.group())) {
-                hasClause = true;
-                nodes.add(match(n, report.findings()).map(f -> decorate(n, f)).orElse(n));
+                GraphNode decorated = match(n, report.findings()).map(f -> decorate(n, f)).orElse(n);
+                nodes.add(decorated);
+                clauseNodes.add(n);
             } else nodes.add(n);
         }
-        if (!hasClause && !report.findings().isEmpty()) {
+
+        // 逐 finding 檢查：既有 clause 節點沒有任何一個對應得上時才補建，避免「全有全無」漏補
+        List<ClauseFinding> missing = report.findings().stream()
+                .filter(f -> !f.clauseNo().isBlank())
+                .filter(f -> clauseNodes.stream().noneMatch(n -> matchesClause(f.clauseNo(), n)))
+                .toList();
+        if (!missing.isEmpty()) {
+            java.util.Set<String> usedIds = nodes.stream().map(GraphNode::id).collect(java.util.stream.Collectors.toCollection(java.util.HashSet::new));
+            // 沒有 contract 節點時先合成一個，讓「包含」邊有起點
             String contractId = nodes.stream().filter(n -> "contract".equals(n.group())).map(GraphNode::id).findFirst().orElseGet(() -> {
-                nodes.add(new GraphNode("contract", "contract", report.contractType(), null, null, null, null, null, null, null, null, null, null, null));
-                return "contract";
+                String id = uniqueId("contract", usedIds);
+                nodes.add(new GraphNode(id, "contract", report.contractType(), null, null, null, null, null, null, null, null, null, null, null));
+                return id;
             });
-            int i = 0;
-            for (ClauseFinding f : report.findings()) {
-                String id = "clause-" + (++i);
+            int seq = 0;
+            for (ClauseFinding f : missing) {
+                String id = uniqueId("clause-" + (++seq), usedIds);
                 nodes.add(decorate(new GraphNode(id, "clause", f.clauseNo(), null, null, null, null, null, null, report.contractType(), null, null, null, null), f));
                 edges.add(new GraphEdge(contractId, id, "包含", null, null));
             }
-            notes.add("synthesised " + i + " clause nodes from the compliance report");
+            notes.add("synthesised " + missing.size() + " of " + report.findings().size() + " clause nodes from the compliance report");
+            notes.add("synthesised clause nodes carry no obligation layer (acceptable degradation)");
         }
+
         GraphOutcome filtered = GraphRules.apply(new GraphData(nodes, edges), research, new AnalysisResult(List.of(), "", List.of(), ""));
         notes.addAll(filtered.notes());
         return new GraphOutcome(filtered.graph(), notes);

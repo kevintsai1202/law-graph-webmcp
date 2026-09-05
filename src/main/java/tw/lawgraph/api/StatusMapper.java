@@ -52,6 +52,9 @@ public final class StatusMapper {
             case COMPLETED -> {
                 if (s.compliance() == null) return failed(s, "COMPLETED_WITHOUT_REPORT", "process completed without a compliance report", step);
                 if (s.outcome() == null) return failed(s, "COMPLETED_WITHOUT_GRAPH", "process completed without a graph", step);
+                // 圖存在但沒有任何節點等同沒有產物，一併判失敗，避免前端拿到空白圖的「完成」狀態
+                if (s.outcome().graph() == null || s.outcome().graph().nodes().isEmpty())
+                    return failed(s, "COMPLETED_WITHOUT_GRAPH", "graph has no nodes", step);
                 List<String> notes = new ArrayList<>(s.research() == null ? List.of() : s.research().notes());
                 notes.addAll(s.outcome().notes());
                 ResearchResult research = s.research() == null ? null : s.research().withNotes(notes);

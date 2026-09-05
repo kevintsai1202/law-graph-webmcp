@@ -87,6 +87,9 @@ await modelContext.registerTool({ name, description, inputSchema, annotations,
 | `filterFindingsByRisk` | `RESULT`（contract） | | Filter the findings table by risk level |
 | `getUsageStats` | `HOME`, `INPUT`, `RESULT` | ✓ | 近 N 日（1～90，預設 30）站台彙總用量：每日分析次數、tokens 與成員數；讀 `GET /api/stats`，不含案情內容與個資 |
 
+
+The six result-page read tools (`getAnalysis`, `getGraphSummary`, `focusNode`, `filterGraph`, `explainEdge`, `getComplianceReport`) return a uniform failure envelope `{ ok: false, error: '<CODE>', message }` with `CODE` one of `NOT_COMPLETED`, `GRAPH_NOT_RENDERED`, `NODE_NOT_FOUND`, `EDGE_NOT_FOUND`; successful responses are unchanged and carry no `ok` field.
+
 `RESULT` in contract mode additionally exposes the合約義務關係圖 (`getGraphSummary`／`focusNode`／`filterGraph`／`explainEdge`, same tools as case mode) and, when `documents` included `"revised"`, the `doc-revised` tab in the rendered page (no dedicated tool — read via `getResultTabs`/`getAnalysis`).
 
 Environment notes: in **Chrome 149+** enable `chrome://flags/#enable-webmcp-testing`, then `await document.modelContext.getTools()` returns the tools for the current view (`HOME` / `INPUT` / `RUNNING` / `QUESTIONS` / `RESULT` / `FAILED` = 7 / 10 / 2 / 4 / 12 / 2 tools; 22 tool definitions total in `TOOL_DEFS`； the WebMCP layer ships as a separate `js/webmcp-bundle.js` loaded synchronously in `<head>` so tools are registered before the app bundle runs). In the **ChatGPT desktop app**, the address-bar *Site tools* list is page-scoped and should be refreshed after a state transition. The declarative (`<form>`-based) WebMCP API is not used.

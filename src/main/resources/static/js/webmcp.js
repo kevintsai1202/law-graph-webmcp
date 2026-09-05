@@ -95,6 +95,11 @@ export const TOOL_NAMES_BY_VIEW = Object.freeze({
 });
 
 /** 回傳長度護欄：JSON 字串化超過 max 字元時改回摘要。 */
+/** 讀取類工具的統一失敗 envelope：{ ok:false, error:'<CODE>', message }。 */
+export function readErr(code, message) {
+  return { ok: false, error: code, message };
+}
+
 export function truncate(obj, max = 1500) {
   const s = JSON.stringify(obj);
   if (s.length <= max) return obj;
@@ -308,11 +313,21 @@ export function createWebMcp({ app, graphView, modelContext, ready = Promise.res
     fillQuestions: async (input = {}) => app.fillQuestions(input.answers),
     verifyCitation: async ({ ref }) => truncate(await app.verify(ref)),
     resetCase: async () => { app.reset(); return { ok: true }; },
-    getAnalysis: async ({ section }) => truncate(app.getState().last?.result?.[section] ?? { error: 'not completed' }),
-    getGraphSummary: async () => truncate(graphView.summary() ?? { error: 'graph not rendered' }),
-    focusNode: async ({ nodeId, label }) => truncate(graphView.focus(nodeId || label) ?? { error: 'node not found' }),
-    filterGraph: async (args) => graphView.filter(args) ?? { error: 'graph not rendered' },
-    explainEdge: async ({ sourceId, targetId }) => graphView.explainEdge(sourceId, targetId) ?? { error: 'edge not found' },
+    getAnalysis: async ({ section }) => {
+      const v = app.getState().last?.result?.[section];
+      return v == null ? readErr('NOT_COMPLETED', 'No result for this section yet; poll getCaseStatus until COMPLETED.') : truncate(v);
+    },
+    getGraphSummary: async () => {
+      const v = graphView.summary();
+      return v == null ? readErr('GRAPH_NOT_RENDERED', 'The graph is not rendered yet; open the graph tab on a completed case.') : truncate(v);
+    },
+    focusNode: async ({ nodeId, label }) => {
+      const v = graphView.focus(nodeId || label);
+      return v == null ? readErr('NODE_NOT_FOUND', 'No node matches that id or label; call getGraphSummary for available nodes.') : truncate(v);
+    },
+    filterGraph: async (args) => graphView.filter(args) ?? readErr('GRAPH_NOT_RENDERED', 'The graph is not rendered yet; open the graph tab on a completed case.'),
+    explainEdge: async ({ sourceId, targetId }) => graphView.explainEdge(sourceId, targetId)
+      ?? readErr('EDGE_NOT_FOUND', 'No edge connects those two nodes; call getGraphSummary for the current edges.'),
     /** 列出本頁兩種能力、各自流程步驟與啟動工具，以及目前開啟的能力。 */
     listCapabilities: async () => ({ ok: true, view: currentView(), current: app.getMode?.() || null,
       capabilities: [{ mode: 'case', title: 'Case analysis', steps: ['BRAINSTORM', 'QUESTIONS', 'RESEARCH', 'ANALYSIS', 'ASSESSMENT', 'DOCUMENTS', 'GRAPH'], startTool: 'startCase' },
@@ -339,7 +354,8 @@ export function createWebMcp({ app, graphView, modelContext, ready = Promise.res
     },
     /** 讀取已完成的合規報告，可依風險等級過濾 findings。 */
     getComplianceReport: async ({ risk = 'all' } = {}) => {
-      const c = app.getState().last?.result?.compliance; if (!c) return { error: 'not completed' };
+      const c = app.getState().last?.result?.compliance;
+      if (!c) return readErr('NOT_COMPLETED', 'No compliance report yet; poll getCaseStatus until COMPLETED.');
       return truncate({ ...c, findings: (c.findings || []).filter((f) => risk === 'all' || f.risk === risk) }, 4000);
     },
     /** 依風險等級過濾結果頁上顯示的 findings 清單。 */

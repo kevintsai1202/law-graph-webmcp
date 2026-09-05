@@ -49,7 +49,7 @@ class StatusMapperContractTest {
         assertEquals("COMPLETED_WITHOUT_GRAPH", withoutGraph.error().code());
 
         // 有 outcome 與 revised：COMPLETED、步驤 GRAPH，result 帶圖與修訂條款
-        var outcome = new GraphOutcome(new GraphData(List.of(), List.of()), List.of());
+        var outcome = new GraphOutcome(new GraphData(List.of(new GraphNode("c", "contract", "勞動契約", null, null, null, null, null, null, null, null, null, null, null)), List.of()), List.of());
         var revised = new RevisedClauses(List.of());
         var status = StatusMapper.map(snap(AgentProcessStatusCode.COMPLETED, brainstorm, null, new UserAnswers(List.of()), research, findings, report, outcome, revised));
         assertEquals("COMPLETED", status.status());
@@ -59,6 +59,15 @@ class StatusMapperContractTest {
         assertEquals(brainstorm, status.result().contract());
         assertNotNull(status.result().graph());
         assertEquals(revised, status.result().revised());
+    }
+
+    /** COMPLETED 但圖沒有任何節點：等同沒有產物，一律判失敗。 */
+    @Test void completedContractWithEmptyGraphIsFailure() {
+        var empty = new GraphOutcome(new GraphData(List.of(), List.of()), List.of());
+        var status = StatusMapper.map(snap(AgentProcessStatusCode.COMPLETED, brainstorm, null, new UserAnswers(List.of()), research, findings, report, empty, new RevisedClauses(List.of())));
+        assertEquals("FAILED", status.status());
+        assertEquals("COMPLETED_WITHOUT_GRAPH", status.error().code());
+        assertEquals("graph has no nodes", status.error().message());
     }
 
     @Test void completedContractWithoutReportIsFailure() {

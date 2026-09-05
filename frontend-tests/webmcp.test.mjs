@@ -351,3 +351,35 @@ test('getUsageStats 在後端失敗時回 STATS_UNAVAILABLE 而非丟例外', as
   const w = createWebMcp({ app, graphView: {}, modelContext: undefined });
   assert.deepEqual(await w.execute('getUsageStats', {}), { ok: false, error: 'STATS_UNAVAILABLE', message: '504' });
 });
+
+// 用途：結果頁六個讀取工具的失敗回傳統一為 { ok:false, error:'<CODE>', message }；成功回傳不加 ok 欄位
+test('結果頁讀取工具失敗一律回統一錯誤 envelope', async () => {
+  const appState = { view: 'RESULT', last: { status: 'COMPLETED', result: {} } };
+  const app = { getState: () => appState, getLocale: () => 'en' };
+  const graphView = { summary: () => null, focus: () => null, filter: () => null, explainEdge: () => null };
+  const w = createWebMcp({ app, graphView, modelContext: null });
+  const expect = async (name, args, code) => {
+    const r = await w.execute(name, args);
+    assert.equal(r.ok, false, name);
+    assert.equal(r.error, code, name);
+    assert.equal(typeof r.message, 'string', name + ' 需帶人類可讀訊息');
+  };
+  await expect('getAnalysis', { section: 'analysis' }, 'NOT_COMPLETED');
+  await expect('getGraphSummary', {}, 'GRAPH_NOT_RENDERED');
+  await expect('focusNode', { nodeId: 'x' }, 'NODE_NOT_FOUND');
+  await expect('filterGraph', { groups: ['law'] }, 'GRAPH_NOT_RENDERED');
+  await expect('explainEdge', { sourceId: 'a', targetId: 'b' }, 'EDGE_NOT_FOUND');
+  await expect('getComplianceReport', {}, 'NOT_COMPLETED');
+});
+
+test('結果頁讀取工具成功回傳不夾帶 ok 欄位', async () => {
+  const appState = { view: 'RESULT', last: { status: 'COMPLETED', result: { analysis: { elements: [] }, compliance: { findings: [] } } } };
+  const app = { getState: () => appState, getLocale: () => 'en' };
+  const graphView = { summary: () => ({ nodeCounts: {} }), focus: () => ({ neighbors: [] }), filter: () => ({ visibleNodes: 1 }), explainEdge: () => ({ label: '包含' }) };
+  const w = createWebMcp({ app, graphView, modelContext: null });
+  for (const [name, args] of [['getAnalysis', { section: 'analysis' }], ['getGraphSummary', {}], ['focusNode', { nodeId: 'x' }],
+    ['filterGraph', { groups: ['law'] }], ['explainEdge', { sourceId: 'a', targetId: 'b' }], ['getComplianceReport', {}]]) {
+    const r = await w.execute(name, args);
+    assert.equal(r.ok, undefined, name + ' 成功時不應新增 ok 欄位');
+  }
+});
