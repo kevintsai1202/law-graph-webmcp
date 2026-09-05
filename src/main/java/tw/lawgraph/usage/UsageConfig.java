@@ -37,9 +37,21 @@ public class UsageConfig {
         return new DailyTokenBudget(dailyTokenLimit, paused, usageStore, Clock.system(DailyTokenBudget.ZONE));
     }
 
-    /** 註冊 Embabel 事件監聽器以累計 LLM 用量。 */
+    /**
+     * case_event 事件儲存：有設定資料庫就落地 PostgreSQL（統計與配額跨重啟保存），
+     * 否則退回記憶體版並警告，避免沒有資料庫的本機開發無法啟動。
+     */
     @Bean
-    public TokenUsageListener tokenUsageListener(DailyTokenBudget budget) {
-        return new TokenUsageListener(budget);
+    public UsageEventStore usageEventStore(LawGraphDatabase database) {
+        return database.optional().<UsageEventStore>map(JdbcUsageEventStore::new).orElseGet(() -> {
+            LOGGER.warn("未設定資料庫，統計與配額只存記憶體，重啟歸零");
+            return new InMemoryUsageEventStore();
+        });
+    }
+
+    /** 註冊 Embabel 事件監聽器以累計 LLM 用量，並把 token 增量回寫 case_event。 */
+    @Bean
+    public TokenUsageListener tokenUsageListener(DailyTokenBudget budget, UsageEventStore events) {
+        return new TokenUsageListener(budget, events);
     }
 }

@@ -31,6 +31,8 @@ class CaseControllerTest {
     @MockitoBean CaseService service;
     @MockitoBean CaseFileExtractor fileExtractor;
     @MockitoBean tw.lawgraph.usage.DailyTokenBudget budget;
+    /** 配額計數與案件事件記錄的儲存（預設 countToday 回 0，不擋任何請求）。 */
+    @MockitoBean tw.lawgraph.usage.UsageEventStore events;
 
     /** 每日 token 預算用盡時，啟動案件與提交答案都回 503 DAILY_TOKEN_LIMIT，且不進入服務層。 */
     @Test void dailyTokenLimitBlocksNewCasesAndAnswers() {

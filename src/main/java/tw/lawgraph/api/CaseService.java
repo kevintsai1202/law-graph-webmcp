@@ -41,6 +41,8 @@ import java.util.concurrent.ConcurrentHashMap;
 /** 啟動、查詢與續行 LegalGraphAgent 流程；caseId 即 Embabel processId。 */
 @Service
 public class CaseService {
+    private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(CaseService.class);
+
     /** 看門狗中止案件時回報給前端的錯誤代碼。 */
     static final String STEP_TIMEOUT = "STEP_TIMEOUT";
 
@@ -53,23 +55,38 @@ public class CaseService {
     private final Map<String, String> timedOut = new ConcurrentHashMap<>();
     /** caseId → 啟動時的流程模式（case／contract）。 */
     private final Map<String, String> modes = new ConcurrentHashMap<>();
+    /** case_event 事件儲存：案件結束時回寫終態。 */
+    private final tw.lawgraph.usage.UsageEventStore events;
+    /** 已回寫過終態的案件，確保每個案件只寫一次。 */
+    private final java.util.Set<String> finished = ConcurrentHashMap.newKeySet();
 
-    /** 相容舊呼叫端與單元測試：預設 300 秒看門狗與系統時鐘。 */
+    /** 相容舊呼叫端與單元測試：預設 300 秒看門狗、系統時鐘與記憶體事件儲存。 */
     public CaseService(AgentPlatform platform) {
-        this(platform, new StepWatchdog(java.time.Duration.ofSeconds(300)), Clock.systemUTC());
+        this(platform, new StepWatchdog(java.time.Duration.ofSeconds(300)));
     }
 
-    /** Spring 注入：AgentPlatform 與設定檔建立的看門狗。 */
-    @Autowired
+    /** 相容舊呼叫端與單元測試：記憶體事件儲存。 */
     public CaseService(AgentPlatform platform, StepWatchdog watchdog) {
-        this(platform, watchdog, Clock.systemUTC());
+        this(platform, watchdog, new tw.lawgraph.usage.InMemoryUsageEventStore());
     }
 
-    /** 完整建構子；Clock 供測試控制時間。 */
+    /** Spring 注入：AgentPlatform、設定檔建立的看門狗與 case_event 事件儲存。 */
+    @Autowired
+    public CaseService(AgentPlatform platform, StepWatchdog watchdog, tw.lawgraph.usage.UsageEventStore events) {
+        this(platform, watchdog, Clock.systemUTC(), events);
+    }
+
+    /** 供測試控制時間的建構子。 */
     CaseService(AgentPlatform platform, StepWatchdog watchdog, Clock clock) {
+        this(platform, watchdog, clock, new tw.lawgraph.usage.InMemoryUsageEventStore());
+    }
+
+    /** 完整建構子；Clock 供測試控制時間，events 供統計回寫。 */
+    CaseService(AgentPlatform platform, StepWatchdog watchdog, Clock clock, tw.lawgraph.usage.UsageEventStore events) {
         this.platform = platform;
         this.watchdog = watchdog;
         this.clock = clock;
+        this.events = events;
     }
 
     /**
@@ -90,6 +107,7 @@ public class CaseService {
             if (watchdog.exceeded(caseId, step, now)) {
                 timedOut.put(caseId, timeoutMessage(locales.get(caseId), step));
                 process.kill();
+                recordFinish(caseId, "FAILED");
             }
         }
     }
@@ -140,7 +158,22 @@ public class CaseService {
     public CaseStatus status(String caseId) {
         AgentProcess process = platform.getAgentProcess(caseId);
         if (process == null || !locales.containsKey(caseId)) throw new CaseNotFoundException(caseId);
-        return StatusMapper.map(snapshot(caseId, process));
+        CaseStatus mapped = StatusMapper.map(snapshot(caseId, process));
+        if ("COMPLETED".equals(mapped.status()) || "FAILED".equals(mapped.status())) recordFinish(caseId, mapped.status());
+        return mapped;
+    }
+
+    /**
+     * 首次觀察到終態時把結束狀態與時間回寫 case_event（同一案件只寫一次）；
+     * 統計失敗不得影響案件查詢，只記警告。
+     */
+    private void recordFinish(String caseId, String status) {
+        if (!finished.add(caseId)) return;
+        try {
+            events.recordFinish(caseId, status, clock.instant());
+        } catch (RuntimeException exception) {
+            LOGGER.warn("無法回寫案件終態 caseId={} 錯誤類型={}", caseId, exception.getClass().getSimpleName());
+        }
     }
 
     /** 將人類答案交給等待物件並恢復流程。 */

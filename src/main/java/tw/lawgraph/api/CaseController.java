@@ -26,6 +26,8 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/cases")
 public class CaseController {
+    private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(CaseController.class);
+
     /** 啟動案件請求；documents 為勾選的書狀代碼（可省略）；mode 為 case／contract（預設 case），party／scopes 僅合約模式使用。 */
     public record StartRequest(String caseText, String locale, List<String> documents, String motionRequest,
                                String mode, String party, List<String> scopes) {}
@@ -43,6 +45,8 @@ public class CaseController {
     private final CaseFileExtractor fileExtractor;
     /** 每日 token 預算；用盡或手動暫停時拒絕任何會呼叫 LLM 的請求。 */
     private final tw.lawgraph.usage.DailyTokenBudget budget;
+    /** case_event 事件儲存：案件啟動即記錄一筆，作為統計與配額計數的唯一來源。 */
+    private final tw.lawgraph.usage.UsageEventStore events;
     /** 測試專用便宜模型名稱（唯一允許透過 header 指定的模型）；空白代表關閉覆寫。 */
     private final String testModel;
 
@@ -53,9 +57,10 @@ public class CaseController {
     public CaseController(CaseService service, RateLimiter limiter, DailyCaseQuota quota, QuotaIdentityResolver identities,
                           tw.lawgraph.auth.AccessPolicy accessPolicy,
                           CaseFileExtractor fileExtractor, tw.lawgraph.usage.DailyTokenBudget budget,
+                          tw.lawgraph.usage.UsageEventStore events,
                           @org.springframework.beans.factory.annotation.Value("${lawgraph.test-model:gpt-5.4-nano}") String testModel) {
         this.service = service; this.limiter = limiter; this.quota = quota; this.identities = identities; this.accessPolicy = accessPolicy;
-        this.fileExtractor = fileExtractor; this.budget = budget;
+        this.fileExtractor = fileExtractor; this.budget = budget; this.events = events;
         this.testModel = testModel == null ? "" : testModel.trim();
     }
 
@@ -91,10 +96,9 @@ public class CaseController {
      * 每人每日配額用盡時回 429 DAILY_CASE_LIMIT，訊息說明原因（免費開放、為了讓更多人用得到才設上限）；
      * 否則扣一次配額並回 null 讓呼叫端繼續。
      */
-    private ResponseEntity<?> quotaGate(HttpServletRequest http, String locale) {
-        var identity = identities.resolve(http);
-        if (quota.tryAcquire(identity.key(), identity.limit())) return null;
-        var snapshot = quota.snapshot(identity.key(), identity.limit());
+    private ResponseEntity<?> quotaGate(QuotaIdentityResolver.Identity identity, String locale) {
+        if (quota.tryAcquire(identity.hash(), identity.limit())) return null;
+        var snapshot = quota.snapshot(identity.hash(), identity.limit());
         boolean zh = "zh-TW".equalsIgnoreCase(locale == null ? "" : locale.trim());
         // 匿名者提醒：登入 Google 每天可多分析幾次
         String loginTip = identity.member() ? ""
@@ -121,7 +125,8 @@ public class CaseController {
             return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
                     .body(ApiExceptionHandler.error("RATE_LIMITED", "max cases per hour reached"));
         }
-        ResponseEntity<?> quotaGate = quotaGate(http, request.locale());
+        var identity = identities.resolve(http);
+        ResponseEntity<?> quotaGate = quotaGate(identity, request.locale());
         if (quotaGate != null) return quotaGate;
         Locale loc = Locale.fromCode(request.locale());
         List<String> documents = request.documents() == null ? List.of() : request.documents();
@@ -129,6 +134,7 @@ public class CaseController {
         CaseStatus created = CaseMode.CONTRACT.equals(CaseMode.normalize(request.mode()))
                 ? service.startContract(new ContractInput(request.caseText().trim(), loc, request.party(), request.scopes(), documents, model))
                 : service.start(request.caseText().trim(), loc, documents, request.motionRequest() == null ? "" : request.motionRequest(), model);
+        recordStart(created, identity, model);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
@@ -152,7 +158,8 @@ public class CaseController {
             return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
                     .body(ApiExceptionHandler.error("RATE_LIMITED", "max cases per hour reached"));
         }
-        ResponseEntity<?> quotaGate = quotaGate(http, locale);
+        var identity = identities.resolve(http);
+        ResponseEntity<?> quotaGate = quotaGate(identity, locale);
         if (quotaGate != null) return quotaGate;
         String composed = fileExtractor.composeCaseText(caseText, fileExtractor.extract(files));
         Locale loc = Locale.fromCode(locale);
@@ -161,6 +168,7 @@ public class CaseController {
         CaseStatus created = CaseMode.CONTRACT.equals(CaseMode.normalize(mode))
                 ? service.startContract(new ContractInput(composed, loc, party, scopes, docs, model))
                 : service.start(composed, loc, docs, motionRequest, model);
+        recordStart(created, identity, model);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
@@ -175,6 +183,21 @@ public class CaseController {
         ResponseEntity<?> gate = budgetGate(current == null ? null : current.locale());
         if (gate != null) return gate;
         return ResponseEntity.ok(service.answer(id, request.answers() == null ? List.of() : request.answers()));
+    }
+
+    /**
+     * 記錄一筆案件啟動事件（同時是當日配額的計數依據）；
+     * 統計失敗絕不能讓已經啟動的案件失敗，因此只記警告。
+     */
+    private void recordStart(CaseStatus created, QuotaIdentityResolver.Identity identity, String model) {
+        try {
+            events.recordStart(new tw.lawgraph.usage.CaseEvent(created.caseId(),
+                    java.time.LocalDate.now(DailyCaseQuota.ZONE), created.mode(), identity.kind(), identity.hash(),
+                    model == null || model.isBlank() ? "default" : model, "RUNNING", 0, 0,
+                    java.time.Instant.now(), null));
+        } catch (RuntimeException exception) {
+            LOGGER.warn("無法記錄案件啟動事件 caseId={} 錯誤類型={}", created.caseId(), exception.getClass().getSimpleName());
+        }
     }
 
     /** Cloudflare 後優先採用 CF-Connecting-IP；其餘代理靠 server.forward-headers-strategy 還原 X-Forwarded-For。 */
@@ -192,8 +215,8 @@ public class CaseController {
         }
 
         /** 每人每日案件配額計數器；上限依身分由 QuotaIdentityResolver 決定。 */
-        @Bean DailyCaseQuota dailyCaseQuota() {
-            return new DailyCaseQuota(Clock.systemUTC());
+        @Bean DailyCaseQuota dailyCaseQuota(tw.lawgraph.usage.UsageEventStore events) {
+            return new DailyCaseQuota(Clock.systemUTC(), events);
         }
     }
 }

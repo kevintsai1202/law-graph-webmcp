@@ -25,6 +25,12 @@ public class ApiExceptionHandler {
         return error("CASE_NOT_WAITING", exception.getMessage());
     }
 
+    /** 配額計數所依賴的統計儲存壞掉時轉成 503，明確告知暫時不可用（不得靜默放行）。 */
+    @ExceptionHandler(QuotaStoreUnavailableException.class) @ResponseStatus(HttpStatus.SERVICE_UNAVAILABLE)
+    public Map<String, String> quotaStoreUnavailable(QuotaStoreUnavailableException exception) {
+        return error("QUOTA_STORE_UNAVAILABLE", exception.getMessage());
+    }
+
     /** 將不支援、損壞或超限的附件轉成 400。 */
     @ExceptionHandler(InvalidAttachmentException.class) @ResponseStatus(HttpStatus.BAD_REQUEST)
     public Map<String, String> invalidAttachment(InvalidAttachmentException exception) {

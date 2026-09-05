@@ -1,6 +1,12 @@
 package tw.lawgraph.api;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import tw.lawgraph.usage.CaseEvent;
+import tw.lawgraph.usage.UsageEventStore;
+
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
@@ -26,6 +32,22 @@ class DailyCaseQuotaControllerTest {
     @MockitoBean CaseService service;
     @MockitoBean CaseFileExtractor fileExtractor;
     @MockitoBean tw.lawgraph.usage.DailyTokenBudget budget;
+    /** 配額改由 case_event 計數，這裡以假儲存模擬「啟動即計一次」。 */
+    @MockitoBean UsageEventStore events;
+
+    /** identityHash → 今日已記錄的啟動次數。 */
+    private final Map<String, Integer> counts = new ConcurrentHashMap<>();
+
+    /** 讓 mock 的事件儲存表現得像真的：recordStart 累加、countToday 讀回。 */
+    @BeforeEach void stubEventStore() {
+        counts.clear();
+        org.mockito.Mockito.doAnswer(invocation -> {
+            CaseEvent event = invocation.getArgument(0);
+            counts.merge(event.identityHash(), 1, Integer::sum);
+            return null;
+        }).when(events).recordStart(any(CaseEvent.class));
+        when(events.countToday(anyString(), any())).thenAnswer(i -> counts.getOrDefault(i.getArgument(0), 0));
+    }
 
     private static final String BODY = "{\"caseText\":\"A hit B\",\"locale\":\"zh-TW\"}";
 
@@ -107,5 +129,44 @@ class DailyCaseQuotaControllerTest {
         assertThat(me).bodyJson().extractingPath("$.blocked").isEqualTo(true);
         assertThat(me).bodyJson().extractingPath("$.blockedMessage").asString().contains("使用授權");
         org.mockito.Mockito.verify(service, org.mockito.Mockito.never()).start(anyString(), any(), anyList(), anyString(), anyString());
+    }
+
+    /** 啟動成功後必須寫入 case_event：匿名身分、雜湊過的識別（非原始 IP）、mode 為 case。 */
+    @Test void startRecordsCaseEventWithHashedAnonymousIdentity() {
+        when(service.start(anyString(), any(), anyList(), anyString(), anyString()))
+                .thenReturn(new CaseStatus("p1", "RUNNING", "BRAINSTORM", "zh-TW", null, null, null));
+        assertThat(mvc.post().uri("/api/cases").contentType(MediaType.APPLICATION_JSON).content(BODY)).hasStatus(201);
+        org.mockito.Mockito.verify(events).recordStart(org.mockito.ArgumentMatchers.argThat(e ->
+                "p1".equals(e.caseId()) && "anonymous".equals(e.identityKind()) && "case".equals(e.mode())
+                        && "RUNNING".equals(e.status()) && e.identityHash() != null && !e.identityHash().contains(".")
+                        && e.startedAt() != null && e.finishedAt() == null));
+    }
+
+    /** 登入者的事件以 member 身分記錄。 */
+    @Test void memberStartRecordsMemberIdentityKind() {
+        when(service.start(anyString(), any(), anyList(), anyString(), anyString()))
+                .thenReturn(new CaseStatus("p2", "RUNNING", "BRAINSTORM", "zh-TW", null, null, null));
+        var login = oauth2Login().attributes(a -> { a.put("sub", "g-123"); a.put("email", "k@example.com"); });
+        assertThat(mvc.post().uri("/api/cases").contentType(MediaType.APPLICATION_JSON).content(BODY).with(login)).hasStatus(201);
+        org.mockito.Mockito.verify(events).recordStart(org.mockito.ArgumentMatchers.argThat(e ->
+                "member".equals(e.identityKind()) && "g-123".equals(e.identityHash())));
+    }
+
+    /** case_event 寫入失敗不得影響案件啟動（統計不能擋流程）。 */
+    @Test void recordStartFailureDoesNotBreakStart() {
+        when(service.start(anyString(), any(), anyList(), anyString(), anyString()))
+                .thenReturn(new CaseStatus("p1", "RUNNING", "BRAINSTORM", "zh-TW", null, null, null));
+        org.mockito.Mockito.doThrow(new IllegalStateException("db down")).when(events).recordStart(any(CaseEvent.class));
+        assertThat(mvc.post().uri("/api/cases").contentType(MediaType.APPLICATION_JSON).content(BODY)).hasStatus(201);
+    }
+
+    /** 配額計數來源（資料庫）壞掉時明確回 503，不得靜默放行。 */
+    @Test void quotaStoreFailureReturns503() {
+        when(events.countToday(anyString(), any())).thenThrow(new IllegalStateException("db down"));
+        var rejected = mvc.post().uri("/api/cases").contentType(MediaType.APPLICATION_JSON).content(BODY).exchange();
+        assertThat(rejected).hasStatus(503);
+        assertThat(rejected).bodyJson().extractingPath("$.error").isEqualTo("QUOTA_STORE_UNAVAILABLE");
+        org.mockito.Mockito.verify(service, org.mockito.Mockito.never())
+                .start(anyString(), any(), anyList(), anyString(), anyString());
     }
 }

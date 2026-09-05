@@ -24,12 +24,17 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import tw.lawgraph.domain.GraphData;
+import tw.lawgraph.domain.GraphOutcome;
+import tw.lawgraph.domain.ResearchResult;
+import tw.lawgraph.usage.UsageEventStore;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -132,5 +137,53 @@ class CaseServiceTest {
         when(process.getStatus()).thenReturn(AgentProcessStatusCode.WAITING);
         timed.sweep(); timed.sweep();
         verify(process, never()).kill();
+    }
+
+    /** 案件跑完（COMPLETED）時只回寫一次終態，重複查詢不得重複寫入。 */
+    @Test void statusRecordsFinishOnceWhenCompleted() {
+        var events = mock(UsageEventStore.class);
+        var finishing = new CaseService(platform, new StepWatchdog(Duration.ofSeconds(300)), events);
+        finishing.start("x", Locale.ZH_TW, List.of());
+        when(process.getStatus()).thenReturn(AgentProcessStatusCode.COMPLETED);
+        when(blackboard.last(ResearchResult.class)).thenReturn(new ResearchResult(List.of(), List.of(), List.of()));
+        when(blackboard.last(GraphOutcome.class)).thenReturn(new GraphOutcome(new GraphData(List.of(), List.of()), List.of()));
+
+        assertEquals("COMPLETED", finishing.status("p1").status());
+        assertEquals("COMPLETED", finishing.status("p1").status());
+
+        verify(events, times(1)).recordFinish(eq("p1"), eq("COMPLETED"), any());
+    }
+
+    /** 失敗終態同樣只回寫一次。 */
+    @Test void statusRecordsFinishOnceWhenFailed() {
+        var events = mock(UsageEventStore.class);
+        var finishing = new CaseService(platform, new StepWatchdog(Duration.ofSeconds(300)), events);
+        finishing.start("x", Locale.EN, List.of());
+        when(process.getStatus()).thenReturn(AgentProcessStatusCode.KILLED);
+
+        assertEquals("FAILED", finishing.status("p1").status());
+        finishing.status("p1");
+
+        verify(events, times(1)).recordFinish(eq("p1"), eq("FAILED"), any());
+    }
+
+    /** 執行中不得回寫終態。 */
+    @Test void statusDoesNotRecordFinishWhileRunning() {
+        var events = mock(UsageEventStore.class);
+        var running = new CaseService(platform, new StepWatchdog(Duration.ofSeconds(300)), events);
+        running.start("x", Locale.EN, List.of());
+        running.status("p1");
+        verify(events, never()).recordFinish(anyString(), anyString(), any());
+    }
+
+    /** case_event 寫入失敗不得讓狀態查詢壞掉。 */
+    @Test void statusSurvivesEventStoreFailure() {
+        var events = mock(UsageEventStore.class);
+        org.mockito.Mockito.doThrow(new IllegalStateException("db down"))
+                .when(events).recordFinish(anyString(), anyString(), any());
+        var finishing = new CaseService(platform, new StepWatchdog(Duration.ofSeconds(300)), events);
+        finishing.start("x", Locale.EN, List.of());
+        when(process.getStatus()).thenReturn(AgentProcessStatusCode.KILLED);
+        assertEquals("FAILED", finishing.status("p1").status());
     }
 }

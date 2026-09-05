@@ -25,7 +25,7 @@ public class QuotaController {
     @GetMapping("/api/quota")
     public QuotaView quota(HttpServletRequest http) {
         var identity = identities.resolve(http);
-        var snapshot = quota.snapshot(identity.key(), identity.limit());
+        var snapshot = quota.snapshot(identity.hash(), identity.limit());
         return new QuotaView(snapshot.date(), snapshot.used(), snapshot.limit(), snapshot.remaining(), snapshot.exhausted(),
                 identity.member(), identities.memberLimit(), SecurityConfig.LOGIN_PATH);
     }

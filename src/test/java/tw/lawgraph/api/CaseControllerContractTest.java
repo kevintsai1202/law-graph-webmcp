@@ -28,6 +28,8 @@ class CaseControllerContractTest {
     @MockitoBean CaseService service;
     @MockitoBean CaseFileExtractor fileExtractor;
     @MockitoBean tw.lawgraph.usage.DailyTokenBudget budget;
+    /** 配額計數與案件事件記錄的儲存（預設 countToday 回 0，不擋任何請求）。 */
+    @MockitoBean tw.lawgraph.usage.UsageEventStore events;
 
     private static CaseStatus running() {
         return new CaseStatus("p1", "RUNNING", "LOAD", "zh-TW", null, null, null, CaseMode.CONTRACT);
