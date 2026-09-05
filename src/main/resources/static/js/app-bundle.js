@@ -2632,13 +2632,63 @@
       annotations: { readOnlyHint: true },
       description: "Explain the relationship on the edge between two node ids (label, relation type, note).",
       inputSchema: S({ sourceId: { type: "string" }, targetId: { type: "string" } }, ["sourceId", "targetId"])
+    },
+    {
+      name: "listCapabilities",
+      phase: "base",
+      annotations: { readOnlyHint: true },
+      description: "List what this page can do: case analysis and contract compliance review, their steps and start tools, plus the capability now open.",
+      inputSchema: S({})
+    },
+    {
+      name: "selectCapability",
+      phase: "base",
+      annotations: {},
+      description: "Open one capability on this page: case analysis or contract compliance review. Does not start work; use the matching start tool next.",
+      inputSchema: S({ mode: { type: "string", enum: ["case", "contract"], description: "case = dispute analysis; contract = compliance review." } }, ["mode"])
+    },
+    {
+      name: "startContractReview",
+      phase: "base",
+      annotations: {},
+      description: "Start one contract compliance review from contractText or a sampleId. Only use when no case is active; never replace an active case.",
+      inputSchema: S({
+        contractText: { type: "string", minLength: 20, description: "Full contract text to review." },
+        sampleId: { type: "string", description: "Exact id or title returned by listSampleCases in contract mode." },
+        party: { type: "string", enum: ["partyA", "partyB", "unknown"], description: "Which side the review speaks for." },
+        scopes: { type: "array", description: "Review scopes; empty lets the reviewer decide.", items: { type: "string", enum: [...CONTRACT_SCOPES] } },
+        outputs: { type: "array", description: "Extra outputs besides the report.", items: { type: "string", enum: ["revised"] } },
+        locale: LOCALE
+      })
+    },
+    {
+      name: "getComplianceReport",
+      phase: "completed",
+      annotations: { readOnlyHint: true, untrustedContentHint: true },
+      description: "Return the completed compliance report: overall risk and findings, optionally filtered to one risk level. Long output is summarised.",
+      inputSchema: S({ risk: { type: "string", enum: ["all", "high", "medium", "low"], description: "Risk level to keep; all keeps every finding." } })
+    },
+    {
+      name: "filterFindingsByRisk",
+      phase: "completed",
+      annotations: {},
+      description: "Filter the visible compliance findings list on the result page by risk level.",
+      inputSchema: S({ risk: { type: "string", enum: ["all", "high", "medium", "low"] } }, ["risk"])
+    },
+    {
+      name: "getUsageStats",
+      phase: "base",
+      annotations: { readOnlyHint: true },
+      description: "Read this page usage statistics for the last N days. Not available yet in this release.",
+      inputSchema: S({ days: { type: "integer", minimum: 1, maximum: 90, description: "How many days back to summarise." } })
     }
   ];
   var TOOL_NAMES_BY_VIEW = Object.freeze({
-    INPUT: Object.freeze(["listSampleCases", "startCase", "setOutputSelection", "getOutputOptions", "getInputForm", "verifyCitation"]),
+    HOME: Object.freeze(["listCapabilities", "selectCapability", "startCase", "startContractReview", "listSampleCases", "verifyCitation", "getUsageStats"]),
+    INPUT: Object.freeze(["listSampleCases", "startCase", "setOutputSelection", "getOutputOptions", "getInputForm", "verifyCitation", "listCapabilities", "selectCapability", "startContractReview", "getUsageStats"]),
     RUNNING: Object.freeze(["getCaseStatus", "resetCase"]),
     QUESTIONS: Object.freeze(["getCaseStatus", "getQuestions", "fillQuestions", "resetCase"]),
-    RESULT: Object.freeze(["getCaseStatus", "getResultTabs", "getAnalysis", "getGraphSummary", "focusNode", "filterGraph", "explainEdge", "verifyCitation", "resetCase"]),
+    RESULT: Object.freeze(["getCaseStatus", "getResultTabs", "getAnalysis", "getGraphSummary", "focusNode", "filterGraph", "explainEdge", "verifyCitation", "resetCase", "getComplianceReport", "filterFindingsByRisk", "getUsageStats"]),
     FAILED: Object.freeze(["getCaseStatus", "resetCase"])
   });
   function truncate(obj, max = 1500) {
@@ -2689,7 +2739,7 @@
     function pageStatus() {
       const page = app2.getState?.() || {};
       const last = page.last || {};
-      const status = last.status || ({ INPUT: "NONE", RUNNING: "RUNNING", QUESTIONS: "WAITING", RESULT: "COMPLETED", FAILED: "FAILED" }[page.view] || "NONE");
+      const status = last.status || ({ HOME: "NONE", INPUT: "NONE", RUNNING: "RUNNING", QUESTIONS: "WAITING", RESULT: "COMPLETED", FAILED: "FAILED" }[page.view] || "NONE");
       const waiting = status === "WAITING" || page.view === "QUESTIONS";
       const active = status !== "NONE";
       const questionProgress = app2.getQuestionProgress?.() || { filledQuestionCount: 0, questionCount: 0, missingQuestionIds: [] };
@@ -2700,11 +2750,13 @@
         step: last.step || (status === "RUNNING" ? "BRAINSTORM" : status === "WAITING" ? "QUESTIONS" : null),
         locale: last.locale || app2.getLocale?.(),
         view: page.view || "INPUT",
+        // 目前開啟的能力（case／contract），HOME 尚未選擇時為 null
+        mode: app2.getMode?.() || null,
         humanActionRequired: waiting,
         questionCount: questionProgress.questionCount || (Array.isArray(last.questions) ? last.questions.length : 0),
         filledQuestionCount: questionProgress.filledQuestionCount || 0,
         missingQuestionIds: questionProgress.missingQuestionIds || [],
-        nextAction: waiting ? allQuestionsFilled ? "Answers are filled in the visible fields. Ask the human to review and click Continue. Do not call startCase or submit another case." : "Ask the human for answers, or use fillQuestions to place proposed answers in the visible fields. The human must review and submit; do not call startCase or submit another case." : active ? status === "RUNNING" ? "Poll getCaseStatus until WAITING, COMPLETED, or FAILED. Do not call startCase while this case is active." : status === "COMPLETED" ? "Use getAnalysis or graph tools for this completed case." : "Show the failure and wait for the human before retrying or resetting." : "Call startCase with caseText or sampleId to begin one case."
+        nextAction: waiting ? allQuestionsFilled ? "Answers are filled in the visible fields. Ask the human to review and click Continue. Do not call startCase or submit another case." : "Ask the human for answers, or use fillQuestions to place proposed answers in the visible fields. The human must review and submit; do not call startCase or submit another case." : active ? status === "RUNNING" ? "Poll getCaseStatus until WAITING, COMPLETED, or FAILED. Do not call startCase while this case is active." : status === "COMPLETED" ? "Use getAnalysis or graph tools for this completed case." : "Show the failure and wait for the human before retrying or resetting." : (page.view || "INPUT") === "HOME" ? "Call listCapabilities, then selectCapability or a start tool." : "Call startCase with caseText or sampleId to begin one case."
       };
     }
     function questionGuide() {
@@ -2744,7 +2796,10 @@
         return app2.getSamples().map(({ id, title, summary: summary2 }) => ({ id, title, summary: summary2 }));
       },
       startCase: async ({ caseText, sampleId, locale: locale2, documents, motionRequest }) => {
-        if (app2.getState().view !== "INPUT") {
+        if (app2.getMode?.() === "contract" && currentView() === "INPUT") {
+          return { ok: false, error: "WRONG_CAPABILITY", message: 'The contract review form is open. Use startContractReview, or selectCapability("case") first.' };
+        }
+        if (!["HOME", "INPUT"].includes(currentView())) {
           const current2 = pageStatus();
           return {
             ok: false,
@@ -2755,6 +2810,7 @@
           };
         }
         if (locale2 && locale2 !== app2.getLocale()) await app2.setLocale(locale2);
+        if (app2.getMode?.() !== "case" && currentView() === "HOME") await app2.selectMode?.("case");
         const outputs = ["graph", ...Array.isArray(documents) ? documents : []];
         const s = sampleId ? await app2.startSample(sampleId, outputs) : await app2.start(caseText, outputs, [], motionRequest || "");
         if (!s) return { ok: false, error: "Unknown sampleId or empty caseText." };
@@ -2810,7 +2866,50 @@
       getGraphSummary: async () => truncate(graphView.summary() ?? { error: "graph not rendered" }),
       focusNode: async ({ nodeId, label }) => truncate(graphView.focus(nodeId || label) ?? { error: "node not found" }),
       filterGraph: async (args) => graphView.filter(args) ?? { error: "graph not rendered" },
-      explainEdge: async ({ sourceId, targetId }) => graphView.explainEdge(sourceId, targetId) ?? { error: "edge not found" }
+      explainEdge: async ({ sourceId, targetId }) => graphView.explainEdge(sourceId, targetId) ?? { error: "edge not found" },
+      /** 列出本頁兩種能力、各自流程步驟與啟動工具，以及目前開啟的能力。 */
+      listCapabilities: async () => ({
+        ok: true,
+        view: currentView(),
+        current: app2.getMode?.() || null,
+        capabilities: [
+          { mode: "case", title: "Case analysis", steps: ["BRAINSTORM", "QUESTIONS", "RESEARCH", "ANALYSIS", "ASSESSMENT", "DOCUMENTS", "GRAPH"], startTool: "startCase" },
+          { mode: "contract", title: "Contract compliance review", steps: ["LOAD", "QUESTIONS", "RESEARCH", "REVIEW", "SUMMARY", "REVISE", "GRAPH"], startTool: "startContractReview" }
+        ],
+        nextAction: "Call selectCapability to open a capability, or its start tool directly."
+      }),
+      /** 開啟指定能力（只在 HOME／INPUT 可用）。 */
+      selectCapability: async ({ mode }) => {
+        if (!["HOME", "INPUT"].includes(currentView())) return unavailable("selectCapability");
+        await app2.selectMode(mode);
+        return { ok: true, mode, view: currentView() };
+      },
+      /** 啟動一次合約合規審查；必要時先切換到合約能力。 */
+      startContractReview: async ({ contractText, sampleId, party, scopes, outputs, locale: locale2 }) => {
+        if (!["HOME", "INPUT"].includes(currentView())) {
+          const c = pageStatus();
+          return { ok: false, error: "CASE_IN_PROGRESS", current: c, nextAction: c.nextAction };
+        }
+        if (locale2 && locale2 !== app2.getLocale()) await app2.setLocale(locale2);
+        if (app2.getMode?.() !== "contract") await app2.selectMode("contract");
+        const extra = { party: party || "unknown", scopes: Array.isArray(scopes) ? scopes : [] };
+        const s = sampleId ? await app2.startSample(sampleId, outputs || [], extra) : await app2.start(contractText, outputs || [], [], "", extra);
+        if (!s) return { ok: false, error: "Unknown sampleId or empty contractText." };
+        return { ok: true, caseId: s.caseId, status: s.status, step: s.step, mode: "contract", nextAction: "Poll getCaseStatus; on COMPLETED call getComplianceReport." };
+      },
+      /** 讀取已完成的合規報告，可依風險等級過濾 findings。 */
+      getComplianceReport: async ({ risk = "all" } = {}) => {
+        const c = app2.getState().last?.result?.compliance;
+        if (!c) return { error: "not completed" };
+        return truncate({ ...c, findings: (c.findings || []).filter((f) => risk === "all" || f.risk === risk) }, 4e3);
+      },
+      /** 依風險等級過濾結果頁上顯示的 findings 清單。 */
+      filterFindingsByRisk: async ({ risk }) => {
+        app2.setRiskFilter(risk);
+        return { ok: true, risk };
+      },
+      /** 使用量統計於下一個里程碑接上，本版先明確回不可用。 */
+      getUsageStats: async () => ({ ok: false, error: "NOT_AVAILABLE", message: "Usage statistics arrive in the next release." })
     };
     let syncQueue = Promise.resolve();
     function syncForState(view) {

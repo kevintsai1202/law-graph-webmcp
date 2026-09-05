@@ -1,5 +1,6 @@
 /** WebMCP 工具層：依頁面狀態註冊可用工具；沒有代答工具。 */
 import { DOC_TYPES } from './documents.js';
+import { CONTRACT_SCOPES } from './contract.js';
 
 /** 產生 object 型 inputSchema（一律 additionalProperties:false）。 */
 const S = (props, required = []) => ({ type: 'object', properties: props, required, additionalProperties: false });
@@ -56,15 +57,39 @@ export const TOOL_DEFS = [
     inputSchema: S({ groups: { type: 'array', items: { type: 'string' } }, family: { type: 'string' }, reset: { type: 'boolean' } }) },
   { name: 'explainEdge', phase: 'completed', annotations: { readOnlyHint: true },
     description: 'Explain the relationship on the edge between two node ids (label, relation type, note).',
-    inputSchema: S({ sourceId: { type: 'string' }, targetId: { type: 'string' } }, ['sourceId', 'targetId']) }
+    inputSchema: S({ sourceId: { type: 'string' }, targetId: { type: 'string' } }, ['sourceId', 'targetId']) },
+  { name: 'listCapabilities', phase: 'base', annotations: { readOnlyHint: true },
+    description: 'List what this page can do: case analysis and contract compliance review, their steps and start tools, plus the capability now open.',
+    inputSchema: S({}) },
+  { name: 'selectCapability', phase: 'base', annotations: {},
+    description: 'Open one capability on this page: case analysis or contract compliance review. Does not start work; use the matching start tool next.',
+    inputSchema: S({ mode: { type: 'string', enum: ['case', 'contract'], description: 'case = dispute analysis; contract = compliance review.' } }, ['mode']) },
+  { name: 'startContractReview', phase: 'base', annotations: {},
+    description: 'Start one contract compliance review from contractText or a sampleId. Only use when no case is active; never replace an active case.',
+    inputSchema: S({ contractText: { type: 'string', minLength: 20, description: 'Full contract text to review.' },
+      sampleId: { type: 'string', description: 'Exact id or title returned by listSampleCases in contract mode.' },
+      party: { type: 'string', enum: ['partyA', 'partyB', 'unknown'], description: 'Which side the review speaks for.' },
+      scopes: { type: 'array', description: 'Review scopes; empty lets the reviewer decide.', items: { type: 'string', enum: [...CONTRACT_SCOPES] } },
+      outputs: { type: 'array', description: 'Extra outputs besides the report.', items: { type: 'string', enum: ['revised'] } },
+      locale: LOCALE }) },
+  { name: 'getComplianceReport', phase: 'completed', annotations: { readOnlyHint: true, untrustedContentHint: true },
+    description: 'Return the completed compliance report: overall risk and findings, optionally filtered to one risk level. Long output is summarised.',
+    inputSchema: S({ risk: { type: 'string', enum: ['all', 'high', 'medium', 'low'], description: 'Risk level to keep; all keeps every finding.' } }) },
+  { name: 'filterFindingsByRisk', phase: 'completed', annotations: {},
+    description: 'Filter the visible compliance findings list on the result page by risk level.',
+    inputSchema: S({ risk: { type: 'string', enum: ['all', 'high', 'medium', 'low'] } }, ['risk']) },
+  { name: 'getUsageStats', phase: 'base', annotations: { readOnlyHint: true },
+    description: 'Read this page usage statistics for the last N days. Not available yet in this release.',
+    inputSchema: S({ days: { type: 'integer', minimum: 1, maximum: 90, description: 'How many days back to summarise.' } }) }
 ];
 
 /** 各頁面狀態允許 Agent 看到與呼叫的工具；QUESTIONS 只允許填入答案，不允許自動送出或換案。 */
 export const TOOL_NAMES_BY_VIEW = Object.freeze({
-  INPUT: Object.freeze(['listSampleCases', 'startCase', 'setOutputSelection', 'getOutputOptions', 'getInputForm', 'verifyCitation']),
+  HOME: Object.freeze(['listCapabilities', 'selectCapability', 'startCase', 'startContractReview', 'listSampleCases', 'verifyCitation', 'getUsageStats']),
+  INPUT: Object.freeze(['listSampleCases', 'startCase', 'setOutputSelection', 'getOutputOptions', 'getInputForm', 'verifyCitation', 'listCapabilities', 'selectCapability', 'startContractReview', 'getUsageStats']),
   RUNNING: Object.freeze(['getCaseStatus', 'resetCase']),
   QUESTIONS: Object.freeze(['getCaseStatus', 'getQuestions', 'fillQuestions', 'resetCase']),
-  RESULT: Object.freeze(['getCaseStatus', 'getResultTabs', 'getAnalysis', 'getGraphSummary', 'focusNode', 'filterGraph', 'explainEdge', 'verifyCitation', 'resetCase']),
+  RESULT: Object.freeze(['getCaseStatus', 'getResultTabs', 'getAnalysis', 'getGraphSummary', 'focusNode', 'filterGraph', 'explainEdge', 'verifyCitation', 'resetCase', 'getComplianceReport', 'filterFindingsByRisk', 'getUsageStats']),
   FAILED: Object.freeze(['getCaseStatus', 'resetCase'])
 });
 
@@ -139,7 +164,7 @@ export function createWebMcp({ app, graphView, modelContext, ready = Promise.res
   function pageStatus() {
     const page = app.getState?.() || {};
     const last = page.last || {};
-    const status = last.status || ({ INPUT: 'NONE', RUNNING: 'RUNNING', QUESTIONS: 'WAITING', RESULT: 'COMPLETED', FAILED: 'FAILED' }[page.view] || 'NONE');
+    const status = last.status || ({ HOME: 'NONE', INPUT: 'NONE', RUNNING: 'RUNNING', QUESTIONS: 'WAITING', RESULT: 'COMPLETED', FAILED: 'FAILED' }[page.view] || 'NONE');
     const waiting = status === 'WAITING' || page.view === 'QUESTIONS';
     const active = status !== 'NONE';
     const questionProgress = app.getQuestionProgress?.() || { filledQuestionCount: 0, questionCount: 0, missingQuestionIds: [] };
@@ -150,6 +175,8 @@ export function createWebMcp({ app, graphView, modelContext, ready = Promise.res
       step: last.step || (status === 'RUNNING' ? 'BRAINSTORM' : status === 'WAITING' ? 'QUESTIONS' : null),
       locale: last.locale || app.getLocale?.(),
       view: page.view || 'INPUT',
+      // 目前開啟的能力（case／contract），HOME 尚未選擇時為 null
+      mode: app.getMode?.() || null,
       humanActionRequired: waiting,
       questionCount: questionProgress.questionCount || (Array.isArray(last.questions) ? last.questions.length : 0),
       filledQuestionCount: questionProgress.filledQuestionCount || 0,
@@ -164,7 +191,9 @@ export function createWebMcp({ app, graphView, modelContext, ready = Promise.res
             : status === 'COMPLETED'
               ? 'Use getAnalysis or graph tools for this completed case.'
               : 'Show the failure and wait for the human before retrying or resetting.'
-          : 'Call startCase with caseText or sampleId to begin one case.'
+          : (page.view || 'INPUT') === 'HOME'
+            ? 'Call listCapabilities, then selectCapability or a start tool.'
+            : 'Call startCase with caseText or sampleId to begin one case.'
     };
   }
 
@@ -210,7 +239,11 @@ export function createWebMcp({ app, graphView, modelContext, ready = Promise.res
       return app.getSamples().map(({ id, title, summary }) => ({ id, title, summary }));
     },
     startCase: async ({ caseText, sampleId, locale, documents, motionRequest }) => {
-      if (app.getState().view !== 'INPUT') {
+      // 合約審查表單開著時不接受案件分析啟動，避免送出到錯誤的能力
+      if (app.getMode?.() === 'contract' && currentView() === 'INPUT') {
+        return { ok: false, error: 'WRONG_CAPABILITY', message: 'The contract review form is open. Use startContractReview, or selectCapability("case") first.' };
+      }
+      if (!['HOME', 'INPUT'].includes(currentView())) {
         const current = pageStatus();
         return {
           ok: false,
@@ -221,6 +254,8 @@ export function createWebMcp({ app, graphView, modelContext, ready = Promise.res
         };
       }
       if (locale && locale !== app.getLocale()) await app.setLocale(locale);
+      // 從 HOME 直接啟動時先選案件分析能力，讓流程走案件分析
+      if (app.getMode?.() !== 'case' && currentView() === 'HOME') await app.selectMode?.('case');
       // 關聯圖為 Agent 啟動時的預設輸出；documents 另外加上勾選書狀
       const outputs = ['graph', ...(Array.isArray(documents) ? documents : [])];
       const s = sampleId ? await app.startSample(sampleId, outputs) : await app.start(caseText, outputs, [], motionRequest || '');
@@ -276,7 +311,36 @@ export function createWebMcp({ app, graphView, modelContext, ready = Promise.res
     getGraphSummary: async () => truncate(graphView.summary() ?? { error: 'graph not rendered' }),
     focusNode: async ({ nodeId, label }) => truncate(graphView.focus(nodeId || label) ?? { error: 'node not found' }),
     filterGraph: async (args) => graphView.filter(args) ?? { error: 'graph not rendered' },
-    explainEdge: async ({ sourceId, targetId }) => graphView.explainEdge(sourceId, targetId) ?? { error: 'edge not found' }
+    explainEdge: async ({ sourceId, targetId }) => graphView.explainEdge(sourceId, targetId) ?? { error: 'edge not found' },
+    /** 列出本頁兩種能力、各自流程步驟與啟動工具，以及目前開啟的能力。 */
+    listCapabilities: async () => ({ ok: true, view: currentView(), current: app.getMode?.() || null,
+      capabilities: [{ mode: 'case', title: 'Case analysis', steps: ['BRAINSTORM', 'QUESTIONS', 'RESEARCH', 'ANALYSIS', 'ASSESSMENT', 'DOCUMENTS', 'GRAPH'], startTool: 'startCase' },
+        { mode: 'contract', title: 'Contract compliance review', steps: ['LOAD', 'QUESTIONS', 'RESEARCH', 'REVIEW', 'SUMMARY', 'REVISE', 'GRAPH'], startTool: 'startContractReview' }],
+      nextAction: 'Call selectCapability to open a capability, or its start tool directly.' }),
+    /** 開啟指定能力（只在 HOME／INPUT 可用）。 */
+    selectCapability: async ({ mode }) => {
+      if (!['HOME', 'INPUT'].includes(currentView())) return unavailable('selectCapability');
+      await app.selectMode(mode); return { ok: true, mode, view: currentView() };
+    },
+    /** 啟動一次合約合規審查；必要時先切換到合約能力。 */
+    startContractReview: async ({ contractText, sampleId, party, scopes, outputs, locale }) => {
+      if (!['HOME', 'INPUT'].includes(currentView())) { const c = pageStatus(); return { ok: false, error: 'CASE_IN_PROGRESS', current: c, nextAction: c.nextAction }; }
+      if (locale && locale !== app.getLocale()) await app.setLocale(locale);
+      if (app.getMode?.() !== 'contract') await app.selectMode('contract');
+      const extra = { party: party || 'unknown', scopes: Array.isArray(scopes) ? scopes : [] };
+      const s = sampleId ? await app.startSample(sampleId, outputs || [], extra) : await app.start(contractText, outputs || [], [], '', extra);
+      if (!s) return { ok: false, error: 'Unknown sampleId or empty contractText.' };
+      return { ok: true, caseId: s.caseId, status: s.status, step: s.step, mode: 'contract', nextAction: 'Poll getCaseStatus; on COMPLETED call getComplianceReport.' };
+    },
+    /** 讀取已完成的合規報告，可依風險等級過濾 findings。 */
+    getComplianceReport: async ({ risk = 'all' } = {}) => {
+      const c = app.getState().last?.result?.compliance; if (!c) return { error: 'not completed' };
+      return truncate({ ...c, findings: (c.findings || []).filter((f) => risk === 'all' || f.risk === risk) }, 4000);
+    },
+    /** 依風險等級過濾結果頁上顯示的 findings 清單。 */
+    filterFindingsByRisk: async ({ risk }) => { app.setRiskFilter(risk); return { ok: true, risk }; },
+    /** 使用量統計於下一個里程碑接上，本版先明確回不可用。 */
+    getUsageStats: async () => ({ ok: false, error: 'NOT_AVAILABLE', message: 'Usage statistics arrive in the next release.' })
   };
 
   /** 註冊串行化：早期啟動器與應用層可能同時呼叫 syncForState，排隊避免舊註冊插隊覆蓋。 */

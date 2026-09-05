@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import { TOOL_DEFS, TOOL_NAMES_BY_VIEW, truncate, createWebMcp, resolveModelContext } from '../src/main/resources/static/js/webmcp.js';
 
 // 用途：WebMCP 十二工具契約、狀態矩陣（名稱／描述長度、annotations、無自動送出工具）與 1500 字元護欄。
-test('十六個工具，名稱/描述長度符合 Chrome 安全預算', () => {
-  assert.equal(TOOL_DEFS.length, 16);
+test('二十二個工具，名稱/描述長度符合 Chrome 安全預算', () => {
+  assert.equal(TOOL_DEFS.length, 22);
   for (const d of TOOL_DEFS) {
     assert.ok(d.name.length <= 30, d.name);
     assert.ok(d.description.length <= 150, d.name);
@@ -59,9 +59,12 @@ test('每個頁面狀態只註冊該狀態工具，切換狀態會 abort 舊清�
     assert.deepEqual([...active.keys()].sort(), [...expected].sort(), view);
     assert.deepEqual([...w.tools()].sort(), [...expected].sort(), `recorded ${view}`);
   }
-  assert.equal(aborted, 6 + 2 + 4 + 9, '每次真正切換都應解除上一批工具');
+  // 每次切換解除前一批工具；最後一批由 unregisterAll 解除
+  const sizes = Object.values(TOOL_NAMES_BY_VIEW).map((tools) => tools.length);
+  const beforeCleanup = sizes.slice(0, -1).reduce((a, b) => a + b, 0);
+  assert.equal(aborted, beforeCleanup, '每次真正切換都應解除上一批工具');
   w.unregisterAll();
-  assert.equal(aborted, 6 + 2 + 4 + 9 + 2, '清理時應解除最後一批工具');
+  assert.equal(aborted, beforeCleanup + sizes[sizes.length - 1], '清理時應解除最後一批工具');
   assert.equal(active.size, 0);
   assert.equal(w.tools().length, 0);
 });
@@ -243,4 +246,37 @@ test('ready 尚未解決前 host callback 不執行工具，解決後才回結�
   assert.equal(done, false, 'app 未綁定前不得執行');
   resolveReady();
   assert.deepEqual(await pending, [{ id: 'a', title: 'A', summary: 's' }]);
+});
+
+test('新工具契約：HOME 可選能力，合約工具只在對應狀態', () => {
+  const byName = Object.fromEntries(TOOL_DEFS.map((d) => [d.name, d]));
+  assert.ok(TOOL_NAMES_BY_VIEW.HOME.includes('selectCapability'));
+  assert.ok(TOOL_NAMES_BY_VIEW.RESULT.includes('getComplianceReport'));
+  assert.equal(byName.getComplianceReport.annotations.untrustedContentHint, true);
+  assert.deepEqual(byName.selectCapability.inputSchema.properties.mode.enum, ['case', 'contract']);
+  assert.ok(byName.startContractReview.inputSchema.properties.party.enum.includes('partyB'));
+});
+test('startContractReview 從 HOME 先選能力再啟動；getComplianceReport 依 risk 過濾', async () => {
+  const state = { view: 'HOME', mode: null, last: null };
+  const app = {
+    getState: () => state, getLocale: () => 'zh-TW', getMode: () => state.mode,
+    selectMode: async (m) => { state.view = 'INPUT'; state.mode = m; },
+    start: async (text, outputs, files, motion, extra) => { state.view = 'RUNNING'; return { caseId: 'c1', status: 'RUNNING', step: 'LOAD', extra }; },
+    startSample: async () => null,
+    setRiskFilter: () => {}
+  };
+  const w = createWebMcp({ app, graphView: {}, modelContext: null });
+  const r = await w.execute('startContractReview', { contractText: '合約全文超過二十個字的測試內容合約全文', party: 'partyB', scopes: ['labor'] });
+  assert.equal(r.ok, true); assert.equal(state.mode, 'contract');
+  state.view = 'RESULT'; state.last = { result: { compliance: { overallRisk: 'high', findings: [{ risk: 'high' }, { risk: 'low' }] } } };
+  const report = await w.execute('getComplianceReport', { risk: 'high' });
+  assert.equal(report.findings.length, 1);
+});
+test('合約 INPUT 頁呼叫 startCase 回 WRONG_CAPABILITY', async () => {
+  const state = { view: 'INPUT', mode: 'contract', last: null };
+  const app = { getState: () => state, getLocale: () => 'zh-TW', getMode: () => state.mode, selectMode: async () => {}, start: async () => ({ caseId: 'x' }) };
+  const w = createWebMcp({ app, graphView: {}, modelContext: null });
+  const r = await w.execute('startCase', { caseText: '案情文字超過二十個字的測試內容案情文字' });
+  assert.equal(r.ok, false); assert.equal(r.error, 'WRONG_CAPABILITY');
+  assert.match(r.message, /startContractReview/);
 });
