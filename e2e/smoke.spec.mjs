@@ -47,7 +47,7 @@ test('選單上有 Law Powers 技能常駐連結，切換語系後文字跟著�
   await page.evaluate((l) => window.__lawGraphApp.setLocale(l), 'en'); // 頁首已無語系選單，改由 app API 切換
   await expect(link).toHaveText(/Law Powers skills/);
 });
-test('input view lists four sample cards and switches locale', async ({ page }) => {
+test('input view lists six sample cards and switches locale', async ({ page }) => {
   await expect(page.locator('.sample')).toHaveCount(4);
   await expect(page.locator('#case-submit')).toHaveText('Analyse');
   await page.evaluate((l) => window.__lawGraphApp.setLocale(l), 'zh-TW'); // 頁首已無語系選單，改由 app API 切換
