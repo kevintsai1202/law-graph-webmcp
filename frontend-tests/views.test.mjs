@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { esc } from '../src/main/resources/static/js/views/util.js';
 import { bindInput, renderInput } from '../src/main/resources/static/js/views/input.js';
 import { renderProgress, renderCancel, STEPS, STEPS_BY_MODE } from '../src/main/resources/static/js/views/progress.js';
-import { renderHome } from '../src/main/resources/static/js/views/home.js';
+import { renderHome, bindHome } from '../src/main/resources/static/js/views/home.js';
 import { renderQuestions } from '../src/main/resources/static/js/views/questions.js';
 import { renderResult, renderSections, claimStatus, checklistCsv } from '../src/main/resources/static/js/views/result.js';
 
@@ -565,4 +565,27 @@ test('input 合約模式顯示立場、範疇與 revised 勾選，不顯示書�
   assert.doesNotMatch(html, /id="motion-field"/);
   assert.match(html, /開始審查/);
   assert.match(html, /貼上合約原文/);
+});
+
+// 用途：bindHome 按鈕聚焦時按 Enter 不應由 keydown 監聽重複觸發 onSelect（原生 click 已會冒泡處理一次）
+test('bindHome 按鈕聚焦按 Enter 時 keydown 監聽不重複觸發，只有原生 click 冒泡才算一次；卡片本身按 Enter 直接觸發', () => {
+  const card = { dataset: { mode: 'case' }, listeners: new Map(), addEventListener(type, l) { this.listeners.set(type, l); } };
+  const root = { querySelectorAll: () => [card] };
+  let calls = 0;
+  bindHome(root, { onSelect: () => { calls += 1; } });
+
+  // 按鈕聚焦時按 Enter：keydown target 落在 button 內，keydown 監聽本身不應呼叫 onSelect
+  const btn = {};
+  const eOnButton = { key: 'Enter', target: { closest: (sel) => (sel === 'button' ? btn : null) } };
+  card.listeners.get('keydown')(eOnButton);
+  assert.equal(calls, 0);
+
+  // 瀏覽器中按鈕的原生 click 會冒泡到卡片，模擬該冒泡：呼叫一次 click 監聽
+  card.listeners.get('click')();
+  assert.equal(calls, 1);
+
+  // 卡片本身（非按鈕）聚焦按 Enter：keydown 監聽直接觸發
+  const eOnCard = { key: 'Enter', target: { closest: () => null } };
+  card.listeners.get('keydown')(eOnCard);
+  assert.equal(calls, 2);
 });
