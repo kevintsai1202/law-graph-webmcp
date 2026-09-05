@@ -162,6 +162,8 @@ public class CaseService {
                 ? awaitable.questions() : null;
         Object failure = process.getFailureInfo();
         String timeout = timedOut.get(caseId);
+        // 條款分批審查失敗需以錯誤碼形式傳給前端，否則客戶端只看得到一段例外字串
+        String failureCode = failureCode(timeout, failure);
         return new StatusSnapshot(caseId, locales.get(caseId), process.getStatus(),
                 blackboard.last(BrainstormResult.class), pending, blackboard.last(UserAnswers.class),
                 blackboard.last(ResearchResult.class), blackboard.last(AnalysisResult.class),
@@ -169,11 +171,20 @@ public class CaseService {
                 blackboard.last(DraftedDocuments.class),
                 blackboard.last(GraphOutcome.class),
                 timeout != null ? timeout : failure == null ? null : failure.toString(),
-                timeout != null ? STEP_TIMEOUT : null,
+                failureCode,
                 modes.getOrDefault(caseId, CaseMode.CASE),
                 blackboard.last(ContractBrainstorm.class),
                 blackboard.last(ClauseFindings.class),
                 blackboard.last(ComplianceReport.class));
+    }
+
+    /** 決定回傳給前端的錯誤碼：逾時優先，其次辨識條款批次審查失敗。 */
+    private static String failureCode(String timeout, Object failure) {
+        if (timeout != null) return STEP_TIMEOUT;
+        if (failure != null && failure.toString().contains(ContractReviewAgent.REVIEW_BATCH_FAILED)) {
+            return ContractReviewAgent.REVIEW_BATCH_FAILED;
+        }
+        return null;
     }
 
     /** 依輪次由後往前取得目前等待物件；不同型別確保每輪答案能驅動下一個 GOAP Action。 */

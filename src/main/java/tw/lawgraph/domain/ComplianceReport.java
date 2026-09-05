@@ -13,7 +13,8 @@ public record ComplianceReport(String contractType, List<String> scopes, Risk ov
 
     public ComplianceReport {
         contractType = contractType == null ? "" : contractType.trim();
-        scopes = scopes == null ? List.of() : scopes.stream().filter(Objects::nonNull).distinct().toList();
+        // 範疇來自 LLM 原始字串，會被前端當 i18n key，必須白名單化（未知代碼丟棄）
+        scopes = ContractScopes.normalize(scopes);
         findings = findings == null ? List.of() : findings.stream().filter(Objects::nonNull).toList();
         overallRisk = overallRisk == null ? highest(findings) : overallRisk;
         priorities = priorities == null ? List.of() : priorities.stream().filter(Objects::nonNull).toList();

@@ -55,4 +55,18 @@ class CaseServiceContractTest {
         verify(platform).createAgentProcessFrom(eq(caseAgent), any(ProcessOptions.class), any(CaseInput.class));
         assertEquals(CaseMode.CASE, service.status("p1").mode());
     }
+
+    /** 條款批次審查失敗必須以 REVIEW_BATCH_FAILED 錯誤碼傳給前端，訊息保留批次資訊。 */
+    @Test void reviewBatchFailureSurfacesErrorCode() {
+        service.startContract(new ContractInput("x", Locale.ZH_TW, "partyA", List.of(), List.of(), ""));
+        when(process.getStatus()).thenReturn(AgentProcessStatusCode.FAILED);
+        when(process.getFailureInfo()).thenReturn(new Object() {
+            @Override public String toString() {
+                return "java.lang.IllegalStateException: REVIEW_BATCH_FAILED batch 1 of 2";
+            }
+        });
+        var status = service.status("p1");
+        assertEquals(ContractReviewAgent.REVIEW_BATCH_FAILED, status.error().code());
+        assertTrue(status.error().message().contains("batch 1 of 2"));
+    }
 }

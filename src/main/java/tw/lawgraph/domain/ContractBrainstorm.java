@@ -8,7 +8,8 @@ public record ContractBrainstorm(String contractType, List<String> scopes, List<
                                  List<Clause> clauses, List<Question> questions, String summary) {
     public ContractBrainstorm {
         contractType = contractType == null ? "" : contractType.trim();
-        scopes = scopes == null ? List.of() : scopes.stream().filter(Objects::nonNull).distinct().toList();
+        // 範疇來自 LLM 原始字串，會被前端當 i18n key，必須白名單化（未知代碼丟棄）
+        scopes = ContractScopes.normalize(scopes);
         parties = parties == null ? List.of() : parties.stream().filter(Objects::nonNull).toList();
         clauses = clauses == null ? List.of() : clauses.stream().filter(Objects::nonNull).toList();
         questions = questions == null ? List.of() : questions.stream().filter(Objects::nonNull).toList();

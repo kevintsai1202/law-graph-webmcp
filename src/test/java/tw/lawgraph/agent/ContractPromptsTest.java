@@ -32,6 +32,9 @@ class ContractPromptsTest {
         assertTrue(p.contains("batch 2 of 3"));
         assertTrue(p.contains("ClauseFindings"));
         assertTrue(p.contains("research.laws[].ref"));
+        // 條款原文以 <clauses> 包覆，system prompt 的注入防禦必須涵蓋此標籤
+        assertTrue(p.contains("<clauses>"));
+        assertTrue(LegalPrompts.system(Locale.ZH_TW).contains("<clauses>"));
     }
 
     @Test void summarizeAsksForPrioritiesAndDisclaimer() {

@@ -31,6 +31,8 @@ import java.util.stream.Stream;
 public class ContractReviewAgent {
     /** CaseService 依此名稱挑選 agent。 */
     public static final String AGENT_NAME = "ContractReviewAgent";
+    /** 條款分批審查失敗的錯誤碼；同時用於例外訊息前綴與 API error.code。 */
+    public static final String REVIEW_BATCH_FAILED = "REVIEW_BATCH_FAILED";
     /** 逐批審查每批最多條款數，避免單次 prompt 過長。 */
     static final int BATCH_SIZE = 15;
 
@@ -178,9 +180,9 @@ public class ContractReviewAgent {
                 part = llm(context).withReference(skills).withSystemPrompt(LegalPrompts.system(input.locale()))
                         .createObject(ContractPrompts.review(input, brainstorm, batches.get(i), i + 1, batches.size(), research, answers), ClauseFindings.class);
             } catch (RuntimeException failure) {
-                throw new IllegalStateException("REVIEW_BATCH_FAILED batch " + (i + 1) + " of " + batches.size(), failure);
+                throw new IllegalStateException(REVIEW_BATCH_FAILED + " batch " + (i + 1) + " of " + batches.size(), failure);
             }
-            if (part == null) throw new IllegalStateException("REVIEW_BATCH_FAILED batch " + (i + 1) + " of " + batches.size() + " returned nothing");
+            if (part == null) throw new IllegalStateException(REVIEW_BATCH_FAILED + " batch " + (i + 1) + " of " + batches.size() + " returned nothing");
             merged.addAll(part.findings());
             notes.addAll(part.notes());
         }

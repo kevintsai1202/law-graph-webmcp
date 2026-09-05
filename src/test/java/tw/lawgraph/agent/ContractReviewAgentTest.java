@@ -88,4 +88,14 @@ class ContractReviewAgentTest {
         assertEquals(research, withService.research(plan, new tw.lawgraph.research.SemanticQuery("短文")));
         assertThrows(IllegalStateException.class, () -> agent.research(plan, new tw.lawgraph.research.SemanticQuery("短文")));
     }
+
+    /** 任一批次沒有回應即整案失敗，訊息以 REVIEW_BATCH_FAILED 開頭供 API 轉為錯誤碼。 */
+    @Test void reviewBatchFailureThrowsWithErrorCode() {
+        var context = FakeOperationContext.create();
+        context.expectResponse(null);
+        var failure = assertThrows(IllegalStateException.class, () -> agent.reviewClauses(
+                input, brainstormWith(1), research, new ClarifiedAnswers(List.of(), List.of()), context));
+        assertTrue(failure.getMessage().startsWith(ContractReviewAgent.REVIEW_BATCH_FAILED));
+        assertTrue(failure.getMessage().contains("batch 1 of 1"));
+    }
 }

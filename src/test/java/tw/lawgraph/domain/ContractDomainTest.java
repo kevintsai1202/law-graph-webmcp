@@ -55,4 +55,12 @@ class ContractDomainTest {
         assertEquals(Risk.low, ComplianceReport.highest(List.of(low)));
         assertEquals(Risk.low, ComplianceReport.highest(List.of()));
     }
+
+    /** 範疇為 LLM 原始字串，會被前端當 i18n key；未知代碼必須丟棄、只留白名單並保序。 */
+    @Test void scopesAreWhitelisted() {
+        var report = new ComplianceReport("x", List.of("labor", "勞動", "bogus"), null, List.of(), null, null);
+        assertEquals(List.of("labor"), report.scopes());
+        var brainstorm = new ContractBrainstorm("x", List.of("labor", "勞動", "bogus"), null, null, null, null);
+        assertEquals(List.of("labor"), brainstorm.scopes());
+    }
 }
