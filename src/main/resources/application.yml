@@ -53,6 +53,9 @@ lawgraph:
     # 以登入者 Google email 判定：逗號分隔的網域（含子網域）或個別信箱；命中者案件 API 回 403 LICENSE_EXCLUDED。
     blocked-email-domains: ${LAWGRAPH_BLOCKED_EMAIL_DOMAINS:}
     blocked-emails: ${LAWGRAPH_BLOCKED_EMAILS:}
+  member:
+    # 會員最後登入起的保存天數，逾期由排程（每日台北 03:30）刪除會員資料並去識別化其事件（個資保存期限）。
+    retention-days: ${LAWGRAPH_MEMBER_RETENTION_DAYS:365}
   # 步驤看門狗：同一步驤（BRAINSTORM／RESEARCH／ANALYSIS／DOCUMENTS／GRAPH）超過此時間仍未完成就 kill 流程，
   # 案件狀態回 FAILED／STEP_TIMEOUT 並顯示逾時訊息，不再執行後續步驤。WAITING（等待回答）不計時。
   step-timeout: ${LAWGRAPH_STEP_TIMEOUT:300s}

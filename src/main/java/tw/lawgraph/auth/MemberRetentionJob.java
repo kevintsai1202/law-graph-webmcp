@@ -1,0 +1,50 @@
+package tw.lawgraph.auth;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.scheduling.annotation.Scheduled;
+import tw.lawgraph.usage.UsageEventStore;
+
+import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.List;
+
+/**
+ * 個資保存期限排程：超過保存天數未再登入的會員，先把其使用事件去識別化，再刪除會員資料本身。
+ * 每日台北時間 03:30 執行一次（離峰時段）。
+ */
+public class MemberRetentionJob {
+    private static final Logger LOGGER = LoggerFactory.getLogger(MemberRetentionJob.class);
+
+    private final MemberStore members;
+    private final UsageEventStore events;
+    /** 自最後登入起算的保存天數。 */
+    private final int retentionDays;
+    /** 可注入固定時鐘以利測試。 */
+    private final Clock clock;
+
+    public MemberRetentionJob(MemberStore members, UsageEventStore events, int retentionDays, Clock clock) {
+        this.members = members;
+        this.events = events;
+        this.retentionDays = retentionDays;
+        this.clock = clock;
+    }
+
+    /** 執行清理，回傳實際刪除的會員數（回傳值供測試與記錄使用）。 */
+    @Scheduled(cron = "0 30 3 * * *", zone = "Asia/Taipei")
+    public int run() {
+        Instant cutoff = clock.instant().minus(Duration.ofDays(retentionDays));
+        List<String> stale = members.inactiveSubs(cutoff);
+        for (String sub : stale) {
+            try {
+                events.anonymize(sub);
+            } catch (RuntimeException e) {
+                LOGGER.warn("會員 {} 的事件去識別化失敗：{}", sub, e.toString());
+            }
+        }
+        int deleted = stale.isEmpty() ? 0 : members.deleteInactiveBefore(cutoff);
+        if (deleted > 0) LOGGER.info("已刪除逾保存期限（{} 天未登入）的會員 {} 位", retentionDays, deleted);
+        return deleted;
+    }
+}
