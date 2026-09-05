@@ -233,16 +233,20 @@ export function createApp({ root, client, storage, navigatorLanguage, partialCol
   async function showStats() {
     if (statsInFlight) return;
     statsInFlight = true;
-    dispatch({ type: 'SHOW_STATS' });
-    stats = null;
-    render();
+    // try/finally 確保任何例外（含 render 或 dispatch 拋錯）都會把旗標放掉，否則統計頁會永遠打不開
     try {
-      stats = await client.stats(30);
-    } catch (e) {
-      stats = { error: e?.message || 'ERROR' };
+      dispatch({ type: 'SHOW_STATS' });
+      stats = null;
+      render();
+      try {
+        stats = await client.stats(30);
+      } catch (e) {
+        stats = { error: e?.message || 'ERROR' };
+      }
+      render();
+    } finally {
+      statsInFlight = false;
     }
-    statsInFlight = false;
-    render();
   }
 
   /** 回首頁（不清除案件記錄；要捨棄案件請用 reset）。 */

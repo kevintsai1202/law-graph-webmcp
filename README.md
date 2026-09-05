@@ -210,15 +210,17 @@ curl -s -X POST localhost:8080/api/cases -H 'Content-Type: application/json' \
 
 | 表 | 用途 | 主要欄位 |
 |---|---|---|
-| `usage_daily` | 每日 LLM 用量與暫停旗標（沿用 M0/M1） | day, prompt_tokens, completion_tokens, paused |
-| `case_event` | 每一次案件／合約審閱呼叫的快照，`GET /api/stats` 的聚合來源，也是配額計數來源 | caseId, day, mode(`case`/`contract`), identityKind(`anonymous`/`member`), identityHash, model, status(`RUNNING`/`COMPLETED`/`FAILED`), promptTokens, completionTokens, startedAt, finishedAt |
+| `usage_daily` | 每日 LLM 用量（沿用 M0/M1；暫停旗標是設定值 `LAWGRAPH_LLM_PAUSED`，不存在此表） | usage_day, prompt_tokens, completion_tokens, llm_calls, cached_tokens, reasoning_tokens |
+| `case_event` | 每一次案件／合約審閱呼叫的快照，`GET /api/stats` 的聚合來源，也是配額計數來源 | caseId, day, mode(`case`/`contract`), identityKind(`anonymous`/`member`), identityHash（SHA-256；匿名為 `ip:<ip>`、會員為 `user:<google_sub>` 的雜湊，不存原文）, model, status(`RUNNING`/`COMPLETED`/`FAILED`), promptTokens, completionTokens, startedAt, finishedAt |
 | `member` | 以 Google 登入建立的會員，只留顯示與配額所需最小個資 | googleSub(主鍵), email, displayName, pictureUrl, firstLoginAt, lastLoginAt, loginCount, blocked, blockedReason, noticeAcknowledgedAt |
 
 三者皆有 `LAWGRAPH_DB_URL` 才落地 PostgreSQL；未設定資料庫時 `case_event` 與 `member` 一律退回記憶體實作並於啟動時 WARN log（「未設定資料庫，會員資料只存記憶體，重啟歸零」），配額與統計仍可運作，但重啟／重佈後歸零。
 
 ### `GET /api/stats?days=N`
 
-唯讀彙總，days 夾在 `[1,90]`（預設 30），回應快取 60 秒：
+唯讀彙總，days 夾在 `[1,90]`（預設 30），回應快取 60 秒。此端點會做全表聚合，因此有伺服端限流：
+每個來源 IP 每小時最多 `LAWGRAPH_STATS_RATE_LIMIT_PER_HOUR`（`lawgraph.stats-rate-limit-per-hour`，預設 120）次，
+超過回 `429 {"error":"RATE_LIMITED"}`（與案件 API 的限流分開計數）。
 
 ```json
 {

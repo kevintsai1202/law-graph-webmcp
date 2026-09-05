@@ -70,7 +70,8 @@ const updateLoginSlot = () => {
       try {
         await app.client.deleteMe();
       } catch (e) {
-        globalThis.alert?.(e.message);
+        // e 可能不是 Error（例如 reject 一個字串），沒有訊息時退回統計頁共用的錯誤文案
+        globalThis.alert?.(e?.message || t('stats.error', app.getLocale()));
         return;
       }
       location.reload();

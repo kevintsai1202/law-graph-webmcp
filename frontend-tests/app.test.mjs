@@ -294,6 +294,28 @@ test('進入統計頁只呼叫一次 client.stats：dispatch 同步網址 hash �
   }
 });
 
+test('showStats 例外不得卡住 statsInFlight：拋錯後仍能再次進入統計頁', async () => {
+  let statsCalls = 0;
+  const client = {
+    samples: async () => [], poll: () => () => {}, usage: async () => null, quota: async () => null,
+    authStatus: async () => null,
+    stats: async () => {
+      statsCalls += 1;
+      // 第一次丟出一個連 message 都會爆的物件，讓 catch 區塊自己也拋錯、逸出 showStats
+      if (statsCalls === 1) throw { get message() { throw new Error('boom'); } };
+      return { days: [] };
+    }
+  };
+  const app = createApp({ root: mountRoot(), client, storage: fakeStorage(), navigatorLanguage: 'zh-TW', locationLike: { hash: '', pathname: '/', search: '' } });
+  await app.mount();
+
+  await assert.rejects(() => app.showStats());
+  // 旗標若沒被 finally 放掉，第二次呼叫會直接 return，statsCalls 停在 1
+  await app.showStats();
+  assert.equal(statsCalls, 2);
+  assert.equal(app.getState().view, 'STATS');
+});
+
 test('統計頁為唯讀分頁：進行中的案件在返回 #/case 時直接回到進行中畫面，不被捨棄', async () => {
   const originalAdd = globalThis.addEventListener;
   let onHashChange = null;

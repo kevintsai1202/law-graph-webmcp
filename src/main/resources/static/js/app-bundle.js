@@ -219,7 +219,7 @@
       "privacy.notice.purpose": "Purpose: identify your login and count your daily analysis quota.",
       "privacy.notice.fields": "Data collected: your Google account email, display name and avatar URL. Case or contract content is never stored.",
       "privacy.notice.retention": "Retention: deleted automatically after 12 months without a login.",
-      "privacy.notice.delete": "You can delete your account any time from the top-right menu, or ask us by email.",
+      "privacy.notice.delete": "You can delete your account any time from the top-right menu.",
       "privacy.notice.ack": "Got it",
       "privacy.deleteConfirm": "Delete your account? Your login record is removed and your usage rows are anonymised.",
       "nav.stats": "Stats",
@@ -499,7 +499,7 @@
       "privacy.notice.purpose": "\u6536\u96C6\u76EE\u7684\uFF1A\u8FA8\u8B58\u767B\u5165\u8EAB\u5206\u8207\u8A08\u7B97\u6BCF\u65E5\u5206\u6790\u914D\u984D\u3002",
       "privacy.notice.fields": "\u6536\u96C6\u6B04\u4F4D\uFF1AGoogle \u5E33\u865F\u7684 email\u3001\u986F\u793A\u540D\u7A31\u8207\u982D\u50CF\u7DB2\u5740\uFF1B\u4E0D\u6536\u96C6\u6848\u60C5\u6216\u5408\u7D04\u5167\u5BB9\u3002",
       "privacy.notice.retention": "\u4FDD\u5B58\u671F\u9650\uFF1A\u6700\u5F8C\u767B\u5165\u8D77 12 \u500B\u6708\u672A\u4F7F\u7528\u5373\u81EA\u52D5\u522A\u9664\u3002",
-      "privacy.notice.delete": "\u4F60\u53EF\u96A8\u6642\u5728\u53F3\u4E0A\u89D2\u9078\u55AE\u522A\u9664\u5E33\u865F\uFF0C\u6216\u5BC4\u4FE1\u81F3\u7AD9\u65B9\u4FE1\u7BB1\u7533\u8ACB\u3002",
+      "privacy.notice.delete": "\u4F60\u53EF\u96A8\u6642\u5728\u53F3\u4E0A\u89D2\u9078\u55AE\u522A\u9664\u5E33\u865F\u3002",
       "privacy.notice.ack": "\u6211\u77E5\u9053\u4E86",
       "privacy.deleteConfirm": "\u78BA\u5B9A\u522A\u9664\u5E33\u865F\uFF1F\u767B\u5165\u7D00\u9304\u5C07\u79FB\u9664\uFF0C\u4F7F\u7528\u7D00\u9304\u5C07\u533F\u540D\u5316\u3002",
       "nav.stats": "\u4F7F\u7528\u7D71\u8A08",
@@ -1475,16 +1475,19 @@
     async function showStats() {
       if (statsInFlight) return;
       statsInFlight = true;
-      dispatch({ type: "SHOW_STATS" });
-      stats = null;
-      render2();
       try {
-        stats = await client.stats(30);
-      } catch (e) {
-        stats = { error: e?.message || "ERROR" };
+        dispatch({ type: "SHOW_STATS" });
+        stats = null;
+        render2();
+        try {
+          stats = await client.stats(30);
+        } catch (e) {
+          stats = { error: e?.message || "ERROR" };
+        }
+        render2();
+      } finally {
+        statsInFlight = false;
       }
-      statsInFlight = false;
-      render2();
     }
     function goHome() {
       dispatch({ type: "GO_HOME" });
@@ -3367,7 +3370,7 @@
         try {
           await app.client.deleteMe();
         } catch (e) {
-          globalThis.alert?.(e.message);
+          globalThis.alert?.(e?.message || t("stats.error", app.getLocale()));
           return;
         }
         location.reload();
