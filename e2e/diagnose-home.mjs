@@ -1,11 +1,13 @@
 // 用途：診斷首頁是否卡在初始畫面（例如登入後回到 / 卻沒有渲染）。
 // 開啟指定網址，收集 console 錯誤與失敗的網路請求，並回報 #stage 是否有內容、頁首 i18n 是否套用。
 // 執行：node e2e/diagnose-home.mjs [url]   （預設線上網址；可加 --headed 觀察）
-import { chromium } from 'playwright';
+import { chromium, firefox, webkit } from 'playwright';
 
 const url = process.argv.find((a) => a.startsWith('http')) || 'https://law-graph-webmcp.zeabur.app/';
 const headed = process.argv.includes('--headed');
-const browser = await chromium.launch({ headless: !headed });
+// --browser=firefox|webkit|chromium：不同引擎行為可能不同（例如 Firefox 的追蹤保護）
+const engine = (process.argv.find((a) => a.startsWith('--browser=')) || '--browser=chromium').split('=')[1];
+const browser = await ({ firefox, webkit, chromium }[engine] || chromium).launch({ headless: !headed });
 const page = await browser.newPage({ locale: 'zh-TW' });
 // --stale-case=<id>：模擬 sessionStorage 留有已不存在的案件（例如部署後遺失），觀察 mount 是否卡住
 const stale = (process.argv.find((a) => a.startsWith('--stale-case=')) || '').split('=')[1];
@@ -20,6 +22,11 @@ if (process.argv.includes('--session-first')) {
   await page.route('**accounts.google.com/**', (r) => r.fulfill({ status: 200, body: 'blocked' }));
   await page.goto(new URL('/oauth2/authorization/google', url).href, { waitUntil: 'domcontentloaded' }).catch(() => {});
   console.log('cookies after login-start:', (await page.context().cookies()).map((c) => `${c.name}=${c.value.slice(0, 8)}…`).join(', '));
+}
+// --mock-login：把 /api/me 與 /api/quota 換成已登入的回應，模擬 Google 登入後的前端狀態（不需真的登入）
+if (process.argv.includes('--mock-login')) {
+  await page.route('**/api/me', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ enabled: true, loggedIn: true, name: 'Kevin Tsai', email: 'k@example.com', picture: 'https://lh3.googleusercontent.com/a/x=s96-c', loginPath: '/oauth2/authorization/google', blocked: false, blockedMessage: null }) }));
+  await page.route('**/api/quota', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ date: '2026-09-05', used: 0, limit: 5, remaining: 5, exhausted: false, loggedIn: true, memberLimit: 5, loginPath: '/oauth2/authorization/google' }) }));
 }
 const all = [];
 page.on('response', (r) => all.push(`${r.status()} ${r.request().resourceType()} ${r.url().replace(url, '/')}`));
