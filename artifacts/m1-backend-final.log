@@ -1,0 +1,655 @@
+14:00:40.785 [main] INFO com.embabel.agent.config.models.openai.OpenAiModelLoader -- Loading OpenAI models from classpath:models/openai-models.yml
+14:00:43.101 [main] INFO com.embabel.agent.config.models.openai.OpenAiModelLoader -- Loaded 4 OpenAI model definitions
+14:00:43.119 [main] INFO com.embabel.agent.config.models.openai.OpenAiModelLoader -- Loading OpenAI models from classpath:models/openai-models.yml
+14:00:43.162 [main] INFO com.embabel.agent.config.models.openai.OpenAiModelLoader -- Loaded 4 OpenAI model definitions
+14:00:43.304 [main] INFO com.embabel.agent.skills.Skills -- Loaded skill from local path skills\law-powers\skills\legal-brainstorming
+14:00:43.317 [main] INFO com.embabel.agent.skills.Skills -- Loaded skill from local path skills\law-powers\skills\legal-research
+14:00:43.323 [main] INFO com.embabel.agent.skills.Skills -- Loaded skill from local path skills\law-powers\skills\legal-element-analysis
+14:00:43.331 [main] INFO com.embabel.agent.skills.Skills -- Loaded skill from local path skills\law-powers\skills\legal-graph
+14:00:43.335 [main] INFO com.embabel.agent.skills.Skills -- Loaded skill from local path skills\law-powers\skills\compliance-verification
+Mockito is currently self-attaching to enable the inline-mock-maker. This will no longer work in future releases of the JDK. Please add Mockito as an agent to your build as described in Mockito's documentation: https://javadoc.io/doc/org.mockito/mockito-core/latest/org.mockito/org/mockito/Mockito.html#0.3
+WARNING: A Java agent has been loaded dynamically (C:\Users\kevintsai\.m2\repository\net\bytebuddy\byte-buddy-agent\1.18.10\byte-buddy-agent-1.18.10.jar)
+WARNING: If a serviceability tool is in use, please run with -XX:+EnableDynamicAgentLoading to hide this warning
+WARNING: If a serviceability tool is not in use, please run with -Djdk.instrument.traceUsage for more information
+WARNING: Dynamic loading of agents will be disallowed by default in a future release
+OpenJDK 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has been appended
+14:00:46.188 [main] INFO com.embabel.agent.spi.support.RegistryToolGroupResolver -- RegistryToolGroupResolver(name='empty', 0 tool groups: )
+14:00:46.393 [main] INFO com.embabel.agent.spi.support.RegistryToolGroupResolver -- RegistryToolGroupResolver(name='empty', 0 tool groups: )
+14:00:46.619 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: 1361230763
+14:00:46.625 [main] INFO com.embabel.agent.test.unit.FakeOperationContext -- FakeOperationContext created: 249483336: PromptRunner: 1361230763
+14:00:46.628 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Expected response added: tw.lawgraph.domain.ClauseFindings
+14:00:46.628 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Expected response added: tw.lawgraph.domain.ClauseFindings
+14:00:46.712 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: 863447607
+14:00:46.712 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: -1705589502
+14:00:46.713 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: -1879710641
+14:00:47.084 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: -1408438286
+14:00:47.086 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: -503139333
+14:00:47.086 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: -2042001072
+14:00:47.087 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: 1030634593
+14:00:47.087 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: -525232022
+14:00:47.094 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: 1379098778
+14:00:47.402 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: 1890735909
+14:00:47.402 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: -678301200
+14:00:47.402 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: -852422339
+14:00:47.404 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: -1619981299
+14:00:47.405 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: 1574281994
+14:00:47.406 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: -155599058
+14:00:47.406 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: 305933488
+14:00:47.406 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: -1249933127
+14:00:47.406 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: 654397673
+14:00:47.424 [main] INFO com.embabel.agent.spi.support.RegistryToolGroupResolver -- RegistryToolGroupResolver(name='empty', 0 tool groups: )
+14:00:47.426 [main] INFO com.embabel.agent.spi.support.RegistryToolGroupResolver -- RegistryToolGroupResolver(name='empty', 0 tool groups: )
+14:00:47.427 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: 50714
+14:00:47.428 [main] INFO com.embabel.agent.test.unit.FakeOperationContext -- FakeOperationContext created: 368384503: PromptRunner: 50714
+14:00:47.430 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Expected response added: tw.lawgraph.domain.ComplianceReport
+14:00:47.435 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: 654281288
+14:00:47.435 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: -1914755821
+14:00:47.435 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: -2088876960
+14:00:47.437 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: -1283906194
+14:00:47.440 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: -1881004013
+14:00:47.442 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: 316519778
+14:00:47.442 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: 980126008
+14:00:47.443 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: -40215591
+14:00:47.443 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: 749996505
+14:00:47.461 [main] INFO com.embabel.agent.spi.support.RegistryToolGroupResolver -- RegistryToolGroupResolver(name='empty', 0 tool groups: )
+14:00:47.462 [main] INFO com.embabel.agent.spi.support.RegistryToolGroupResolver -- RegistryToolGroupResolver(name='empty', 0 tool groups: )
+14:00:47.464 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: -1739909722
+14:00:47.464 [main] INFO com.embabel.agent.test.unit.FakeOperationContext -- FakeOperationContext created: 166003331: PromptRunner: -1739909722
+14:00:47.464 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Expected response added: tw.lawgraph.domain.ContractBrainstorm
+14:00:47.466 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: 1593242494
+14:00:47.467 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: -975794615
+14:00:47.467 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: -1149915754
+14:00:47.468 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: 12505119
+14:00:47.468 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: -2095959087
+14:00:47.470 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: 436258393
+14:00:47.473 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: -79212126
+14:00:47.473 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: -1771504486
+14:00:47.474 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: 335021260
+14:00:47.481 [main] INFO com.embabel.agent.spi.support.RegistryToolGroupResolver -- RegistryToolGroupResolver(name='empty', 0 tool groups: )
+14:00:47.486 [main] INFO com.embabel.agent.spi.support.RegistryToolGroupResolver -- RegistryToolGroupResolver(name='empty', 0 tool groups: )
+14:00:47.491 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: 1761399017
+14:00:47.492 [main] INFO com.embabel.agent.test.unit.FakeOperationContext -- FakeOperationContext created: 1145646086: PromptRunner: 1761399017
+14:00:47.492 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Expected response added: tw.lawgraph.domain.ClauseFindings
+14:00:47.492 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: -586364550
+14:00:47.492 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: 1139565637
+14:00:47.492 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: 965444498
+14:00:47.493 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: 1154583984
+14:00:47.493 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: -2063260459
+14:00:47.495 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: 785746476
+14:00:47.495 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: 1419956429
+14:00:47.495 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: 1335697406
+14:00:47.497 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: 143615710
+14:00:47.538 [main] INFO com.embabel.agent.spi.support.RegistryToolGroupResolver -- RegistryToolGroupResolver(name='empty', 0 tool groups: )
+14:00:47.540 [main] INFO com.embabel.agent.spi.support.RegistryToolGroupResolver -- RegistryToolGroupResolver(name='empty', 0 tool groups: )
+14:00:47.541 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: -1475749146
+14:00:47.541 [main] INFO com.embabel.agent.test.unit.FakeOperationContext -- FakeOperationContext created: 1819326403: PromptRunner: -1475749146
+14:00:47.542 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Expected response added: tw.lawgraph.domain.ClarificationAssessment
+14:00:47.548 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: 2131999569
+14:00:47.549 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: -437037540
+14:00:47.549 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: -611158679
+14:00:47.549 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: -1734675480
+14:00:47.552 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: 2041330294
+14:00:47.553 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: 179896667
+14:00:47.553 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: -1806930202
+14:00:47.554 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: -918313776
+14:00:47.554 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: 1306064222
+14:00:47.601 [main] INFO com.embabel.agent.spi.support.RegistryToolGroupResolver -- RegistryToolGroupResolver(name='empty', 0 tool groups: )
+14:00:47.602 [main] INFO com.embabel.agent.spi.support.RegistryToolGroupResolver -- RegistryToolGroupResolver(name='empty', 0 tool groups: )
+14:00:47.605 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: 1487700936
+14:00:47.605 [main] INFO com.embabel.agent.test.unit.FakeOperationContext -- FakeOperationContext created: 1391735333: PromptRunner: 1487700936
+14:00:47.610 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Expected response added: tw.lawgraph.domain.GraphData
+14:00:47.628 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: 161504547
+14:00:47.629 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: 1887434734
+14:00:47.629 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: 1713313595
+14:00:47.630 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: 1171458711
+14:00:47.630 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: -770237795
+14:00:47.630 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: 834872787
+14:00:47.630 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: 1732635937
+14:00:47.630 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: -1967570499
+14:00:47.630 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: 31075111
+14:00:47.711 [main] INFO com.embabel.agent.spi.support.RegistryToolGroupResolver -- RegistryToolGroupResolver(name='empty', 0 tool groups: )
+14:00:47.712 [main] INFO com.embabel.agent.spi.support.RegistryToolGroupResolver -- RegistryToolGroupResolver(name='empty', 0 tool groups: )
+14:00:47.713 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: -1827021785
+14:00:47.713 [main] INFO com.embabel.agent.test.unit.FakeOperationContext -- FakeOperationContext created: 1592196548: PromptRunner: -1827021785
+14:00:47.731 [main] INFO com.embabel.agent.spi.support.RegistryToolGroupResolver -- RegistryToolGroupResolver(name='empty', 0 tool groups: )
+14:00:47.732 [main] INFO com.embabel.agent.spi.support.RegistryToolGroupResolver -- RegistryToolGroupResolver(name='empty', 0 tool groups: )
+14:00:47.733 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: 1800387750
+14:00:47.733 [main] INFO com.embabel.agent.test.unit.FakeOperationContext -- FakeOperationContext created: 187885955: PromptRunner: 1800387750
+14:00:47.743 [main] INFO com.embabel.agent.spi.support.RegistryToolGroupResolver -- RegistryToolGroupResolver(name='empty', 0 tool groups: )
+14:00:47.746 [main] INFO com.embabel.agent.spi.support.RegistryToolGroupResolver -- RegistryToolGroupResolver(name='empty', 0 tool groups: )
+14:00:47.747 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: 1292979263
+14:00:47.747 [main] INFO com.embabel.agent.test.unit.FakeOperationContext -- FakeOperationContext created: 47865820: PromptRunner: 1292979263
+14:00:47.748 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Expected response added: tw.lawgraph.research.ResearchPlan
+14:00:47.748 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: -1333000525
+14:00:47.748 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: 392929662
+14:00:47.748 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: 218808523
+14:00:47.750 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: 2014732341
+14:00:47.750 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: -1988678132
+14:00:47.750 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: 1147210296
+14:00:47.750 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: 1230653861
+14:00:47.750 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: -1774560862
+14:00:47.751 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: -401000342
+14:00:47.761 [main] INFO com.embabel.agent.spi.support.RegistryToolGroupResolver -- RegistryToolGroupResolver(name='empty', 0 tool groups: )
+14:00:47.762 [main] INFO com.embabel.agent.spi.support.RegistryToolGroupResolver -- RegistryToolGroupResolver(name='empty', 0 tool groups: )
+14:00:47.763 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: 2116454323
+14:00:47.763 [main] INFO com.embabel.agent.test.unit.FakeOperationContext -- FakeOperationContext created: 227426896: PromptRunner: 2116454323
+14:00:47.777 [main] INFO com.embabel.agent.spi.support.RegistryToolGroupResolver -- RegistryToolGroupResolver(name='empty', 0 tool groups: )
+14:00:47.778 [main] INFO com.embabel.agent.spi.support.RegistryToolGroupResolver -- RegistryToolGroupResolver(name='empty', 0 tool groups: )
+14:00:47.778 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: 1533276463
+14:00:47.778 [main] INFO com.embabel.agent.test.unit.FakeOperationContext -- FakeOperationContext created: 1502050508: PromptRunner: 1533276463
+14:00:47.780 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Expected response added: tw.lawgraph.domain.CaseAssessment
+14:00:47.789 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: -1902696992
+14:00:47.789 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: -176766805
+14:00:47.789 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: -350887944
+14:00:47.792 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: 1625857868
+14:00:47.793 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: 266273802
+14:00:47.794 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: -2131124675
+14:00:47.794 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: -300137493
+14:00:47.794 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: 1775689942
+14:00:47.794 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: 961692546
+14:00:47.818 [main] WARN tw.lawgraph.domain.TaiwanTerminology -- 非台灣法律用語已自動替換 scope=caseAssessment terms=[合同]
+14:00:47.898 [main] INFO com.embabel.agent.spi.support.RegistryToolGroupResolver -- RegistryToolGroupResolver(name='empty', 0 tool groups: )
+14:00:47.902 [main] INFO com.embabel.agent.spi.support.RegistryToolGroupResolver -- RegistryToolGroupResolver(name='empty', 0 tool groups: )
+14:00:47.904 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: -1016904275
+14:00:47.904 [main] INFO com.embabel.agent.test.unit.FakeOperationContext -- FakeOperationContext created: 919045066: PromptRunner: -1016904275
+14:00:47.904 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Expected response added: tw.lawgraph.domain.BrainstormResult
+14:00:47.905 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: 1351305687
+14:00:47.906 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: -1217731422
+14:00:47.906 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: -1391852561
+14:00:47.906 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: 1526753610
+14:00:47.907 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: 786083253
+14:00:47.907 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: -2054350298
+14:00:47.908 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: 2082851185
+14:00:47.908 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: -677832002
+14:00:47.909 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: -558259994
+14:00:47.916 [main] INFO com.embabel.agent.spi.support.RegistryToolGroupResolver -- RegistryToolGroupResolver(name='empty', 0 tool groups: )
+14:00:47.917 [main] INFO com.embabel.agent.spi.support.RegistryToolGroupResolver -- RegistryToolGroupResolver(name='empty', 0 tool groups: )
+14:00:47.918 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: 1052076218
+14:00:47.918 [main] INFO com.embabel.agent.test.unit.FakeOperationContext -- FakeOperationContext created: 385889431: PromptRunner: 1052076218
+14:00:47.924 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Expected response added: tw.lawgraph.domain.DraftedDocuments
+14:00:47.935 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: -661981121
+14:00:47.935 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: 1063949066
+14:00:47.935 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: 889827927
+14:00:47.937 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: -744709273
+14:00:47.940 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: 1808434229
+14:00:47.940 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: 699680860
+14:00:47.940 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: -1734668072
+14:00:47.940 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: 1339264474
+14:00:47.941 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: 403649336
+14:00:47.985 [main] INFO com.embabel.agent.spi.support.RegistryToolGroupResolver -- RegistryToolGroupResolver(name='empty', 0 tool groups: )
+14:00:47.988 [main] INFO com.embabel.agent.spi.support.RegistryToolGroupResolver -- RegistryToolGroupResolver(name='empty', 0 tool groups: )
+14:00:47.990 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: -383076283
+14:00:47.991 [main] INFO com.embabel.agent.test.unit.FakeOperationContext -- FakeOperationContext created: 1499383906: PromptRunner: -383076283
+14:00:47.991 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Expected response added: tw.lawgraph.research.SemanticQuery
+14:00:47.992 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: 957555007
+14:00:47.993 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: -1611482102
+14:00:47.993 [main] INFO com.embabel.agent.test.unit.FakePromptRunner -- Fake prompt runner created: -1785603241
+14:00:49.298 [main] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [tw.lawgraph.api.CaseControllerContractTest]: CaseControllerContractTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+14:00:49.764 [main] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration tw.lawgraph.LawGraphApplication for test class tw.lawgraph.api.CaseControllerContractTest
+14:00:49.768 [main] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [tw.lawgraph.api.CaseControllerContractTest]: CaseControllerContractTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+14:00:49.792 [main] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration tw.lawgraph.LawGraphApplication for test class tw.lawgraph.api.CaseControllerContractTest
+Active Console Code Page: 65001
+Active Console Code Page: 65001
+Active Console Code Page: 65001
+Active Console Code Page: 65001
+? No suitable Unicode fonts found
+   ___  ___    _______ .___  ___. .______        ___      .______    _______  __         ___  ___
+  /  / /  /   |   ____||   \/   | |   _  \      /   \     |   _  \  |   ____||  |        \  \ \  \
+ /  / /  /    |  |__   |  \  /  | |  |_)  |    /  ^  \    |  |_)  | |  |__   |  |         \  \ \  \
+<  < <  <     |   __|  |  |\/|  | |   _  <    /  /_\  \   |   _  <  |   __|  |  |          >  > >  >
+ \  \ \  \    |  |____ |  |  |  | |  |_)  |  /  _____  \  |  |_)  | |  |____ |  `----.    /  / /  /
+  \__\ \__\   |_______||__|  |__| |______/  /__/     \__\ |______/  |_______||_______|   /__/ /__/
+
+Powered by Spring Boot 4.1.0
+14:00:51.764 [main] INFO  CaseControllerContractTest - Starting CaseControllerContractTest using Java 21 with PID 52220 (started by kevintsai in D:\GitHub\webmcp\law-graph-webmcp)
+14:00:51.768 [main] INFO  CaseControllerContractTest - No active profile set, falling back to 1 default profile: "default"
+14:00:55.280 [main] INFO  WelcomePageHandlerMapping - Adding welcome page: class path resource [static/index.html]
+14:00:56.192 [main] INFO  SpringBootMockServletContext - Initializing Spring TestDispatcherServlet ''
+14:00:56.193 [main] INFO  TestDispatcherServlet - Initializing Servlet ''
+14:00:56.197 [main] INFO  TestDispatcherServlet - Completed initialization in 3 ms
+14:00:56.258 [main] INFO  CaseControllerContractTest - Started CaseControllerContractTest in 6.361 seconds (process running for 18.302)
+   ___  ___    _______ .___  ___. .______        ___      .______    _______  __         ___  ___
+  /  / /  /   |   ____||   \/   | |   _  \      /   \     |   _  \  |   ____||  |        \  \ \  \
+ /  / /  /    |  |__   |  \  /  | |  |_)  |    /  ^  \    |  |_)  | |  |__   |  |         \  \ \  \
+<  < <  <     |   __|  |  |\/|  | |   _  <    /  /_\  \   |   _  <  |   __|  |  |          >  > >  >
+ \  \ \  \    |  |____ |  |  |  | |  |_)  |  /  _____  \  |  |_)  | |  |____ |  `----.    /  / /  /
+  \__\ \__\   |_______||__|  |__| |______/  /__/     \__\ |______/  |_______||_______|   /__/ /__/
+
+Powered by Spring Boot 4.1.0
+14:00:57.295 [main] INFO  CaseControllerContractTest - Starting CaseControllerContractTest using Java 21 with PID 52220 (started by kevintsai in D:\GitHub\webmcp\law-graph-webmcp)
+14:00:57.297 [main] INFO  CaseControllerContractTest - No active profile set, falling back to 1 default profile: "default"
+14:00:58.019 [main] INFO  WelcomePageHandlerMapping - Adding welcome page: class path resource [static/index.html]
+14:00:58.091 [main] INFO  SpringBootMockServletContext - Initializing Spring TestDispatcherServlet ''
+14:00:58.091 [main] INFO  TestDispatcherServlet - Initializing Servlet ''
+14:00:58.096 [main] INFO  TestDispatcherServlet - Completed initialization in 5 ms
+14:00:58.109 [main] INFO  CaseControllerContractTest - Started CaseControllerContractTest in 0.901 seconds (process running for 20.152)
+   ___  ___    _______ .___  ___. .______        ___      .______    _______  __         ___  ___
+  /  / /  /   |   ____||   \/   | |   _  \      /   \     |   _  \  |   ____||  |        \  \ \  \
+ /  / /  /    |  |__   |  \  /  | |  |_)  |    /  ^  \    |  |_)  | |  |__   |  |         \  \ \  \
+<  < <  <     |   __|  |  |\/|  | |   _  <    /  /_\  \   |   _  <  |   __|  |  |          >  > >  >
+ \  \ \  \    |  |____ |  |  |  | |  |_)  |  /  _____  \  |  |_)  | |  |____ |  `----.    /  / /  /
+  \__\ \__\   |_______||__|  |__| |______/  /__/     \__\ |______/  |_______||_______|   /__/ /__/
+
+Powered by Spring Boot 4.1.0
+14:00:58.262 [main] INFO  CaseControllerContractTest - Starting CaseControllerContractTest using Java 21 with PID 52220 (started by kevintsai in D:\GitHub\webmcp\law-graph-webmcp)
+14:00:58.262 [main] INFO  CaseControllerContractTest - No active profile set, falling back to 1 default profile: "default"
+14:00:59.066 [main] INFO  WelcomePageHandlerMapping - Adding welcome page: class path resource [static/index.html]
+14:00:59.131 [main] INFO  SpringBootMockServletContext - Initializing Spring TestDispatcherServlet ''
+14:00:59.131 [main] INFO  TestDispatcherServlet - Initializing Servlet ''
+14:00:59.138 [main] INFO  TestDispatcherServlet - Completed initialization in 5 ms
+14:00:59.155 [main] INFO  CaseControllerContractTest - Started CaseControllerContractTest in 0.973 seconds (process running for 21.198)
+14:00:59.307 [main] INFO  AnnotationConfigContextLoaderUtils - Could not detect default configuration classes for test class [tw.lawgraph.api.CaseControllerTest]: CaseControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+14:00:59.350 [main] INFO  SpringBootTestContextBootstrapper - Found @SpringBootConfiguration tw.lawgraph.LawGraphApplication for test class tw.lawgraph.api.CaseControllerTest
+14:00:59.364 [main] INFO  AnnotationConfigContextLoaderUtils - Could not detect default configuration classes for test class [tw.lawgraph.api.CaseControllerTest]: CaseControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+14:00:59.460 [main] INFO  SpringBootTestContextBootstrapper - Found @SpringBootConfiguration tw.lawgraph.LawGraphApplication for test class tw.lawgraph.api.CaseControllerTest
+   ___  ___    _______ .___  ___. .______        ___      .______    _______  __         ___  ___
+  /  / /  /   |   ____||   \/   | |   _  \      /   \     |   _  \  |   ____||  |        \  \ \  \
+ /  / /  /    |  |__   |  \  /  | |  |_)  |    /  ^  \    |  |_)  | |  |__   |  |         \  \ \  \
+<  < <  <     |   __|  |  |\/|  | |   _  <    /  /_\  \   |   _  <  |   __|  |  |          >  > >  >
+ \  \ \  \    |  |____ |  |  |  | |  |_)  |  /  _____  \  |  |_)  | |  |____ |  `----.    /  / /  /
+  \__\ \__\   |_______||__|  |__| |______/  /__/     \__\ |______/  |_______||_______|   /__/ /__/
+
+Powered by Spring Boot 4.1.0
+14:00:59.652 [main] INFO  CaseControllerTest - Starting CaseControllerTest using Java 21 with PID 52220 (started by kevintsai in D:\GitHub\webmcp\law-graph-webmcp)
+14:00:59.652 [main] INFO  CaseControllerTest - No active profile set, falling back to 1 default profile: "default"
+14:01:00.270 [main] INFO  WelcomePageHandlerMapping - Adding welcome page: class path resource [static/index.html]
+14:01:00.403 [main] INFO  SpringBootMockServletContext - Initializing Spring TestDispatcherServlet ''
+14:01:00.403 [main] INFO  TestDispatcherServlet - Initializing Servlet ''
+14:01:00.411 [main] INFO  TestDispatcherServlet - Completed initialization in 8 ms
+14:01:00.429 [main] INFO  CaseControllerTest - Started CaseControllerTest in 0.949 seconds (process running for 22.472)
+   ___  ___    _______ .___  ___. .______        ___      .______    _______  __         ___  ___
+  /  / /  /   |   ____||   \/   | |   _  \      /   \     |   _  \  |   ____||  |        \  \ \  \
+ /  / /  /    |  |__   |  \  /  | |  |_)  |    /  ^  \    |  |_)  | |  |__   |  |         \  \ \  \
+<  < <  <     |   __|  |  |\/|  | |   _  <    /  /_\  \   |   _  <  |   __|  |  |          >  > >  >
+ \  \ \  \    |  |____ |  |  |  | |  |_)  |  /  _____  \  |  |_)  | |  |____ |  `----.    /  / /  /
+  \__\ \__\   |_______||__|  |__| |______/  /__/     \__\ |______/  |_______||_______|   /__/ /__/
+
+Powered by Spring Boot 4.1.0
+14:01:00.604 [main] INFO  CaseControllerTest - Starting CaseControllerTest using Java 21 with PID 52220 (started by kevintsai in D:\GitHub\webmcp\law-graph-webmcp)
+14:01:00.604 [main] INFO  CaseControllerTest - No active profile set, falling back to 1 default profile: "default"
+14:01:01.344 [main] INFO  WelcomePageHandlerMapping - Adding welcome page: class path resource [static/index.html]
+14:01:01.396 [main] INFO  SpringBootMockServletContext - Initializing Spring TestDispatcherServlet ''
+14:01:01.396 [main] INFO  TestDispatcherServlet - Initializing Servlet ''
+14:01:01.399 [main] INFO  TestDispatcherServlet - Completed initialization in 3 ms
+14:01:01.413 [main] INFO  CaseControllerTest - Started CaseControllerTest in 0.887 seconds (process running for 23.456)
+   ___  ___    _______ .___  ___. .______        ___      .______    _______  __         ___  ___
+  /  / /  /   |   ____||   \/   | |   _  \      /   \     |   _  \  |   ____||  |        \  \ \  \
+ /  / /  /    |  |__   |  \  /  | |  |_)  |    /  ^  \    |  |_)  | |  |__   |  |         \  \ \  \
+<  < <  <     |   __|  |  |\/|  | |   _  <    /  /_\  \   |   _  <  |   __|  |  |          >  > >  >
+ \  \ \  \    |  |____ |  |  |  | |  |_)  |  /  _____  \  |  |_)  | |  |____ |  `----.    /  / /  /
+  \__\ \__\   |_______||__|  |__| |______/  /__/     \__\ |______/  |_______||_______|   /__/ /__/
+
+Powered by Spring Boot 4.1.0
+14:01:01.560 [main] INFO  CaseControllerTest - Starting CaseControllerTest using Java 21 with PID 52220 (started by kevintsai in D:\GitHub\webmcp\law-graph-webmcp)
+14:01:01.561 [main] INFO  CaseControllerTest - No active profile set, falling back to 1 default profile: "default"
+14:01:02.225 [main] INFO  WelcomePageHandlerMapping - Adding welcome page: class path resource [static/index.html]
+14:01:02.298 [main] INFO  SpringBootMockServletContext - Initializing Spring TestDispatcherServlet ''
+14:01:02.300 [main] INFO  TestDispatcherServlet - Initializing Servlet ''
+14:01:02.303 [main] INFO  TestDispatcherServlet - Completed initialization in 3 ms
+14:01:02.316 [main] INFO  CaseControllerTest - Started CaseControllerTest in 0.818 seconds (process running for 24.36)
+   ___  ___    _______ .___  ___. .______        ___      .______    _______  __         ___  ___
+  /  / /  /   |   ____||   \/   | |   _  \      /   \     |   _  \  |   ____||  |        \  \ \  \
+ /  / /  /    |  |__   |  \  /  | |  |_)  |    /  ^  \    |  |_)  | |  |__   |  |         \  \ \  \
+<  < <  <     |   __|  |  |\/|  | |   _  <    /  /_\  \   |   _  <  |   __|  |  |          >  > >  >
+ \  \ \  \    |  |____ |  |  |  | |  |_)  |  /  _____  \  |  |_)  | |  |____ |  `----.    /  / /  /
+  \__\ \__\   |_______||__|  |__| |______/  /__/     \__\ |______/  |_______||_______|   /__/ /__/
+
+Powered by Spring Boot 4.1.0
+14:01:02.453 [main] INFO  CaseControllerTest - Starting CaseControllerTest using Java 21 with PID 52220 (started by kevintsai in D:\GitHub\webmcp\law-graph-webmcp)
+14:01:02.453 [main] INFO  CaseControllerTest - No active profile set, falling back to 1 default profile: "default"
+14:01:02.963 [main] INFO  WelcomePageHandlerMapping - Adding welcome page: class path resource [static/index.html]
+14:01:03.118 [main] INFO  SpringBootMockServletContext - Initializing Spring TestDispatcherServlet ''
+14:01:03.118 [main] INFO  TestDispatcherServlet - Initializing Servlet ''
+14:01:03.125 [main] INFO  TestDispatcherServlet - Completed initialization in 5 ms
+14:01:03.144 [main] INFO  CaseControllerTest - Started CaseControllerTest in 0.759 seconds (process running for 25.188)
+   ___  ___    _______ .___  ___. .______        ___      .______    _______  __         ___  ___
+  /  / /  /   |   ____||   \/   | |   _  \      /   \     |   _  \  |   ____||  |        \  \ \  \
+ /  / /  /    |  |__   |  \  /  | |  |_)  |    /  ^  \    |  |_)  | |  |__   |  |         \  \ \  \
+<  < <  <     |   __|  |  |\/|  | |   _  <    /  /_\  \   |   _  <  |   __|  |  |          >  > >  >
+ \  \ \  \    |  |____ |  |  |  | |  |_)  |  /  _____  \  |  |_)  | |  |____ |  `----.    /  / /  /
+  \__\ \__\   |_______||__|  |__| |______/  /__/     \__\ |______/  |_______||_______|   /__/ /__/
+
+Powered by Spring Boot 4.1.0
+14:01:03.276 [main] INFO  CaseControllerTest - Starting CaseControllerTest using Java 21 with PID 52220 (started by kevintsai in D:\GitHub\webmcp\law-graph-webmcp)
+14:01:03.276 [main] INFO  CaseControllerTest - No active profile set, falling back to 1 default profile: "default"
+14:01:03.703 [main] INFO  WelcomePageHandlerMapping - Adding welcome page: class path resource [static/index.html]
+14:01:03.748 [main] INFO  SpringBootMockServletContext - Initializing Spring TestDispatcherServlet ''
+14:01:03.750 [main] INFO  TestDispatcherServlet - Initializing Servlet ''
+14:01:03.753 [main] INFO  TestDispatcherServlet - Completed initialization in 3 ms
+14:01:03.762 [main] INFO  CaseControllerTest - Started CaseControllerTest in 0.549 seconds (process running for 25.805)
+   ___  ___    _______ .___  ___. .______        ___      .______    _______  __         ___  ___
+  /  / /  /   |   ____||   \/   | |   _  \      /   \     |   _  \  |   ____||  |        \  \ \  \
+ /  / /  /    |  |__   |  \  /  | |  |_)  |    /  ^  \    |  |_)  | |  |__   |  |         \  \ \  \
+<  < <  <     |   __|  |  |\/|  | |   _  <    /  /_\  \   |   _  <  |   __|  |  |          >  > >  >
+ \  \ \  \    |  |____ |  |  |  | |  |_)  |  /  _____  \  |  |_)  | |  |____ |  `----.    /  / /  /
+  \__\ \__\   |_______||__|  |__| |______/  /__/     \__\ |______/  |_______||_______|   /__/ /__/
+
+Powered by Spring Boot 4.1.0
+14:01:03.870 [main] INFO  CaseControllerTest - Starting CaseControllerTest using Java 21 with PID 52220 (started by kevintsai in D:\GitHub\webmcp\law-graph-webmcp)
+14:01:03.870 [main] INFO  CaseControllerTest - No active profile set, falling back to 1 default profile: "default"
+14:01:04.270 [main] INFO  WelcomePageHandlerMapping - Adding welcome page: class path resource [static/index.html]
+14:01:04.301 [main] INFO  SpringBootMockServletContext - Initializing Spring TestDispatcherServlet ''
+14:01:04.301 [main] INFO  TestDispatcherServlet - Initializing Servlet ''
+14:01:04.302 [main] INFO  TestDispatcherServlet - Completed initialization in 1 ms
+14:01:04.310 [main] INFO  CaseControllerTest - Started CaseControllerTest in 0.509 seconds (process running for 26.353)
+   ___  ___    _______ .___  ___. .______        ___      .______    _______  __         ___  ___
+  /  / /  /   |   ____||   \/   | |   _  \      /   \     |   _  \  |   ____||  |        \  \ \  \
+ /  / /  /    |  |__   |  \  /  | |  |_)  |    /  ^  \    |  |_)  | |  |__   |  |         \  \ \  \
+<  < <  <     |   __|  |  |\/|  | |   _  <    /  /_\  \   |   _  <  |   __|  |  |          >  > >  >
+ \  \ \  \    |  |____ |  |  |  | |  |_)  |  /  _____  \  |  |_)  | |  |____ |  `----.    /  / /  /
+  \__\ \__\   |_______||__|  |__| |______/  /__/     \__\ |______/  |_______||_______|   /__/ /__/
+
+Powered by Spring Boot 4.1.0
+14:01:04.414 [main] INFO  CaseControllerTest - Starting CaseControllerTest using Java 21 with PID 52220 (started by kevintsai in D:\GitHub\webmcp\law-graph-webmcp)
+14:01:04.416 [main] INFO  CaseControllerTest - No active profile set, falling back to 1 default profile: "default"
+14:01:04.700 [main] INFO  WelcomePageHandlerMapping - Adding welcome page: class path resource [static/index.html]
+14:01:04.730 [main] INFO  SpringBootMockServletContext - Initializing Spring TestDispatcherServlet ''
+14:01:04.731 [main] INFO  TestDispatcherServlet - Initializing Servlet ''
+14:01:04.733 [main] INFO  TestDispatcherServlet - Completed initialization in 1 ms
+14:01:04.740 [main] INFO  CaseControllerTest - Started CaseControllerTest in 0.379 seconds (process running for 26.784)
+   ___  ___    _______ .___  ___. .______        ___      .______    _______  __         ___  ___
+  /  / /  /   |   ____||   \/   | |   _  \      /   \     |   _  \  |   ____||  |        \  \ \  \
+ /  / /  /    |  |__   |  \  /  | |  |_)  |    /  ^  \    |  |_)  | |  |__   |  |         \  \ \  \
+<  < <  <     |   __|  |  |\/|  | |   _  <    /  /_\  \   |   _  <  |   __|  |  |          >  > >  >
+ \  \ \  \    |  |____ |  |  |  | |  |_)  |  /  _____  \  |  |_)  | |  |____ |  `----.    /  / /  /
+  \__\ \__\   |_______||__|  |__| |______/  /__/     \__\ |______/  |_______||_______|   /__/ /__/
+
+Powered by Spring Boot 4.1.0
+14:01:04.825 [main] INFO  CaseControllerTest - Starting CaseControllerTest using Java 21 with PID 52220 (started by kevintsai in D:\GitHub\webmcp\law-graph-webmcp)
+14:01:04.826 [main] INFO  CaseControllerTest - No active profile set, falling back to 1 default profile: "default"
+14:01:05.262 [main] INFO  WelcomePageHandlerMapping - Adding welcome page: class path resource [static/index.html]
+14:01:05.301 [main] INFO  SpringBootMockServletContext - Initializing Spring TestDispatcherServlet ''
+14:01:05.302 [main] INFO  TestDispatcherServlet - Initializing Servlet ''
+14:01:05.305 [main] INFO  TestDispatcherServlet - Completed initialization in 3 ms
+14:01:05.314 [main] INFO  CaseControllerTest - Started CaseControllerTest in 0.529 seconds (process running for 27.358)
+   ___  ___    _______ .___  ___. .______        ___      .______    _______  __         ___  ___
+  /  / /  /   |   ____||   \/   | |   _  \      /   \     |   _  \  |   ____||  |        \  \ \  \
+ /  / /  /    |  |__   |  \  /  | |  |_)  |    /  ^  \    |  |_)  | |  |__   |  |         \  \ \  \
+<  < <  <     |   __|  |  |\/|  | |   _  <    /  /_\  \   |   _  <  |   __|  |  |          >  > >  >
+ \  \ \  \    |  |____ |  |  |  | |  |_)  |  /  _____  \  |  |_)  | |  |____ |  `----.    /  / /  /
+  \__\ \__\   |_______||__|  |__| |______/  /__/     \__\ |______/  |_______||_______|   /__/ /__/
+
+Powered by Spring Boot 4.1.0
+14:01:05.403 [main] INFO  CaseControllerTest - Starting CaseControllerTest using Java 21 with PID 52220 (started by kevintsai in D:\GitHub\webmcp\law-graph-webmcp)
+14:01:05.404 [main] INFO  CaseControllerTest - No active profile set, falling back to 1 default profile: "default"
+14:01:05.817 [main] INFO  WelcomePageHandlerMapping - Adding welcome page: class path resource [static/index.html]
+14:01:05.858 [main] INFO  SpringBootMockServletContext - Initializing Spring TestDispatcherServlet ''
+14:01:05.859 [main] INFO  TestDispatcherServlet - Initializing Servlet ''
+14:01:05.868 [main] INFO  TestDispatcherServlet - Completed initialization in 9 ms
+14:01:05.880 [main] INFO  CaseControllerTest - Started CaseControllerTest in 0.521 seconds (process running for 27.924)
+   ___  ___    _______ .___  ___. .______        ___      .______    _______  __         ___  ___
+  /  / /  /   |   ____||   \/   | |   _  \      /   \     |   _  \  |   ____||  |        \  \ \  \
+ /  / /  /    |  |__   |  \  /  | |  |_)  |    /  ^  \    |  |_)  | |  |__   |  |         \  \ \  \
+<  < <  <     |   __|  |  |\/|  | |   _  <    /  /_\  \   |   _  <  |   __|  |  |          >  > >  >
+ \  \ \  \    |  |____ |  |  |  | |  |_)  |  /  _____  \  |  |_)  | |  |____ |  `----.    /  / /  /
+  \__\ \__\   |_______||__|  |__| |______/  /__/     \__\ |______/  |_______||_______|   /__/ /__/
+
+Powered by Spring Boot 4.1.0
+14:01:06.115 [main] INFO  CaseControllerTest - Starting CaseControllerTest using Java 21 with PID 52220 (started by kevintsai in D:\GitHub\webmcp\law-graph-webmcp)
+14:01:06.115 [main] INFO  CaseControllerTest - No active profile set, falling back to 1 default profile: "default"
+14:01:06.566 [main] INFO  WelcomePageHandlerMapping - Adding welcome page: class path resource [static/index.html]
+14:01:06.595 [main] INFO  SpringBootMockServletContext - Initializing Spring TestDispatcherServlet ''
+14:01:06.595 [main] INFO  TestDispatcherServlet - Initializing Servlet ''
+14:01:06.596 [main] INFO  TestDispatcherServlet - Completed initialization in 1 ms
+14:01:06.604 [main] INFO  CaseControllerTest - Started CaseControllerTest in 0.562 seconds (process running for 28.647)
+14:01:09.639 [main] INFO  AnnotationConfigContextLoaderUtils - Could not detect default configuration classes for test class [tw.lawgraph.api.DailyCaseQuotaControllerTest]: DailyCaseQuotaControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+14:01:09.659 [main] INFO  SpringBootTestContextBootstrapper - Found @SpringBootConfiguration tw.lawgraph.LawGraphApplication for test class tw.lawgraph.api.DailyCaseQuotaControllerTest
+14:01:09.660 [main] INFO  AnnotationConfigContextLoaderUtils - Could not detect default configuration classes for test class [tw.lawgraph.api.DailyCaseQuotaControllerTest]: DailyCaseQuotaControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+14:01:09.697 [main] INFO  SpringBootTestContextBootstrapper - Found @SpringBootConfiguration tw.lawgraph.LawGraphApplication for test class tw.lawgraph.api.DailyCaseQuotaControllerTest
+   ___  ___    _______ .___  ___. .______        ___      .______    _______  __         ___  ___
+  /  / /  /   |   ____||   \/   | |   _  \      /   \     |   _  \  |   ____||  |        \  \ \  \
+ /  / /  /    |  |__   |  \  /  | |  |_)  |    /  ^  \    |  |_)  | |  |__   |  |         \  \ \  \
+<  < <  <     |   __|  |  |\/|  | |   _  <    /  /_\  \   |   _  <  |   __|  |  |          >  > >  >
+ \  \ \  \    |  |____ |  |  |  | |  |_)  |  /  _____  \  |  |_)  | |  |____ |  `----.    /  / /  /
+  \__\ \__\   |_______||__|  |__| |______/  /__/     \__\ |______/  |_______||_______|   /__/ /__/
+
+Powered by Spring Boot 4.1.0
+14:01:09.782 [main] INFO  DailyCaseQuotaControllerTest - Starting DailyCaseQuotaControllerTest using Java 21 with PID 52220 (started by kevintsai in D:\GitHub\webmcp\law-graph-webmcp)
+14:01:09.782 [main] INFO  DailyCaseQuotaControllerTest - No active profile set, falling back to 1 default profile: "default"
+14:01:10.193 [main] INFO  WelcomePageHandlerMapping - Adding welcome page: class path resource [static/index.html]
+14:01:10.225 [main] INFO  SpringBootMockServletContext - Initializing Spring TestDispatcherServlet ''
+14:01:10.226 [main] INFO  TestDispatcherServlet - Initializing Servlet ''
+14:01:10.228 [main] INFO  TestDispatcherServlet - Completed initialization in 2 ms
+14:01:10.241 [main] INFO  DailyCaseQuotaControllerTest - Started DailyCaseQuotaControllerTest in 0.54 seconds (process running for 32.284)
+   ___  ___    _______ .___  ___. .______        ___      .______    _______  __         ___  ___
+  /  / /  /   |   ____||   \/   | |   _  \      /   \     |   _  \  |   ____||  |        \  \ \  \
+ /  / /  /    |  |__   |  \  /  | |  |_)  |    /  ^  \    |  |_)  | |  |__   |  |         \  \ \  \
+<  < <  <     |   __|  |  |\/|  | |   _  <    /  /_\  \   |   _  <  |   __|  |  |          >  > >  >
+ \  \ \  \    |  |____ |  |  |  | |  |_)  |  /  _____  \  |  |_)  | |  |____ |  `----.    /  / /  /
+  \__\ \__\   |_______||__|  |__| |______/  /__/     \__\ |______/  |_______||_______|   /__/ /__/
+
+Powered by Spring Boot 4.1.0
+14:01:10.368 [main] INFO  DailyCaseQuotaControllerTest - Starting DailyCaseQuotaControllerTest using Java 21 with PID 52220 (started by kevintsai in D:\GitHub\webmcp\law-graph-webmcp)
+14:01:10.368 [main] INFO  DailyCaseQuotaControllerTest - No active profile set, falling back to 1 default profile: "default"
+14:01:10.756 [main] INFO  WelcomePageHandlerMapping - Adding welcome page: class path resource [static/index.html]
+14:01:10.786 [main] INFO  SpringBootMockServletContext - Initializing Spring TestDispatcherServlet ''
+14:01:10.787 [main] INFO  TestDispatcherServlet - Initializing Servlet ''
+14:01:10.788 [main] INFO  TestDispatcherServlet - Completed initialization in 1 ms
+14:01:10.795 [main] INFO  DailyCaseQuotaControllerTest - Started DailyCaseQuotaControllerTest in 0.481 seconds (process running for 32.838)
+   ___  ___    _______ .___  ___. .______        ___      .______    _______  __         ___  ___
+  /  / /  /   |   ____||   \/   | |   _  \      /   \     |   _  \  |   ____||  |        \  \ \  \
+ /  / /  /    |  |__   |  \  /  | |  |_)  |    /  ^  \    |  |_)  | |  |__   |  |         \  \ \  \
+<  < <  <     |   __|  |  |\/|  | |   _  <    /  /_\  \   |   _  <  |   __|  |  |          >  > >  >
+ \  \ \  \    |  |____ |  |  |  | |  |_)  |  /  _____  \  |  |_)  | |  |____ |  `----.    /  / /  /
+  \__\ \__\   |_______||__|  |__| |______/  /__/     \__\ |______/  |_______||_______|   /__/ /__/
+
+Powered by Spring Boot 4.1.0
+14:01:10.896 [main] INFO  DailyCaseQuotaControllerTest - Starting DailyCaseQuotaControllerTest using Java 21 with PID 52220 (started by kevintsai in D:\GitHub\webmcp\law-graph-webmcp)
+14:01:10.896 [main] INFO  DailyCaseQuotaControllerTest - No active profile set, falling back to 1 default profile: "default"
+14:01:11.291 [main] INFO  WelcomePageHandlerMapping - Adding welcome page: class path resource [static/index.html]
+14:01:11.347 [main] INFO  SpringBootMockServletContext - Initializing Spring TestDispatcherServlet ''
+14:01:11.347 [main] INFO  TestDispatcherServlet - Initializing Servlet ''
+14:01:11.353 [main] INFO  TestDispatcherServlet - Completed initialization in 6 ms
+14:01:11.363 [main] INFO  DailyCaseQuotaControllerTest - Started DailyCaseQuotaControllerTest in 0.514 seconds (process running for 33.405)
+   ___  ___    _______ .___  ___. .______        ___      .______    _______  __         ___  ___
+  /  / /  /   |   ____||   \/   | |   _  \      /   \     |   _  \  |   ____||  |        \  \ \  \
+ /  / /  /    |  |__   |  \  /  | |  |_)  |    /  ^  \    |  |_)  | |  |__   |  |         \  \ \  \
+<  < <  <     |   __|  |  |\/|  | |   _  <    /  /_\  \   |   _  <  |   __|  |  |          >  > >  >
+ \  \ \  \    |  |____ |  |  |  | |  |_)  |  /  _____  \  |  |_)  | |  |____ |  `----.    /  / /  /
+  \__\ \__\   |_______||__|  |__| |______/  /__/     \__\ |______/  |_______||_______|   /__/ /__/
+
+Powered by Spring Boot 4.1.0
+14:01:11.502 [main] INFO  DailyCaseQuotaControllerTest - Starting DailyCaseQuotaControllerTest using Java 21 with PID 52220 (started by kevintsai in D:\GitHub\webmcp\law-graph-webmcp)
+14:01:11.503 [main] INFO  DailyCaseQuotaControllerTest - No active profile set, falling back to 1 default profile: "default"
+14:01:11.800 [main] INFO  WelcomePageHandlerMapping - Adding welcome page: class path resource [static/index.html]
+14:01:11.822 [main] INFO  SpringBootMockServletContext - Initializing Spring TestDispatcherServlet ''
+14:01:11.822 [main] INFO  TestDispatcherServlet - Initializing Servlet ''
+14:01:11.823 [main] INFO  TestDispatcherServlet - Completed initialization in 1 ms
+14:01:11.829 [main] INFO  DailyCaseQuotaControllerTest - Started DailyCaseQuotaControllerTest in 0.365 seconds (process running for 33.873)
+   ___  ___    _______ .___  ___. .______        ___      .______    _______  __         ___  ___
+  /  / /  /   |   ____||   \/   | |   _  \      /   \     |   _  \  |   ____||  |        \  \ \  \
+ /  / /  /    |  |__   |  \  /  | |  |_)  |    /  ^  \    |  |_)  | |  |__   |  |         \  \ \  \
+<  < <  <     |   __|  |  |\/|  | |   _  <    /  /_\  \   |   _  <  |   __|  |  |          >  > >  >
+ \  \ \  \    |  |____ |  |  |  | |  |_)  |  /  _____  \  |  |_)  | |  |____ |  `----.    /  / /  /
+  \__\ \__\   |_______||__|  |__| |______/  /__/     \__\ |______/  |_______||_______|   /__/ /__/
+
+Powered by Spring Boot 4.1.0
+14:01:11.927 [main] INFO  DailyCaseQuotaControllerTest - Starting DailyCaseQuotaControllerTest using Java 21 with PID 52220 (started by kevintsai in D:\GitHub\webmcp\law-graph-webmcp)
+14:01:11.927 [main] INFO  DailyCaseQuotaControllerTest - No active profile set, falling back to 1 default profile: "default"
+14:01:12.272 [main] INFO  WelcomePageHandlerMapping - Adding welcome page: class path resource [static/index.html]
+14:01:12.310 [main] INFO  SpringBootMockServletContext - Initializing Spring TestDispatcherServlet ''
+14:01:12.310 [main] INFO  TestDispatcherServlet - Initializing Servlet ''
+14:01:12.310 [main] INFO  TestDispatcherServlet - Completed initialization in 0 ms
+14:01:12.318 [main] INFO  DailyCaseQuotaControllerTest - Started DailyCaseQuotaControllerTest in 0.425 seconds (process running for 34.361)
+   ___  ___    _______ .___  ___. .______        ___      .______    _______  __         ___  ___
+  /  / /  /   |   ____||   \/   | |   _  \      /   \     |   _  \  |   ____||  |        \  \ \  \
+ /  / /  /    |  |__   |  \  /  | |  |_)  |    /  ^  \    |  |_)  | |  |__   |  |         \  \ \  \
+<  < <  <     |   __|  |  |\/|  | |   _  <    /  /_\  \   |   _  <  |   __|  |  |          >  > >  >
+ \  \ \  \    |  |____ |  |  |  | |  |_)  |  /  _____  \  |  |_)  | |  |____ |  `----.    /  / /  /
+  \__\ \__\   |_______||__|  |__| |______/  /__/     \__\ |______/  |_______||_______|   /__/ /__/
+
+Powered by Spring Boot 4.1.0
+14:01:12.405 [main] INFO  DailyCaseQuotaControllerTest - Starting DailyCaseQuotaControllerTest using Java 21 with PID 52220 (started by kevintsai in D:\GitHub\webmcp\law-graph-webmcp)
+14:01:12.406 [main] INFO  DailyCaseQuotaControllerTest - No active profile set, falling back to 1 default profile: "default"
+14:01:12.774 [main] INFO  WelcomePageHandlerMapping - Adding welcome page: class path resource [static/index.html]
+14:01:12.798 [main] INFO  SpringBootMockServletContext - Initializing Spring TestDispatcherServlet ''
+14:01:12.798 [main] INFO  TestDispatcherServlet - Initializing Servlet ''
+14:01:12.799 [main] INFO  TestDispatcherServlet - Completed initialization in 1 ms
+14:01:12.804 [main] INFO  DailyCaseQuotaControllerTest - Started DailyCaseQuotaControllerTest in 0.446 seconds (process running for 34.847)
+14:01:12.881 [main] INFO  AnnotationConfigContextLoaderUtils - Could not detect default configuration classes for test class [tw.lawgraph.api.SamplesControllerTest]: SamplesControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+14:01:12.892 [main] INFO  SpringBootTestContextBootstrapper - Found @SpringBootConfiguration tw.lawgraph.LawGraphApplication for test class tw.lawgraph.api.SamplesControllerTest
+14:01:12.893 [main] INFO  AnnotationConfigContextLoaderUtils - Could not detect default configuration classes for test class [tw.lawgraph.api.SamplesControllerTest]: SamplesControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+14:01:12.902 [main] INFO  SpringBootTestContextBootstrapper - Found @SpringBootConfiguration tw.lawgraph.LawGraphApplication for test class tw.lawgraph.api.SamplesControllerTest
+   ___  ___    _______ .___  ___. .______        ___      .______    _______  __         ___  ___
+  /  / /  /   |   ____||   \/   | |   _  \      /   \     |   _  \  |   ____||  |        \  \ \  \
+ /  / /  /    |  |__   |  \  /  | |  |_)  |    /  ^  \    |  |_)  | |  |__   |  |         \  \ \  \
+<  < <  <     |   __|  |  |\/|  | |   _  <    /  /_\  \   |   _  <  |   __|  |  |          >  > >  >
+ \  \ \  \    |  |____ |  |  |  | |  |_)  |  /  _____  \  |  |_)  | |  |____ |  `----.    /  / /  /
+  \__\ \__\   |_______||__|  |__| |______/  /__/     \__\ |______/  |_______||_______|   /__/ /__/
+
+Powered by Spring Boot 4.1.0
+14:01:12.946 [main] INFO  SamplesControllerTest - Starting SamplesControllerTest using Java 21 with PID 52220 (started by kevintsai in D:\GitHub\webmcp\law-graph-webmcp)
+14:01:12.946 [main] INFO  SamplesControllerTest - No active profile set, falling back to 1 default profile: "default"
+14:01:13.158 [main] INFO  WelcomePageHandlerMapping - Adding welcome page: class path resource [static/index.html]
+14:01:13.286 [main] INFO  SpringBootMockServletContext - Initializing Spring TestDispatcherServlet ''
+14:01:13.286 [main] INFO  TestDispatcherServlet - Initializing Servlet ''
+14:01:13.289 [main] INFO  TestDispatcherServlet - Completed initialization in 3 ms
+14:01:13.302 [main] INFO  SamplesControllerTest - Started SamplesControllerTest in 0.394 seconds (process running for 35.345)
+14:01:13.632 [main] WARN  TaiwanTerminology - 非台灣法律用語已自動替換 scope=documents terms=[人民法院, 原告方, 合同, 損失賠償, 被告方, 雙方當事人]
+14:01:13.648 [main] WARN  TaiwanTerminology - 非台灣法律用語已自動替換 scope=analysis terms=[合同, 被告方, 視頻, 證據材料]
+14:01:13.652 [main] WARN  TaiwanTerminology - 非台灣法律用語已自動替換 scope=caseAssessment terms=[合同]
+14:01:13.661 [main] INFO  AnnotationConfigContextLoaderUtils - Could not detect default configuration classes for test class [tw.lawgraph.llm.LlmProxyControllerTest]: LlmProxyControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+14:01:13.694 [main] INFO  SpringBootTestContextBootstrapper - Found @SpringBootConfiguration tw.lawgraph.LawGraphApplication for test class tw.lawgraph.llm.LlmProxyControllerTest
+14:01:13.696 [main] INFO  AnnotationConfigContextLoaderUtils - Could not detect default configuration classes for test class [tw.lawgraph.llm.LlmProxyControllerTest]: LlmProxyControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+14:01:13.709 [main] INFO  SpringBootTestContextBootstrapper - Found @SpringBootConfiguration tw.lawgraph.LawGraphApplication for test class tw.lawgraph.llm.LlmProxyControllerTest
+   ___  ___    _______ .___  ___. .______        ___      .______    _______  __         ___  ___
+  /  / /  /   |   ____||   \/   | |   _  \      /   \     |   _  \  |   ____||  |        \  \ \  \
+ /  / /  /    |  |__   |  \  /  | |  |_)  |    /  ^  \    |  |_)  | |  |__   |  |         \  \ \  \
+<  < <  <     |   __|  |  |\/|  | |   _  <    /  /_\  \   |   _  <  |   __|  |  |          >  > >  >
+ \  \ \  \    |  |____ |  |  |  | |  |_)  |  /  _____  \  |  |_)  | |  |____ |  `----.    /  / /  /
+  \__\ \__\   |_______||__|  |__| |______/  /__/     \__\ |______/  |_______||_______|   /__/ /__/
+
+Powered by Spring Boot 4.1.0
+14:01:13.810 [main] INFO  LlmProxyControllerTest - Starting LlmProxyControllerTest using Java 21 with PID 52220 (started by kevintsai in D:\GitHub\webmcp\law-graph-webmcp)
+14:01:13.812 [main] INFO  LlmProxyControllerTest - No active profile set, falling back to 1 default profile: "default"
+14:01:14.156 [main] INFO  WelcomePageHandlerMapping - Adding welcome page: class path resource [static/index.html]
+14:01:14.180 [main] INFO  SpringBootMockServletContext - Initializing Spring TestDispatcherServlet ''
+14:01:14.180 [main] INFO  TestDispatcherServlet - Initializing Servlet ''
+14:01:14.181 [main] INFO  TestDispatcherServlet - Completed initialization in 1 ms
+14:01:14.187 [main] INFO  LlmProxyControllerTest - Started LlmProxyControllerTest in 0.427 seconds (process running for 36.23)
+14:01:14.353 [main] INFO  LlmProxyController - LLM usage prompt=10 cached=4 completion=5 reasoning=3
+14:01:14.377 [main] INFO  LlmProxyController - LLM usage prompt=10 cached=4 completion=5 reasoning=3
+14:01:14.458 [pool-61-thread-2] WARN  DualMcpResearchService - semantic track UNAVAILABLE kind=AUTH causes=McpResearchException origin=n/a
+14:01:14.912 [main] INFO  JdbcOAuthSessionStore - oauth_session 資料表就緒（JdbcOAuthSessionStore, provider=tw-legal-rag）
+14:01:14.960 [main] INFO  JdbcOAuthSessionStore - oauth_session 資料表就緒（JdbcOAuthSessionStore, provider=tw-legal-rag）
+14:01:14.962 [main] INFO  JdbcOAuthSessionStore - oauth_session 資料表就緒（JdbcOAuthSessionStore, provider=other-provider）
+14:01:14.970 [main] INFO  JdbcOAuthSessionStore - oauth_session 資料表就緒（JdbcOAuthSessionStore, provider=tw-legal-rag）
+14:01:14.974 [main] INFO  JdbcOAuthSessionStore - oauth_session 資料表就緒（JdbcOAuthSessionStore, provider=tw-legal-rag）
+14:01:15.516 [main] INFO  AnnotationConfigContextLoaderUtils - Could not detect default configuration classes for test class [tw.lawgraph.research.mcp.TwLegalRagAuthControllerTest]: TwLegalRagAuthControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+14:01:15.558 [main] INFO  SpringBootTestContextBootstrapper - Found @SpringBootConfiguration tw.lawgraph.LawGraphApplication for test class tw.lawgraph.research.mcp.TwLegalRagAuthControllerTest
+14:01:15.559 [main] INFO  AnnotationConfigContextLoaderUtils - Could not detect default configuration classes for test class [tw.lawgraph.research.mcp.TwLegalRagAuthControllerTest]: TwLegalRagAuthControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+14:01:15.568 [main] INFO  SpringBootTestContextBootstrapper - Found @SpringBootConfiguration tw.lawgraph.LawGraphApplication for test class tw.lawgraph.research.mcp.TwLegalRagAuthControllerTest
+   ___  ___    _______ .___  ___. .______        ___      .______    _______  __         ___  ___
+  /  / /  /   |   ____||   \/   | |   _  \      /   \     |   _  \  |   ____||  |        \  \ \  \
+ /  / /  /    |  |__   |  \  /  | |  |_)  |    /  ^  \    |  |_)  | |  |__   |  |         \  \ \  \
+<  < <  <     |   __|  |  |\/|  | |   _  <    /  /_\  \   |   _  <  |   __|  |  |          >  > >  >
+ \  \ \  \    |  |____ |  |  |  | |  |_)  |  /  _____  \  |  |_)  | |  |____ |  `----.    /  / /  /
+  \__\ \__\   |_______||__|  |__| |______/  /__/     \__\ |______/  |_______||_______|   /__/ /__/
+
+Powered by Spring Boot 4.1.0
+14:01:15.639 [main] INFO  TwLegalRagAuthControllerTest - Starting TwLegalRagAuthControllerTest using Java 21 with PID 52220 (started by kevintsai in D:\GitHub\webmcp\law-graph-webmcp)
+14:01:15.639 [main] INFO  TwLegalRagAuthControllerTest - No active profile set, falling back to 1 default profile: "default"
+14:01:16.280 [main] INFO  WelcomePageHandlerMapping - Adding welcome page: class path resource [static/index.html]
+14:01:16.391 [main] INFO  SpringBootMockServletContext - Initializing Spring TestDispatcherServlet ''
+14:01:16.392 [main] INFO  TestDispatcherServlet - Initializing Servlet ''
+14:01:16.396 [main] INFO  TestDispatcherServlet - Completed initialization in 4 ms
+14:01:16.404 [main] INFO  TwLegalRagAuthControllerTest - Started TwLegalRagAuthControllerTest in 0.83 seconds (process running for 38.447)
+   ___  ___    _______ .___  ___. .______        ___      .______    _______  __         ___  ___
+  /  / /  /   |   ____||   \/   | |   _  \      /   \     |   _  \  |   ____||  |        \  \ \  \
+ /  / /  /    |  |__   |  \  /  | |  |_)  |    /  ^  \    |  |_)  | |  |__   |  |         \  \ \  \
+<  < <  <     |   __|  |  |\/|  | |   _  <    /  /_\  \   |   _  <  |   __|  |  |          >  > >  >
+ \  \ \  \    |  |____ |  |  |  | |  |_)  |  /  _____  \  |  |_)  | |  |____ |  `----.    /  / /  /
+  \__\ \__\   |_______||__|  |__| |______/  /__/     \__\ |______/  |_______||_______|   /__/ /__/
+
+Powered by Spring Boot 4.1.0
+14:01:16.560 [main] INFO  TwLegalRagAuthControllerTest - Starting TwLegalRagAuthControllerTest using Java 21 with PID 52220 (started by kevintsai in D:\GitHub\webmcp\law-graph-webmcp)
+14:01:16.560 [main] INFO  TwLegalRagAuthControllerTest - No active profile set, falling back to 1 default profile: "default"
+14:01:16.779 [main] INFO  WelcomePageHandlerMapping - Adding welcome page: class path resource [static/index.html]
+14:01:16.832 [main] INFO  SpringBootMockServletContext - Initializing Spring TestDispatcherServlet ''
+14:01:16.833 [main] INFO  TestDispatcherServlet - Initializing Servlet ''
+14:01:16.834 [main] INFO  TestDispatcherServlet - Completed initialization in 0 ms
+14:01:16.840 [main] INFO  TwLegalRagAuthControllerTest - Started TwLegalRagAuthControllerTest in 0.349 seconds (process running for 38.883)
+   ___  ___    _______ .___  ___. .______        ___      .______    _______  __         ___  ___
+  /  / /  /   |   ____||   \/   | |   _  \      /   \     |   _  \  |   ____||  |        \  \ \  \
+ /  / /  /    |  |__   |  \  /  | |  |_)  |    /  ^  \    |  |_)  | |  |__   |  |         \  \ \  \
+<  < <  <     |   __|  |  |\/|  | |   _  <    /  /_\  \   |   _  <  |   __|  |  |          >  > >  >
+ \  \ \  \    |  |____ |  |  |  | |  |_)  |  /  _____  \  |  |_)  | |  |____ |  `----.    /  / /  /
+  \__\ \__\   |_______||__|  |__| |______/  /__/     \__\ |______/  |_______||_______|   /__/ /__/
+
+Powered by Spring Boot 4.1.0
+14:01:16.915 [main] INFO  TwLegalRagAuthControllerTest - Starting TwLegalRagAuthControllerTest using Java 21 with PID 52220 (started by kevintsai in D:\GitHub\webmcp\law-graph-webmcp)
+14:01:16.915 [main] INFO  TwLegalRagAuthControllerTest - No active profile set, falling back to 1 default profile: "default"
+14:01:17.115 [main] INFO  WelcomePageHandlerMapping - Adding welcome page: class path resource [static/index.html]
+14:01:17.157 [main] INFO  SpringBootMockServletContext - Initializing Spring TestDispatcherServlet ''
+14:01:17.157 [main] INFO  TestDispatcherServlet - Initializing Servlet ''
+14:01:17.158 [main] INFO  TestDispatcherServlet - Completed initialization in 1 ms
+14:01:17.162 [main] INFO  TwLegalRagAuthControllerTest - Started TwLegalRagAuthControllerTest in 0.297 seconds (process running for 39.205)
+   ___  ___    _______ .___  ___. .______        ___      .______    _______  __         ___  ___
+  /  / /  /   |   ____||   \/   | |   _  \      /   \     |   _  \  |   ____||  |        \  \ \  \
+ /  / /  /    |  |__   |  \  /  | |  |_)  |    /  ^  \    |  |_)  | |  |__   |  |         \  \ \  \
+<  < <  <     |   __|  |  |\/|  | |   _  <    /  /_\  \   |   _  <  |   __|  |  |          >  > >  >
+ \  \ \  \    |  |____ |  |  |  | |  |_)  |  /  _____  \  |  |_)  | |  |____ |  `----.    /  / /  /
+  \__\ \__\   |_______||__|  |__| |______/  /__/     \__\ |______/  |_______||_______|   /__/ /__/
+
+Powered by Spring Boot 4.1.0
+14:01:17.230 [main] INFO  TwLegalRagAuthControllerTest - Starting TwLegalRagAuthControllerTest using Java 21 with PID 52220 (started by kevintsai in D:\GitHub\webmcp\law-graph-webmcp)
+14:01:17.231 [main] INFO  TwLegalRagAuthControllerTest - No active profile set, falling back to 1 default profile: "default"
+14:01:17.441 [main] INFO  WelcomePageHandlerMapping - Adding welcome page: class path resource [static/index.html]
+14:01:17.490 [main] INFO  SpringBootMockServletContext - Initializing Spring TestDispatcherServlet ''
+14:01:17.490 [main] INFO  TestDispatcherServlet - Initializing Servlet ''
+14:01:17.491 [main] INFO  TestDispatcherServlet - Completed initialization in 1 ms
+14:01:17.495 [main] INFO  TwLegalRagAuthControllerTest - Started TwLegalRagAuthControllerTest in 0.31 seconds (process running for 39.539)
+14:01:17.880 [HttpClient-65-Worker-0] INFO  LifecycleInitializer - Server response with Protocol: 2025-06-18, Capabilities: ServerCapabilities[completions=null, experimental=null, logging=null, prompts=null, resources=null, tools=ToolCapabilities[listChanged=null]], Info: Implementation[name=test, title=null, version=1.0, description=null, icons=null, websiteUrl=null] and Instructions null
+14:01:17.927 [main] INFO  TwLegalRagOAuthClient - tw-legal-rag OAuth session 已從 memory 恢復
+14:01:17.999 [HttpClient-67-Worker-0] INFO  LifecycleInitializer - Server response with Protocol: 2025-06-18, Capabilities: ServerCapabilities[completions=null, experimental=null, logging=null, prompts=null, resources=null, tools=ToolCapabilities[listChanged=null]], Info: Implementation[name=test, title=null, version=1.0, description=null, icons=null, websiteUrl=null] and Instructions null
+14:01:18.042 [HttpClient-68-Worker-0] INFO  LifecycleInitializer - Server response with Protocol: 2025-06-18, Capabilities: ServerCapabilities[completions=null, experimental=null, logging=null, prompts=null, resources=null, tools=ToolCapabilities[listChanged=null]], Info: Implementation[name=test, title=null, version=1.0, description=null, icons=null, websiteUrl=null] and Instructions null
+14:01:18.115 [HttpClient-69-Worker-0] INFO  LifecycleInitializer - Server response with Protocol: 2025-06-18, Capabilities: ServerCapabilities[completions=null, experimental=null, logging=null, prompts=null, resources=null, tools=ToolCapabilities[listChanged=null]], Info: Implementation[name=test, title=null, version=1.0, description=null, icons=null, websiteUrl=null] and Instructions null
+14:01:18.218 [HttpClient-72-Worker-0] INFO  LifecycleInitializer - Server response with Protocol: 2025-06-18, Capabilities: ServerCapabilities[completions=null, experimental=null, logging=null, prompts=null, resources=null, tools=ToolCapabilities[listChanged=null]], Info: Implementation[name=test, title=null, version=1.0, description=null, icons=null, websiteUrl=null] and Instructions null
+14:01:18.248 [HttpClient-73-Worker-0] INFO  LifecycleInitializer - Server response with Protocol: 2025-06-18, Capabilities: ServerCapabilities[completions=null, experimental=null, logging=null, prompts=null, resources=null, tools=ToolCapabilities[listChanged=null]], Info: Implementation[name=test, title=null, version=1.0, description=null, icons=null, websiteUrl=null] and Instructions null
+14:01:18.313 [HttpClient-75-Worker-0] INFO  LifecycleInitializer - Server response with Protocol: 2025-06-18, Capabilities: ServerCapabilities[completions=null, experimental=null, logging=null, prompts=null, resources=null, tools=ToolCapabilities[listChanged=null]], Info: Implementation[name=test, title=null, version=1.0, description=null, icons=null, websiteUrl=null] and Instructions null
+14:01:18.323 [main] INFO  TwLegalRagOAuthClient - tw-legal-rag 自動授權完成（store=memory）
+14:01:18.338 [HttpClient-76-Worker-0] INFO  LifecycleInitializer - Server response with Protocol: 2025-06-18, Capabilities: ServerCapabilities[completions=null, experimental=null, logging=null, prompts=null, resources=null, tools=ToolCapabilities[listChanged=null]], Info: Implementation[name=test, title=null, version=1.0, description=null, icons=null, websiteUrl=null] and Instructions null
+14:01:18.350 [ForkJoinPool.commonPool-worker-1] WARN  McpTransport - Error during asynchronous close
+java.io.IOException: HTTP/1.1 header parser received no bytes
+	at java.net.http/jdk.internal.net.http.common.Utils.wrapWithExtraDetail(Utils.java:388)
+	at java.net.http/jdk.internal.net.http.Http1Response$HeadersReader.onReadError(Http1Response.java:590)
+	at java.net.http/jdk.internal.net.http.Http1AsyncReceiver.checkForErrors(Http1AsyncReceiver.java:302)
+	at java.net.http/jdk.internal.net.http.Http1AsyncReceiver.flush(Http1AsyncReceiver.java:268)
+	at java.net.http/jdk.internal.net.http.common.SequentialScheduler$LockingRestartableTask.run(SequentialScheduler.java:182)
+	at java.net.http/jdk.internal.net.http.common.SequentialScheduler$CompleteRestartableTask.run(SequentialScheduler.java:149)
+	at java.net.http/jdk.internal.net.http.common.SequentialScheduler$SchedulableTask.run(SequentialScheduler.java:207)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)
+	at java.base/java.lang.Thread.run(Thread.java:1583)
+Caused by: java.net.SocketException: Connection reset
+	at java.base/sun.nio.ch.SocketChannelImpl.throwConnectionReset(SocketChannelImpl.java:401)
+	at java.base/sun.nio.ch.SocketChannelImpl.read(SocketChannelImpl.java:434)
+	at java.net.http/jdk.internal.net.http.SocketTube.readAvailable(SocketTube.java:1178)
+	at java.net.http/jdk.internal.net.http.SocketTube$InternalReadPublisher$InternalReadSubscription.read(SocketTube.java:841)
+	at java.net.http/jdk.internal.net.http.SocketTube$SocketFlowTask.run(SocketTube.java:181)
+	at java.net.http/jdk.internal.net.http.common.SequentialScheduler$SchedulableTask.run(SequentialScheduler.java:207)
+	at java.net.http/jdk.internal.net.http.common.SequentialScheduler.runOrSchedule(SequentialScheduler.java:280)
+	at java.net.http/jdk.internal.net.http.common.SequentialScheduler.runOrSchedule(SequentialScheduler.java:233)
+	at java.net.http/jdk.internal.net.http.SocketTube$InternalReadPublisher$InternalReadSubscription.signalReadable(SocketTube.java:782)
+	at java.net.http/jdk.internal.net.http.SocketTube$InternalReadPublisher$ReadEvent.signalEvent(SocketTube.java:965)
+	at java.net.http/jdk.internal.net.http.SocketTube$SocketFlowEvent.handle(SocketTube.java:253)
+	at java.net.http/jdk.internal.net.http.HttpClientImpl$SelectorManager.handleEvent(HttpClientImpl.java:1467)
+	at java.net.http/jdk.internal.net.http.HttpClientImpl$SelectorManager.lambda$run$3(HttpClientImpl.java:1412)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.net.http/jdk.internal.net.http.HttpClientImpl$SelectorManager.run(HttpClientImpl.java:1412)
+14:01:18.446 [HttpClient-80-Worker-0] INFO  LifecycleInitializer - Server response with Protocol: 2025-06-18, Capabilities: ServerCapabilities[completions=null, experimental=null, logging=null, prompts=null, resources=null, tools=ToolCapabilities[listChanged=null]], Info: Implementation[name=test, title=null, version=1.0, description=null, icons=null, websiteUrl=null] and Instructions null
+14:01:18.460 [main] INFO  TwLegalRagOAuthClient - tw-legal-rag OAuth session 已從 file 恢復
+14:01:18.509 [HttpClient-82-Worker-0] INFO  LifecycleInitializer - Server response with Protocol: 2025-06-18, Capabilities: ServerCapabilities[completions=null, experimental=null, logging=null, prompts=null, resources=null, tools=ToolCapabilities[listChanged=null]], Info: Implementation[name=test, title=null, version=1.0, description=null, icons=null, websiteUrl=null] and Instructions null
+14:01:18.518 [main] INFO  TwLegalRagOAuthClient - tw-legal-rag 自動授權完成（store=memory）
+14:01:18.532 [HttpClient-83-Worker-0] INFO  LifecycleInitializer - Server response with Protocol: 2025-06-18, Capabilities: ServerCapabilities[completions=null, experimental=null, logging=null, prompts=null, resources=null, tools=ToolCapabilities[listChanged=null]], Info: Implementation[name=test, title=null, version=1.0, description=null, icons=null, websiteUrl=null] and Instructions null
+14:01:18.631 [main] INFO  TwLegalRagOAuthClient - tw-legal-rag 自動授權未完成：provider 回 200（可能需人工同意），改由使用者按鈕授權
+14:01:18.648 [main] WARN  DailyTokenBudget - 每日 token 上限已到：used=1000 limit=1000 date=2026-09-04
+14:01:18.648 [main] INFO  DailyTokenBudget - 每日 token 預算跨日重置：2026-09-04 → 2026-09-05（前一日用量 1000）
+14:01:18.654 [main] WARN  DailyTokenBudget - 每日 token 上限已到：used=1000 limit=1000 date=2026-09-04
+14:01:18.982 [main] INFO  JdbcUsageStore - usage_daily 資料表就緒（JdbcUsageStore）
+14:01:18.986 [main] INFO  JdbcUsageStore - usage_daily 資料表就緒（JdbcUsageStore）
+14:01:18.996 [main] INFO  JdbcUsageStore - usage_daily 資料表就緒（JdbcUsageStore）
+14:01:19.001 [main] INFO  JdbcUsageStore - usage_daily 資料表就緒（JdbcUsageStore）
+14:01:19.003 [main] INFO  JdbcUsageStore - usage_daily 資料表就緒（JdbcUsageStore）
+14:01:19.005 [main] INFO  JdbcUsageStore - usage_daily 資料表就緒（JdbcUsageStore）
+14:01:19.006 [main] INFO  JdbcUsageStore - usage_daily 資料表就緒（JdbcUsageStore）

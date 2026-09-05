@@ -22,3 +22,4 @@
 - TLR OAuth 零互動（2026-09-04 起）：LAWGRAPH_OAUTH_SESSION_STORE=db 時 refresh token 存 PostgreSQL 資料表 oauth_session；啟動時先用 refresh token 恢復，沒有就由程式自行走 start→authorize→callback（TLR authorize 對已註冊 client 自動同意 302）。retrieve 遇未授權也會先自動授權，失敗 60 秒內不重試；provider 若改成需人工同意，前端授權按鈕仍在。
 - 測試省額度：請求帶 header `X-LawGraph-Model`（只接受 LAWGRAPH_TEST_MODEL 這一個值）該案件改用測試模型；`scripts/verify-semantic-live.mjs` 預設帶 gpt-5.4-nano。**Meta Muse 期間線上 LAWGRAPH_TEST_MODEL=muse-spark-1.3-contributor（與 MODEL 相同）**，因此 nano header 會被忽略、一律走 Muse；切回 OpenAI 時把 LAWGRAPH_TEST_MODEL 刪掉即恢復 nano。
 - 建置設定：zbpack.json 指向 docker/app/Dockerfile（多階段 Maven 建置，技能包一併 COPY 進映像）
+- 流程兩條：LegalGraphAgent／ContractReviewAgent，依 CaseController mode 選；合約步驟 LOAD/QUESTIONS/RESEARCH/REVIEW/SUMMARY/REVISE/GRAPH；前端 hash 路由 #/、#/case、#/contract；示範案例 JSON 以 mode 欄位區分

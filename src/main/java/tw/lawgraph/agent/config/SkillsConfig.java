@@ -9,7 +9,7 @@ import org.springframework.context.annotation.Configuration;
 import java.nio.file.Path;
 import java.util.List;
 
-/** 載入 law-powers 的四個技能，作為 LlmReference 掛進每個 Action 的 PromptRunner。 */
+/** 載入 law-powers 的五個技能，作為 LlmReference 掛進每個 Action 的 PromptRunner。 */
 @Configuration
 public class SkillsConfig {
     /** 唯一允許載入的五個 law-powers 技能名稱。 */

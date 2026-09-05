@@ -155,6 +155,44 @@ $env:E2E_LIVE='1'; npx playwright test -c e2e/playwright.config.mjs e2e/tutorial
 
 `e2e/tutorial.spec.mjs` walks the whole human/agent journey in **English and 繁體中文** and saves one screenshot per action to `docs/tutorial/<locale>/NN-*.png` (21 frames each: input → progress with partial results → questions → answers → graph → four tabs → every Inspector tool → focus/detail panel → filter → verify citation → new case). These frames are the storyboard for the demo video. While a case runs, the page already lists the results of finished steps under *Results so far*, and every progress screen has a *Cancel and start over* button.
 
+## 合約法規審查（M1）
+
+首頁 `#/` 現有兩張入口卡：案件分析（`#/case`，原有七步流程）與合約法規審查（`#/contract`，新的 `ContractReviewAgent`）。`CaseController` 依請求的 `mode` 欄位（`case` 或 `contract`，預設 `case`）決定要跑哪一條流程；兩者共用同一組 `/api/cases` 端點與進度輪詢機制。
+
+合約審查的七個步驟：
+
+1. **LOAD** — 辨識契約類型、切分條款、找出雙方當事人與待問問題
+2. **QUESTIONS** — 有問題就停在 `WAITING`，等待人工作答（`POST /api/cases/{id}/answers`）
+3. **RESEARCH** — 依選定的 `scopes` 產生檢索計畫並查詢法規
+4. **REVIEW** — 逐批呼叫 LLM 審查每條條款是否合規，沒有條款切分時以全文為單一條款「全文」
+5. **SUMMARY** — 整體風險（`overallRisk`）由 Java 依所有 findings 取最高風險等級，本里程碑（M1）的目標步驟
+6. **REVISE**（M2 起）— 產生建議修改後的條款文字
+7. **GRAPH**（M2 起）— 產出契約義務關係圖
+
+M1 只做到 SUMMARY；REVISE 與 GRAPH 尚未實作，會在 M2 補上。
+
+### API 參數
+
+`POST /api/cases` 除既有的 `caseText`／`locale`／`documents` 外，合約模式另接受：
+
+- `mode`：`"case"` 或 `"contract"`（預設 `"case"`）
+- `party`：己方立場，`"partyA"`／`"partyB"`／`"unknown"`（預設 `"unknown"`）
+- `scopes`：審查範疇子集合，可含 `"commercial"`／`"labor"`／`"privacy"`／`"corporate"`
+- `documents`：合約模式下的輸出選項（目前為 `"revised"`，即修改後條款；M2 起提供）
+
+```bash
+curl -s -X POST localhost:8080/api/cases -H 'Content-Type: application/json' \
+  -d '{"caseText":"<合約全文>","locale":"zh-TW","mode":"contract","party":"partyB","scopes":["labor"]}'
+```
+
+### 示範案例
+
+`GET /api/samples?mode=contract` 回傳兩份合約示範：`labor-contract`（勞動契約）與 `software-dev-contract`（軟體委外開發契約），可直接餵給 `startCase` 或上面的 curl。
+
+### 前端路由
+
+首頁 `#/` 列出兩張能力卡；選擇後導向 `#/case` 或 `#/contract` 對應的輸入頁。合約結果頁分頁：**findings**（逐條發現）／**summary**（整體風險摘要）／**laws**（引用法規白名單），與案件分析頁共用同一份結果檢視框架。
+
 ## Limitations
 
 - The configured `MODEL` output quality varies; the hard rules remove unverifiable nodes rather than "fix" them, so graphs can be small. Choose a stronger model in `.env` when quality matters more than cost.
