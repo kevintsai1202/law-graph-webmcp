@@ -235,6 +235,12 @@
       "stats.error": "Statistics could not be loaded right now. Please try again later.",
       "stats.chart.cases": "Analyses per day",
       "stats.chart.tokens": "Tokens per day",
+      "stats.chart.mix": "Capability mix",
+      "stats.chart.outcome": "Completion rate",
+      "stats.period": "Period",
+      "stats.details": "Daily breakdown",
+      "stats.vsYesterday": "vs yesterday",
+      "stats.noData": "No data",
       "stats.col.day": "Date",
       "stats.col.total": "Analyses",
       "stats.col.case": "Case",
@@ -515,6 +521,12 @@
       "stats.error": "\u76EE\u524D\u7121\u6CD5\u8F09\u5165\u7D71\u8A08\u8CC7\u6599\uFF0C\u8ACB\u7A0D\u5F8C\u518D\u8A66\u3002",
       "stats.chart.cases": "\u6BCF\u65E5\u5206\u6790\u6B21\u6578",
       "stats.chart.tokens": "\u6BCF\u65E5 token \u7528\u91CF",
+      "stats.chart.mix": "\u80FD\u529B\u5360\u6BD4",
+      "stats.chart.outcome": "\u5B8C\u6210\u7387",
+      "stats.period": "\u7D71\u8A08\u671F\u9593",
+      "stats.details": "\u6BCF\u65E5\u660E\u7D30",
+      "stats.vsYesterday": "\u8F03\u6628\u65E5",
+      "stats.noData": "\u5C1A\u7121\u8CC7\u6599",
       "stats.col.day": "\u65E5\u671F",
       "stats.col.total": "\u5206\u6790\u6B21\u6578",
       "stats.col.case": "\u6848\u4EF6",
@@ -1258,28 +1270,96 @@
 
   // src/main/resources/static/js/views/stats.js
   var day = (row) => String(row?.day || "");
-  function bars(rows, pick, labelKey, locale2) {
-    const max = Math.max(1, ...rows.map(pick));
-    return `<div class="bars" data-chart="${esc(t(labelKey, locale2))}">${rows.map((r) => `<div class="bar-row"><span class="bar-day">${esc(day(r).slice(5))}</span><span class="bar" style="width:${Math.round(pick(r) / max * 100)}%" aria-label="${esc(day(r))} ${pick(r).toLocaleString(locale2)}"></span><span class="bar-value">${pick(r).toLocaleString(locale2)}</span></div>`).join("")}</div>`;
+  var num = (v) => Number(v || 0);
+  var MIN_DAYS = 7;
+  function visibleWindow(days) {
+    const asc = [...days || []].sort((a, b) => day(a).localeCompare(day(b)));
+    const first = asc.findIndex((r) => num(r.total) > 0 || num(r.totalTokens) > 0);
+    const start = Math.max(0, Math.min(first < 0 ? asc.length : first, asc.length - MIN_DAYS));
+    return asc.slice(start);
+  }
+  var W = 640;
+  var H = 200;
+  var PAD = { top: 12, right: 8, bottom: 28, left: 48 };
+  var PLOT_H = H - PAD.top - PAD.bottom;
+  var PLOT_W = W - PAD.left - PAD.right;
+  function columnChart(rows, series, locale2, title) {
+    const totals = rows.map((r) => series.reduce((s, sr) => s + num(sr.pick(r)), 0));
+    const max = Math.max(1, ...totals), peak = totals.indexOf(Math.max(...totals));
+    const n = Math.max(1, rows.length), slot = PLOT_W / n, bw = Math.min(36, slot * 0.6);
+    const y = (v) => PAD.top + PLOT_H - v / max * PLOT_H;
+    const grid = [0, 0.5, 1].map((p) => `<line class="grid" x1="${PAD.left}" x2="${W - PAD.right}" y1="${y(max * p).toFixed(1)}" y2="${y(max * p).toFixed(1)}"/><text class="tick" x="${PAD.left - 6}" y="${(y(max * p) + 4).toFixed(1)}" text-anchor="end">${esc(Math.round(max * p).toLocaleString(locale2))}</text>`).join("");
+    const every = Math.ceil(n / 10);
+    const cols = rows.map((r, i) => {
+      const x = PAD.left + slot * i + (slot - bw) / 2;
+      let base = 0;
+      const rects = series.map((sr) => {
+        const v = num(sr.pick(r));
+        if (v <= 0) return "";
+        const top = y(base + v), h = y(base) - top;
+        base += v;
+        return `<rect class="${sr.cls}" x="${x.toFixed(1)}" y="${top.toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(1.5, h).toFixed(1)}" rx="2" data-day="${esc(day(r))}"${i === peak && totals[i] > 0 ? ' data-peak="1"' : ""}/>`;
+      }).join("");
+      const showLabel = i === n - 1 || (n - 1 - i) % every === 0;
+      const label = showLabel ? `<text class="axis" x="${(x + bw / 2).toFixed(1)}" y="${H - 8}" text-anchor="middle">${esc(day(r).slice(5))}</text>` : "";
+      const empty = totals[i] === 0 ? `<circle class="empty" cx="${(x + bw / 2).toFixed(1)}" cy="${(PAD.top + PLOT_H - 2).toFixed(1)}" r="1.6"/>` : "";
+      return `<g aria-label="${esc(day(r))} ${totals[i].toLocaleString(locale2)}">${rects}${empty}${label}</g>`;
+    }).join("");
+    return `<svg class="chart chart-columns" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(title)}" preserveAspectRatio="xMidYMid meet">${grid}${cols}</svg>`;
+  }
+  function donut(parts, locale2, emptyText) {
+    const total = parts.reduce((s, p) => s + num(p.value), 0);
+    const R = 42, C = 2 * Math.PI * R;
+    let offset = 0;
+    const arcs = total <= 0 ? "" : parts.map((p) => {
+      const len = num(p.value) / total * C;
+      const seg = `<circle class="${p.cls}" r="${R}" cx="60" cy="60" fill="none" stroke-width="14" stroke-dasharray="${len.toFixed(2)} ${(C - len).toFixed(2)}" stroke-dashoffset="${(-offset).toFixed(2)}"/>`;
+      offset += len;
+      return seg;
+    }).join("");
+    const pct = total > 0 ? Math.round(num(parts[0].value) / total * 100) + "%" : esc(emptyText);
+    const legend = parts.map((p) => `<li><i class="swatch ${p.cls}"></i>${esc(p.label)}<b>${num(p.value).toLocaleString(locale2)}</b></li>`).join("");
+    return `<div class="donut-wrap"><svg class="donut" viewBox="0 0 120 120" role="img" aria-label="${esc(parts.map((p) => `${p.label} ${num(p.value)}`).join(", "))}"><circle class="donut-track" r="${R}" cx="60" cy="60" fill="none" stroke-width="14"/>${arcs}<text class="donut-center${total > 0 ? "" : " muted"}" x="60" y="60" text-anchor="middle" dominant-baseline="central">${pct}</text></svg><ul class="legend">${legend}</ul></div>`;
+  }
+  function delta(cur, prev, locale2) {
+    const d = num(cur) - num(prev);
+    if (d === 0) return `<span class="delta flat">\u2014 ${esc(t("stats.vsYesterday", locale2))}</span>`;
+    return `<span class="delta ${d > 0 ? "up" : "down"}">${d > 0 ? "\u25B2" : "\u25BC"} ${Math.abs(d).toLocaleString(locale2)} ${esc(t("stats.vsYesterday", locale2))}</span>`;
   }
   function renderStats(data, locale2) {
     if (!data) return `<section class="stats card"><p role="status">${esc(t("stats.loading", locale2))}</p></section>`;
     if (data.error) return `<section class="stats card" role="alert"><p>${esc(t("stats.error", locale2))}</p></section>`;
-    const asc = [...data.days || []].sort((a, b) => day(a).localeCompare(day(b))), desc = [...asc].reverse(), today = data.today || desc[0] || {};
-    const n = (v) => Number(v || 0).toLocaleString(locale2);
+    const win = visibleWindow(data.days), desc = [...win].reverse();
+    const today = data.today || desc[0] || {}, yesterday = win.length >= 2 ? win[win.length - 2] : {};
+    const n = (v) => num(v).toLocaleString(locale2);
     const m = (v) => Number(v) < 0 ? "\u2014" : n(v);
-    const tile = (title, big, sub) => `<div class="stat-tile"><span class="stat-title">${esc(title)}</span><strong class="stat-big">${esc(big)}</strong><span class="stat-sub">${esc(sub)}</span></div>`;
+    const sum = (pick) => win.reduce((s, r) => s + num(pick(r)), 0);
+    const tile = (title, big, sub, foot = "") => `<div class="stat-tile card"><span class="stat-title">${esc(title)}</span><strong class="stat-big">${esc(big)}</strong><span class="stat-sub">${esc(sub)}</span>${foot}</div>`;
+    const period = win.length ? `${day(win[0])} \uFF5E ${day(win[win.length - 1])}` : "";
+    const caseT = t("home.case.title", locale2), contractT = t("home.contract.title", locale2);
     const head = ["day", "total", "case", "contract", "completed", "failed", "prompt", "completion", "tokens"].map((k) => `<th scope="col">${esc(t("stats.col." + k, locale2))}</th>`).join("");
     const rows = desc.map((r) => `<tr data-day="${esc(day(r))}"><td>${esc(day(r))}</td><td>${n(r.total)}</td><td>${n(r.byMode?.case)}</td><td>${n(r.byMode?.contract)}</td><td>${n(r.completed)}</td><td>${n(r.failed)}</td><td>${n(r.promptTokens)}</td><td>${n(r.completionTokens)}</td><td>${n(r.totalTokens)}</td></tr>`).join("");
-    return `<section class="stats"><h2>${esc(t("stats.title", locale2))}</h2><p class="home-lead">${esc(t("stats.lead", locale2))}</p>
+    return `<section class="stats">
+    <header class="stats-head"><div><h2>${esc(t("stats.title", locale2))}</h2><p class="home-lead">${esc(t("stats.lead", locale2))}</p></div>${period ? `<span class="period-chip">${esc(t("stats.period", locale2))} ${esc(period)}</span>` : ""}</header>
     <div id="stats-today" class="stat-tiles">
-      ${tile(t("stats.todayCases", locale2), n(today.total), `${t("home.case.title", locale2)} ${n(today.byMode?.case)} \xB7 ${t("home.contract.title", locale2)} ${n(today.byMode?.contract)} \xB7 ${t("stats.anonymous", locale2)} ${n(today.byIdentity?.anonymous)} \xB7 ${t("stats.member", locale2)} ${n(today.byIdentity?.member)}`)}
-      ${tile(t("stats.todayTokens", locale2), n(today.totalTokens), `prompt ${n(today.promptTokens)} \xB7 completion ${n(today.completionTokens)}`)}
+      ${tile(t("stats.todayCases", locale2), n(today.total), `${caseT} ${n(today.byMode?.case)} \xB7 ${contractT} ${n(today.byMode?.contract)} \xB7 ${t("stats.anonymous", locale2)} ${n(today.byIdentity?.anonymous)} \xB7 ${t("stats.member", locale2)} ${n(today.byIdentity?.member)}`, delta(today.total, yesterday.total, locale2))}
+      ${tile(t("stats.todayTokens", locale2), n(today.totalTokens), `prompt ${n(today.promptTokens)} \xB7 completion ${n(today.completionTokens)}`, delta(today.totalTokens, yesterday.totalTokens, locale2))}
       ${tile(t("stats.members", locale2), m(data.members?.total), `${t("stats.activeToday", locale2)} ${m(data.members?.activeToday)}`)}
     </div>
-    <div class="card"><h3>${esc(t("stats.chart.cases", locale2))}</h3>${bars(asc, (r) => Number(r.total || 0), "stats.chart.cases", locale2)}</div>
-    <div class="card"><h3>${esc(t("stats.chart.tokens", locale2))}</h3>${bars(asc, (r) => Number(r.totalTokens || 0), "stats.chart.tokens", locale2)}</div>
-    <div class="card table-wrap"><table class="assess-table stats-table"><thead><tr>${head}</tr></thead><tbody>${rows}</tbody></table></div></section>`;
+    <div class="stats-grid">
+      <div class="card chart-card"><h3>${esc(t("stats.chart.cases", locale2))}</h3>
+        <ul class="legend inline"><li><i class="swatch s-case"></i>${esc(caseT)}</li><li><i class="swatch s-contract"></i>${esc(contractT)}</li></ul>
+        ${columnChart(win, [{ pick: (r) => r.byMode?.case, cls: "s-case" }, { pick: (r) => r.byMode?.contract, cls: "s-contract" }], locale2, t("stats.chart.cases", locale2))}</div>
+      <div class="card chart-card"><h3>${esc(t("stats.chart.tokens", locale2))}</h3>
+        <ul class="legend inline"><li><i class="swatch s-prompt"></i>prompt</li><li><i class="swatch s-completion"></i>completion</li></ul>
+        ${columnChart(win, [{ pick: (r) => r.promptTokens, cls: "s-prompt" }, { pick: (r) => r.completionTokens, cls: "s-completion" }], locale2, t("stats.chart.tokens", locale2))}</div>
+      <div class="card chart-card donut-card"><h3>${esc(t("stats.chart.mix", locale2))}</h3>
+        ${donut([{ label: caseT, value: sum((r) => r.byMode?.case), cls: "s-case" }, { label: contractT, value: sum((r) => r.byMode?.contract), cls: "s-contract" }], locale2, t("stats.noData", locale2))}</div>
+      <div class="card chart-card donut-card"><h3>${esc(t("stats.chart.outcome", locale2))}</h3>
+        ${donut([{ label: t("stats.col.completed", locale2), value: sum((r) => r.completed), cls: "s-ok" }, { label: t("stats.col.failed", locale2), value: sum((r) => r.failed), cls: "s-bad" }], locale2, t("stats.noData", locale2))}</div>
+    </div>
+    <details class="stats-details"><summary>${esc(t("stats.details", locale2))}</summary>
+      <div class="card table-wrap"><table class="assess-table stats-table"><thead><tr>${head}</tr></thead><tbody>${rows}</tbody></table></div></details></section>`;
   }
 
   // src/main/resources/static/js/router.js
@@ -3192,10 +3272,29 @@
   }
 
   // src/main/resources/static/js/inspector.js
+  var FLAG_KEY = "lawgraph.inspector";
+  function inspectorEnabled(loc = location, storage = localStorage) {
+    const params = new URLSearchParams(`${loc.search || ""}&${(loc.hash || "").split("?")[1] || ""}`.replace(/^&/, ""));
+    const flag = params.get("inspector");
+    try {
+      if (flag === "1") {
+        storage.setItem(FLAG_KEY, "1");
+        return true;
+      }
+      if (flag === "0") {
+        storage.removeItem?.(FLAG_KEY);
+        return false;
+      }
+      return storage.getItem(FLAG_KEY) === "1";
+    } catch {
+      return flag === "1";
+    }
+  }
   function mountInspector(root, webmcp2, t2, getLocale) {
     const host = document.createElement("aside");
     host.id = "inspector";
     host.className = "inspector collapsed";
+    host.hidden = !inspectorEnabled();
     root.body.appendChild(host);
     const draw = () => {
       const locale2 = getLocale();

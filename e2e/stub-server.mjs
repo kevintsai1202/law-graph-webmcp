@@ -30,10 +30,12 @@ const json = (res, status, body) => { res.writeHead(status, { 'Content-Type': 'a
 /** 假的站台使用統計：形狀與真正 /api/stats 一致，讓統計頁在 stub 下也能渲染。 */
 const fakeStats = () => {
   const todayStr = new Date().toISOString().slice(0, 10);
-  const days = [2, 1, 0].map((i) => {
+  // 14 天：前 4 天全 0（模擬上線前空白，統計頁應裁掉），之後案件／合約／失敗都有一些，讓圖表看得出形狀
+  const days = Array.from({ length: 14 }, (_, k) => 13 - k).map((i) => {
     const d = new Date(Date.now() - i * 86400000).toISOString().slice(0, 10);
-    const n = 3 - i;
-    return { day: d, total: n, byMode: { case: n, contract: 0 }, completed: n, failed: 0, promptTokens: n * 500, completionTokens: n * 300, totalTokens: n * 800 };
+    const c = i >= 10 ? 0 : [3, 5, 2, 6, 4, 7, 3, 8, 5, 4][9 - i], k = i >= 10 ? 0 : (i % 3 === 0 ? 2 : 1), f = i === 4 ? 1 : 0;
+    const n = c + k;
+    return { day: d, total: n, byMode: { case: c, contract: k }, byIdentity: { anonymous: Math.max(0, n - 1), member: n ? 1 : 0 }, completed: n - f, failed: f, promptTokens: n * 5200, completionTokens: n * 900, totalTokens: n * 6100 };
   });
   const today = days[days.length - 1];
   return {

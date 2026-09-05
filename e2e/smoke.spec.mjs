@@ -23,6 +23,8 @@ const completed = {
 test.beforeEach(async ({ page }) => {
   // 在頁面腳本執行前注入假的 document.modelContext，讓 registerTool 流程可被觀察
   await page.addInitScript(() => {
+    // 工具檢視器對一般使用者預設隱藏；E2E 需要點它核對工具清單，故預先設旗標讓它顯示
+    try { localStorage.setItem('lawgraph.inspector', '1'); } catch {}
     const tools = new Map();
     document.modelContext = {
       registerTool: async (tool, opts) => { tools.set(tool.name, tool); opts?.signal?.addEventListener('abort', () => tools.delete(tool.name)); },
